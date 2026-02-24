@@ -12,6 +12,8 @@ import type { Email } from "@/lib/gmail";
 
 type View = "inbox" | "starred" | "sent" | "trash" | "subscriptions" | "analytics";
 
+const VIEWS = new Set<string>(["inbox", "starred", "sent", "trash", "subscriptions", "analytics"]);
+
 const LABEL_MAP: Record<string, string> = {
   inbox: "INBOX",
   starred: "STARRED",
@@ -19,9 +21,29 @@ const LABEL_MAP: Record<string, string> = {
   trash: "TRASH",
 };
 
+function getViewFromHash(): View {
+  if (typeof window === "undefined") return "inbox";
+  const hash = window.location.hash.replace("#", "");
+  return VIEWS.has(hash) ? (hash as View) : "inbox";
+}
+
 export default function Home() {
   const { data: session, status } = useSession();
-  const [view, setView] = useState<View>("inbox");
+  const [view, setViewState] = useState<View>("inbox");
+
+  // Sync view from URL hash on mount + popstate
+  useEffect(() => {
+    setViewState(getViewFromHash());
+    const onHashChange = () => setViewState(getViewFromHash());
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  // Update URL hash when view changes
+  const setView = useCallback((v: View) => {
+    setViewState(v);
+    window.history.pushState(null, "", `#${v}`);
+  }, []);
   const [emails, setEmails] = useState<Email[]>([]);
   const [selected, setSelected] = useState<Email | null>(null);
   const [loading, setLoading] = useState(false);

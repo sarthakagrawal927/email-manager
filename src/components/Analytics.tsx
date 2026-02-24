@@ -28,7 +28,7 @@ export function Analytics() {
     setLoading(true);
     setStats([]);
     try {
-      const res = await fetch(`/api/emails?label=INBOX&maxResults=${maxResults}`);
+      const res = await fetch(`/api/emails?label=INBOX&maxResults=${maxResults}&metadataOnly=true`);
       if (!res.ok) {
         setLoading(false);
         return;

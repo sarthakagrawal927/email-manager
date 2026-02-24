@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
   const label = searchParams.get("label") ?? undefined;
   const pageToken = searchParams.get("pageToken") ?? undefined;
   const maxResults = searchParams.get("maxResults") ? Number(searchParams.get("maxResults")) : undefined;
+  const metadataOnly = searchParams.get("metadataOnly") === "true";
 
   try {
     const result = await listEmails(token, {
@@ -23,6 +24,7 @@ export async function GET(req: NextRequest) {
       labelIds: label ? [label] : undefined,
       pageToken,
       maxResults,
+      metadataOnly,
     });
     return NextResponse.json(result);
   } catch (err: any) {

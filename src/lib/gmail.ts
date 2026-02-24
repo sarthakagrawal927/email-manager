@@ -88,7 +88,7 @@ export function parseMessage(msg: any): Email {
 
 export async function listEmails(
   accessToken: string,
-  options: { q?: string; labelIds?: string[]; maxResults?: number; pageToken?: string }
+  options: { q?: string; labelIds?: string[]; maxResults?: number; pageToken?: string; metadataOnly?: boolean }
 ) {
   const params = new URLSearchParams();
   params.set("maxResults", String(options.maxResults ?? 25));
@@ -104,10 +104,17 @@ export async function listEmails(
     return { emails: [], nextPageToken: null };
   }
 
+  // metadata format is ~10x faster: only headers, no body parsing
+  const format = options.metadataOnly ? "metadata" : "full";
+  const metaHeaders = "Subject,From,To,Date,List-Unsubscribe,List-Unsubscribe-Post";
+  const formatParams = format === "metadata"
+    ? `format=metadata&metadataHeaders=${encodeURIComponent(metaHeaders)}`
+    : "format=full";
+
   const emails = await Promise.all(
     listData.messages.map(async (m: any) => {
-      const full = await gmailFetch(accessToken, `/messages/${m.id}?format=full`);
-      return parseMessage(full);
+      const msg = await gmailFetch(accessToken, `/messages/${m.id}?${formatParams}`);
+      return parseMessage(msg);
     })
   );
 
