@@ -9,21 +9,27 @@ export function Subscriptions() {
 
   useEffect(() => {
     (async () => {
-      // search for emails with unsubscribe headers
-      const res = await fetch("/api/emails?q=unsubscribe&label=INBOX");
-      const data = await res.json();
-      // filter to only those with actual unsubscribe links
-      const subs = (data.emails ?? []).filter((e: Email) => e.unsubscribeLink);
-      // dedupe by sender domain
-      const seen = new Set<string>();
-      const unique = subs.filter((e: Email) => {
-        const domain = e.from.match(/@([^>]+)/)?.[1]?.toLowerCase();
-        if (!domain || seen.has(domain)) return false;
-        seen.add(domain);
-        return true;
-      });
-      setEmails(unique);
-      setLoading(false);
+      try {
+        const res = await fetch("/api/emails?q=unsubscribe&label=INBOX");
+        if (!res.ok) {
+          setLoading(false);
+          return;
+        }
+        const data = await res.json();
+        const subs = (data.emails ?? []).filter((e: Email) => e.unsubscribeLink);
+        const seen = new Set<string>();
+        const unique = subs.filter((e: Email) => {
+          const domain = e.from.match(/@([^>]+)/)?.[1]?.toLowerCase();
+          if (!domain || seen.has(domain)) return false;
+          seen.add(domain);
+          return true;
+        });
+        setEmails(unique);
+      } catch (err) {
+        console.error("Subscriptions fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 

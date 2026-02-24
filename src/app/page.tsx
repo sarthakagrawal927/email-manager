@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession, signIn, signOut } from "next-auth/react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { EmailList } from "@/components/EmailList";
 import { EmailDetail } from "@/components/EmailDetail";
@@ -11,49 +11,73 @@ import type { Email } from "@/lib/gmail";
 
 type View = "inbox" | "starred" | "sent" | "trash" | "subscriptions";
 
+const LABEL_MAP: Record<string, string> = {
+  inbox: "INBOX",
+  starred: "STARRED",
+  sent: "SENT",
+  trash: "TRASH",
+};
+
 export default function Home() {
   const { data: session, status } = useSession();
   const [view, setView] = useState<View>("inbox");
   const [emails, setEmails] = useState<Email[]>([]);
   const [selected, setSelected] = useState<Email | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [composing, setComposing] = useState(false);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
-
-  const labelMap: Record<string, string> = {
-    inbox: "INBOX",
-    starred: "STARRED",
-    sent: "SENT",
-    trash: "TRASH",
-  };
+  const fetchingRef = useRef(false);
 
   const fetchEmails = useCallback(
     async (pageToken?: string) => {
+      if (fetchingRef.current) return;
+      fetchingRef.current = true;
       setLoading(true);
-      const params = new URLSearchParams();
-      if (labelMap[view]) params.set("label", labelMap[view]);
-      if (search) params.set("q", search);
-      if (pageToken) params.set("pageToken", pageToken);
+      setError(null);
 
-      const res = await fetch(`/api/emails?${params}`);
-      if (res.status === 401) {
-        signOut();
-        return;
-      }
-      const data = await res.json();
-      if (data.error) {
-        console.error("Email fetch error:", data.error);
+      try {
+        const params = new URLSearchParams();
+        if (LABEL_MAP[view]) params.set("label", LABEL_MAP[view]);
+        if (search) params.set("q", search);
+        if (pageToken) params.set("pageToken", pageToken);
+
+        const res = await fetch(`/api/emails?${params}`);
+
+        if (res.status === 401) {
+          signOut();
+          return;
+        }
+
+        if (!res.ok) {
+          const text = await res.text();
+          console.error("Email fetch error:", res.status, text);
+          setError(`Failed to load emails (${res.status})`);
+          return;
+        }
+
+        const data = await res.json();
+
+        if (data.error) {
+          console.error("Email fetch error:", data.error);
+          setError(data.error);
+          return;
+        }
+
+        if (pageToken) {
+          setEmails((prev) => [...prev, ...data.emails]);
+        } else {
+          setEmails(data.emails ?? []);
+        }
+        setNextPageToken(data.nextPageToken);
+      } catch (err) {
+        console.error("Email fetch exception:", err);
+        setError("Failed to load emails");
+      } finally {
         setLoading(false);
-        return;
+        fetchingRef.current = false;
       }
-      if (pageToken) {
-        setEmails((prev) => [...prev, ...data.emails]);
-      } else {
-        setEmails(data.emails ?? []);
-      }
-      setNextPageToken(data.nextPageToken);
-      setLoading(false);
     },
     [view, search]
   );
@@ -104,6 +128,18 @@ export default function Home() {
       <main className="flex-1 flex overflow-hidden">
         {view === "subscriptions" ? (
           <Subscriptions />
+        ) : error ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <p className="text-[var(--text-muted)]">{error}</p>
+              <button
+                onClick={() => fetchEmails()}
+                className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition cursor-pointer"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
         ) : selected ? (
           <EmailDetail
             email={selected}

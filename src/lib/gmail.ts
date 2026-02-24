@@ -1,9 +1,21 @@
-import { google } from "googleapis";
+const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
 
-export function getGmailClient(accessToken: string) {
-  const auth = new google.auth.OAuth2();
-  auth.setCredentials({ access_token: accessToken });
-  return google.gmail({ version: "v1", auth });
+function headers(accessToken: string) {
+  return { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" };
+}
+
+async function gmailFetch(accessToken: string, path: string, init?: RequestInit) {
+  const res = await fetch(`${GMAIL_API}${path}`, {
+    ...init,
+    headers: { ...headers(accessToken), ...init?.headers },
+  });
+  if (!res.ok) {
+    const err: any = new Error(`Gmail API ${res.status}: ${res.statusText}`);
+    err.status = res.status;
+    try { err.details = await res.json(); } catch {}
+    throw err;
+  }
+  return res.json();
 }
 
 export interface Email {
@@ -33,7 +45,6 @@ function decodeBody(payload: any): string {
       if (part.mimeType === "text/plain" && part.body?.data) {
         return Buffer.from(part.body.data, "base64url").toString("utf-8");
       }
-      // nested multipart
       if (part.parts) {
         const nested = decodeBody(part);
         if (nested) return nested;
@@ -48,8 +59,8 @@ function getHeader(headers: any[], name: string): string {
 }
 
 export function parseMessage(msg: any): Email {
-  const headers = msg.payload?.headers ?? [];
-  const unsubHeader = getHeader(headers, "List-Unsubscribe");
+  const hdrs = msg.payload?.headers ?? [];
+  const unsubHeader = getHeader(hdrs, "List-Unsubscribe");
   let unsubscribeLink: string | null = null;
 
   if (unsubHeader) {
@@ -61,10 +72,10 @@ export function parseMessage(msg: any): Email {
   return {
     id: msg.id,
     threadId: msg.threadId,
-    subject: getHeader(headers, "Subject") || "(no subject)",
-    from: getHeader(headers, "From"),
-    to: getHeader(headers, "To"),
-    date: getHeader(headers, "Date"),
+    subject: getHeader(hdrs, "Subject") || "(no subject)",
+    from: getHeader(hdrs, "From"),
+    to: getHeader(hdrs, "To"),
+    date: getHeader(hdrs, "Date"),
     snippet: msg.snippet ?? "",
     body: decodeBody(msg.payload),
     labelIds: msg.labelIds ?? [],
@@ -76,41 +87,33 @@ export async function listEmails(
   accessToken: string,
   options: { q?: string; labelIds?: string[]; maxResults?: number; pageToken?: string }
 ) {
-  const gmail = getGmailClient(accessToken);
-  const res = await gmail.users.messages.list({
-    userId: "me",
-    maxResults: options.maxResults ?? 25,
-    q: options.q,
-    labelIds: options.labelIds,
-    pageToken: options.pageToken,
-  });
+  const params = new URLSearchParams();
+  params.set("maxResults", String(options.maxResults ?? 25));
+  if (options.q) params.set("q", options.q);
+  if (options.pageToken) params.set("pageToken", options.pageToken);
+  if (options.labelIds) {
+    for (const l of options.labelIds) params.append("labelIds", l);
+  }
 
-  if (!res.data.messages?.length) {
+  const listData = await gmailFetch(accessToken, `/messages?${params}`);
+
+  if (!listData.messages?.length) {
     return { emails: [], nextPageToken: null };
   }
 
   const emails = await Promise.all(
-    res.data.messages.map(async (m) => {
-      const full = await gmail.users.messages.get({
-        userId: "me",
-        id: m.id!,
-        format: "full",
-      });
-      return parseMessage(full.data);
+    listData.messages.map(async (m: any) => {
+      const full = await gmailFetch(accessToken, `/messages/${m.id}?format=full`);
+      return parseMessage(full);
     })
   );
 
-  return { emails, nextPageToken: res.data.nextPageToken ?? null };
+  return { emails, nextPageToken: listData.nextPageToken ?? null };
 }
 
 export async function getEmail(accessToken: string, id: string) {
-  const gmail = getGmailClient(accessToken);
-  const res = await gmail.users.messages.get({
-    userId: "me",
-    id,
-    format: "full",
-  });
-  return parseMessage(res.data);
+  const data = await gmailFetch(accessToken, `/messages/${id}?format=full`);
+  return parseMessage(data);
 }
 
 export async function modifyEmail(
@@ -119,17 +122,14 @@ export async function modifyEmail(
   addLabels: string[],
   removeLabels: string[]
 ) {
-  const gmail = getGmailClient(accessToken);
-  await gmail.users.messages.modify({
-    userId: "me",
-    id,
-    requestBody: { addLabelIds: addLabels, removeLabelIds: removeLabels },
+  await gmailFetch(accessToken, `/messages/${id}/modify`, {
+    method: "POST",
+    body: JSON.stringify({ addLabelIds: addLabels, removeLabelIds: removeLabels }),
   });
 }
 
 export async function trashEmail(accessToken: string, id: string) {
-  const gmail = getGmailClient(accessToken);
-  await gmail.users.messages.trash({ userId: "me", id });
+  await gmailFetch(accessToken, `/messages/${id}/trash`, { method: "POST" });
 }
 
 export async function sendEmail(
@@ -138,13 +138,12 @@ export async function sendEmail(
   subject: string,
   body: string
 ) {
-  const gmail = getGmailClient(accessToken);
   const raw = Buffer.from(
     `To: ${to}\r\nSubject: ${subject}\r\nContent-Type: text/html; charset=utf-8\r\n\r\n${body}`
   ).toString("base64url");
 
-  await gmail.users.messages.send({
-    userId: "me",
-    requestBody: { raw },
+  await gmailFetch(accessToken, `/messages/send`, {
+    method: "POST",
+    body: JSON.stringify({ raw }),
   });
 }
