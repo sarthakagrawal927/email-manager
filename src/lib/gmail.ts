@@ -5,17 +5,27 @@ function headers(accessToken: string) {
 }
 
 async function gmailFetch(accessToken: string, path: string, init?: RequestInit) {
-  const res = await fetch(`${GMAIL_API}${path}`, {
-    ...init,
-    headers: { ...headers(accessToken), ...init?.headers },
-  });
-  if (!res.ok) {
-    const err: any = new Error(`Gmail API ${res.status}: ${res.statusText}`);
-    err.status = res.status;
-    try { err.details = await res.json(); } catch {}
-    throw err;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(`${GMAIL_API}${path}`, {
+      ...init,
+      headers: { ...headers(accessToken), ...init?.headers },
+    });
+    if (res.status === 429) {
+      // Exponential backoff: 1s, 2s, 4s
+      await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+      continue;
+    }
+    if (!res.ok) {
+      const err: any = new Error(`Gmail API ${res.status}: ${res.statusText}`);
+      err.status = res.status;
+      try { err.details = await res.json(); } catch {}
+      throw err;
+    }
+    return res.json();
   }
-  return res.json();
+  const err: any = new Error("Gmail API 429: Too Many Requests (after retries)");
+  err.status = 429;
+  throw err;
 }
 
 export interface Email {
@@ -113,12 +123,19 @@ export async function listEmails(
     }
   }
 
-  const emails = await Promise.all(
-    listData.messages.map(async (m: any) => {
-      const msg = await gmailFetch(accessToken, `/messages/${m.id}?${msgParams}`);
-      return parseMessage(msg);
-    })
-  );
+  // Fetch in batches of 25 to avoid Gmail API 429 rate limits
+  const BATCH_SIZE = 25;
+  const emails: ReturnType<typeof parseMessage>[] = [];
+  for (let i = 0; i < listData.messages.length; i += BATCH_SIZE) {
+    const batch = listData.messages.slice(i, i + BATCH_SIZE);
+    const results = await Promise.all(
+      batch.map(async (m: any) => {
+        const msg = await gmailFetch(accessToken, `/messages/${m.id}?${msgParams}`);
+        return parseMessage(msg);
+      })
+    );
+    emails.push(...results);
+  }
 
   return { emails, nextPageToken: listData.nextPageToken ?? null };
 }
