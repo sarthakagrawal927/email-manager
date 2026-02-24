@@ -37,7 +37,16 @@ export default function Home() {
       if (pageToken) params.set("pageToken", pageToken);
 
       const res = await fetch(`/api/emails?${params}`);
+      if (res.status === 401) {
+        signOut();
+        return;
+      }
       const data = await res.json();
+      if (data.error) {
+        console.error("Email fetch error:", data.error);
+        setLoading(false);
+        return;
+      }
       if (pageToken) {
         setEmails((prev) => [...prev, ...data.emails]);
       } else {

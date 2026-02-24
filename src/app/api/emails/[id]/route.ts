@@ -11,9 +11,18 @@ export async function GET(
   const token = (session as any)?.accessToken;
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await params;
-  const email = await getEmail(token, id);
-  return NextResponse.json(email);
+  try {
+    const { id } = await params;
+    const email = await getEmail(token, id);
+    return NextResponse.json(email);
+  } catch (err: any) {
+    console.error("GET /api/emails/[id] error:", err?.message ?? err);
+    const status = err?.code ?? err?.status ?? 500;
+    return NextResponse.json(
+      { error: err?.message ?? "Failed to fetch email" },
+      { status: typeof status === "number" ? status : 500 }
+    );
+  }
 }
 
 export async function PATCH(
@@ -24,10 +33,19 @@ export async function PATCH(
   const token = (session as any)?.accessToken;
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await params;
-  const { addLabels = [], removeLabels = [] } = await req.json();
-  await modifyEmail(token, id, addLabels, removeLabels);
-  return NextResponse.json({ ok: true });
+  try {
+    const { id } = await params;
+    const { addLabels = [], removeLabels = [] } = await req.json();
+    await modifyEmail(token, id, addLabels, removeLabels);
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    console.error("PATCH /api/emails/[id] error:", err?.message ?? err);
+    const status = err?.code ?? err?.status ?? 500;
+    return NextResponse.json(
+      { error: err?.message ?? "Failed to modify email" },
+      { status: typeof status === "number" ? status : 500 }
+    );
+  }
 }
 
 export async function DELETE(
@@ -38,7 +56,16 @@ export async function DELETE(
   const token = (session as any)?.accessToken;
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await params;
-  await trashEmail(token, id);
-  return NextResponse.json({ ok: true });
+  try {
+    const { id } = await params;
+    await trashEmail(token, id);
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    console.error("DELETE /api/emails/[id] error:", err?.message ?? err);
+    const status = err?.code ?? err?.status ?? 500;
+    return NextResponse.json(
+      { error: err?.message ?? "Failed to trash email" },
+      { status: typeof status === "number" ? status : 500 }
+    );
+  }
 }
