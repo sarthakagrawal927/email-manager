@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { Email } from "@/lib/gmail";
 
 interface SenderStat {
+  email: string;
   domain: string;
   displayName: string;
   count: number;
@@ -66,14 +67,16 @@ export function Analytics() {
       setDateRange("");
     }
 
-    // Aggregate by sender domain
-    const domainMap = new Map<string, SenderStat>();
+    // Aggregate by sender email address
+    const senderMap = new Map<string, SenderStat>();
     for (const email of emails) {
-      const domainMatch = email.from.match(/@([^>]+)/);
-      const domain = domainMatch?.[1]?.toLowerCase() ?? "unknown";
-      const displayName = email.from.replace(/<[^>]+>/, "").trim() || domain;
+      const emailMatch = email.from.match(/<([^>]+)>/);
+      const senderEmail = (emailMatch?.[1] ?? email.from).toLowerCase().trim();
+      const domainMatch = senderEmail.match(/@(.+)/);
+      const domain = domainMatch?.[1] ?? "unknown";
+      const displayName = email.from.replace(/<[^>]+>/, "").trim() || senderEmail;
 
-      const existing = domainMap.get(domain);
+      const existing = senderMap.get(senderEmail);
       if (existing) {
         existing.count++;
         if (!existing.unsubscribeLink && email.unsubscribeLink) {
@@ -81,7 +84,8 @@ export function Analytics() {
           existing.unsubscribePost = email.unsubscribePost;
         }
       } else {
-        domainMap.set(domain, {
+        senderMap.set(senderEmail, {
+          email: senderEmail,
           domain,
           displayName,
           count: 1,
@@ -91,7 +95,7 @@ export function Analytics() {
       }
     }
 
-    setStats(Array.from(domainMap.values()).sort((a, b) => b.count - a.count));
+    setStats(Array.from(senderMap.values()).sort((a, b) => b.count - a.count));
     setLoading(false);
     setProgress("");
   }
@@ -165,12 +169,13 @@ export function Analytics() {
 
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  function getEmailsForDomain(domain: string): Email[] {
+  function getEmailsForSender(senderEmail: string): Email[] {
     const sliced = cacheRef.current.slice(0, bucket);
     return sliced
       .filter((e) => {
-        const m = e.from.match(/@([^>]+)/);
-        return (m?.[1]?.toLowerCase() ?? "unknown") === domain;
+        const m = e.from.match(/<([^>]+)>/);
+        const addr = (m?.[1] ?? e.from).toLowerCase().trim();
+        return addr === senderEmail;
       })
       .slice(0, 20);
   }
@@ -227,12 +232,12 @@ export function Analytics() {
       ) : (
         <div className="p-4 space-y-2">
           {stats.map((sender) => {
-            const isExpanded = expanded === sender.domain;
+            const isExpanded = expanded === sender.email;
             return (
-              <div key={sender.domain}>
+              <div key={sender.email}>
                 <div
                   className="flex items-center gap-3 cursor-pointer rounded-lg px-2 py-1.5 -mx-2 hover:bg-[var(--border)]/30 transition"
-                  onClick={() => setExpanded(isExpanded ? null : sender.domain)}
+                  onClick={() => setExpanded(isExpanded ? null : sender.email)}
                 >
                   <span className={`text-xs text-[var(--text-muted)] transition-transform ${isExpanded ? "rotate-90" : ""}`}>
                     ▶
@@ -263,13 +268,13 @@ export function Analytics() {
                         style={{ width: `${(sender.count / maxCount) * 100}%` }}
                       />
                     </div>
-                    <div className="text-xs text-[var(--text-muted)] mt-0.5">{sender.domain}</div>
+                    <div className="text-xs text-[var(--text-muted)] mt-0.5">{sender.email}</div>
                   </div>
                 </div>
 
                 {isExpanded && (
                   <div className="ml-7 mt-1 mb-2 border-l-2 border-[var(--border)] pl-3 space-y-1">
-                    {getEmailsForDomain(sender.domain).map((email) => (
+                    {getEmailsForSender(sender.email).map((email) => (
                       <div
                         key={email.id}
                         className="flex items-baseline gap-2 py-1 text-sm"
