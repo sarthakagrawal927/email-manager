@@ -45,8 +45,64 @@ export function Analytics() {
   const [dateRange, setDateRange] = useState("");
   const [bucket, setBucket] = useState(100);
   const abortRef = useRef<AbortController | null>(null);
+  const cacheRef = useRef<Email[]>([]);
+
+  function computeStats(emails: Email[]) {
+    setTotalEmails(emails.length);
+
+    // Compute date range
+    if (emails.length > 0) {
+      const dates = emails
+        .map((e) => new Date(e.date).getTime())
+        .filter((t) => !isNaN(t))
+        .sort((a, b) => a - b);
+      if (dates.length > 0) {
+        setDateRange(formatDateRange(
+          new Date(dates[0]).toISOString(),
+          new Date(dates[dates.length - 1]).toISOString()
+        ));
+      }
+    } else {
+      setDateRange("");
+    }
+
+    // Aggregate by sender domain
+    const domainMap = new Map<string, SenderStat>();
+    for (const email of emails) {
+      const domainMatch = email.from.match(/@([^>]+)/);
+      const domain = domainMatch?.[1]?.toLowerCase() ?? "unknown";
+      const displayName = email.from.replace(/<[^>]+>/, "").trim() || domain;
+
+      const existing = domainMap.get(domain);
+      if (existing) {
+        existing.count++;
+        if (!existing.unsubscribeLink && email.unsubscribeLink) {
+          existing.unsubscribeLink = email.unsubscribeLink;
+          existing.unsubscribePost = email.unsubscribePost;
+        }
+      } else {
+        domainMap.set(domain, {
+          domain,
+          displayName,
+          count: 1,
+          unsubscribeLink: email.unsubscribeLink,
+          unsubscribePost: email.unsubscribePost,
+        });
+      }
+    }
+
+    setStats(Array.from(domainMap.values()).sort((a, b) => b.count - a.count));
+    setLoading(false);
+    setProgress("");
+  }
 
   const fetchAnalytics = useCallback(async (target: number) => {
+    // If we already have enough cached emails, just recompute from cache
+    if (cacheRef.current.length >= target) {
+      computeStats(cacheRef.current.slice(0, target));
+      return;
+    }
+
     // Cancel any in-flight request
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -88,59 +144,17 @@ export function Analytics() {
 
       if (controller.signal.aborted) return;
 
-      // Trim to exact target
-      const trimmed = allEmails.slice(0, target);
-      setTotalEmails(trimmed.length);
-
-      // Compute date range
-      if (trimmed.length > 0) {
-        const dates = trimmed
-          .map((e) => new Date(e.date).getTime())
-          .filter((t) => !isNaN(t))
-          .sort((a, b) => a - b);
-        if (dates.length > 0) {
-          setDateRange(formatDateRange(
-            new Date(dates[0]).toISOString(),
-            new Date(dates[dates.length - 1]).toISOString()
-          ));
-        }
+      // Update cache if we fetched more than before
+      if (allEmails.length > cacheRef.current.length) {
+        cacheRef.current = allEmails;
       }
 
-      // Aggregate by sender domain
-      const domainMap = new Map<string, SenderStat>();
-      for (const email of trimmed) {
-        const domainMatch = email.from.match(/@([^>]+)/);
-        const domain = domainMatch?.[1]?.toLowerCase() ?? "unknown";
-        const displayName = email.from.replace(/<[^>]+>/, "").trim() || domain;
-
-        const existing = domainMap.get(domain);
-        if (existing) {
-          existing.count++;
-          if (!existing.unsubscribeLink && email.unsubscribeLink) {
-            existing.unsubscribeLink = email.unsubscribeLink;
-            existing.unsubscribePost = email.unsubscribePost;
-          }
-        } else {
-          domainMap.set(domain, {
-            domain,
-            displayName,
-            count: 1,
-            unsubscribeLink: email.unsubscribeLink,
-            unsubscribePost: email.unsubscribePost,
-          });
-        }
-      }
-
-      const sorted = Array.from(domainMap.values()).sort((a, b) => b.count - a.count);
-      setStats(sorted);
+      computeStats(allEmails.slice(0, target));
     } catch (err: any) {
       if (err?.name === "AbortError") return;
       console.error("Analytics fetch error:", err);
-    } finally {
-      if (!controller.signal.aborted) {
-        setLoading(false);
-        setProgress("");
-      }
+      setLoading(false);
+      setProgress("");
     }
   }, []);
 
