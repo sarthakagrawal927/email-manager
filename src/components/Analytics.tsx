@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { Email } from "@/lib/gmail";
 
 interface SenderStat {
@@ -12,33 +12,103 @@ interface SenderStat {
 }
 
 const BUCKET_OPTIONS = [
-  { label: "Last 50", value: 50 },
-  { label: "Last 100", value: 100 },
-  { label: "Last 250", value: 250 },
-  { label: "Last 500", value: 500 },
+  { label: "50", value: 50 },
+  { label: "100", value: 100 },
+  { label: "500", value: 500 },
+  { label: "1k", value: 1000 },
+  { label: "5k", value: 5000 },
 ];
+
+function formatDateRange(oldest: string, newest: string): string {
+  const o = new Date(oldest);
+  const n = new Date(newest);
+  const diffMs = n.getTime() - o.getTime();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  const fmtDate = (d: Date) =>
+    d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+  if (diffDays === 0) return `today (${fmtDate(n)})`;
+  if (diffDays === 1) return `last 1 day`;
+  if (diffDays < 30) return `${diffDays} days (${fmtDate(o)} – ${fmtDate(n)})`;
+  const diffMonths = Math.round(diffDays / 30);
+  if (diffMonths < 12) return `~${diffMonths} month${diffMonths > 1 ? "s" : ""} (${fmtDate(o)} – ${fmtDate(n)})`;
+  const diffYears = (diffDays / 365).toFixed(1);
+  return `~${diffYears} years (${fmtDate(o)} – ${fmtDate(n)})`;
+}
 
 export function Analytics() {
   const [stats, setStats] = useState<SenderStat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState("");
   const [totalEmails, setTotalEmails] = useState(0);
+  const [dateRange, setDateRange] = useState("");
   const [bucket, setBucket] = useState(100);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const fetchAnalytics = useCallback(async (maxResults: number) => {
+  const fetchAnalytics = useCallback(async (target: number) => {
+    // Cancel any in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setStats([]);
-    try {
-      const res = await fetch(`/api/emails?label=INBOX&maxResults=${maxResults}&metadataOnly=true`);
-      if (!res.ok) {
-        setLoading(false);
-        return;
-      }
-      const data = await res.json();
-      const emails: Email[] = data.emails ?? [];
-      setTotalEmails(emails.length);
+    setProgress("Fetching...");
+    setDateRange("");
 
+    try {
+      const allEmails: Email[] = [];
+      let pageToken: string | undefined;
+      const perPage = Math.min(target, 500); // Gmail API caps at 500
+
+      while (allEmails.length < target) {
+        if (controller.signal.aborted) return;
+
+        const params = new URLSearchParams({
+          label: "INBOX",
+          maxResults: String(perPage),
+          metadataOnly: "true",
+        });
+        if (pageToken) params.set("pageToken", pageToken);
+
+        setProgress(`Fetching... ${allEmails.length}/${target}`);
+
+        const res = await fetch(`/api/emails?${params}`, { signal: controller.signal });
+        if (!res.ok) break;
+
+        const data = await res.json();
+        const emails: Email[] = data.emails ?? [];
+        if (emails.length === 0) break;
+
+        allEmails.push(...emails);
+        pageToken = data.nextPageToken;
+        if (!pageToken) break; // no more pages
+      }
+
+      if (controller.signal.aborted) return;
+
+      // Trim to exact target
+      const trimmed = allEmails.slice(0, target);
+      setTotalEmails(trimmed.length);
+
+      // Compute date range
+      if (trimmed.length > 0) {
+        const dates = trimmed
+          .map((e) => new Date(e.date).getTime())
+          .filter((t) => !isNaN(t))
+          .sort((a, b) => a - b);
+        if (dates.length > 0) {
+          setDateRange(formatDateRange(
+            new Date(dates[0]).toISOString(),
+            new Date(dates[dates.length - 1]).toISOString()
+          ));
+        }
+      }
+
+      // Aggregate by sender domain
       const domainMap = new Map<string, SenderStat>();
-      for (const email of emails) {
+      for (const email of trimmed) {
         const domainMatch = email.from.match(/@([^>]+)/);
         const domain = domainMatch?.[1]?.toLowerCase() ?? "unknown";
         const displayName = email.from.replace(/<[^>]+>/, "").trim() || domain;
@@ -63,15 +133,20 @@ export function Analytics() {
 
       const sorted = Array.from(domainMap.values()).sort((a, b) => b.count - a.count);
       setStats(sorted);
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
       console.error("Analytics fetch error:", err);
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+        setProgress("");
+      }
     }
   }, []);
 
   useEffect(() => {
     fetchAnalytics(bucket);
+    return () => abortRef.current?.abort();
   }, [bucket, fetchAnalytics]);
 
   const maxCount = stats[0]?.count ?? 1;
@@ -79,22 +154,27 @@ export function Analytics() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="p-4 border-b border-[var(--border)]">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
             <h2 className="text-lg font-semibold">Sender Analytics</h2>
             <p className="text-sm text-[var(--text-muted)] mt-1">
               {loading
-                ? "Loading..."
+                ? progress
                 : `${stats.length} unique senders across ${totalEmails} emails`}
             </p>
+            {dateRange && !loading && (
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                Spanning {dateRange}
+              </p>
+            )}
           </div>
-          <div className="flex gap-1 bg-[var(--border)]/50 rounded-lg p-0.5">
+          <div className="flex gap-1 bg-[var(--border)]/50 rounded-lg p-0.5 shrink-0">
             {BUCKET_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setBucket(opt.value)}
                 disabled={loading}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
+                className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
                   bucket === opt.value
                     ? "bg-[var(--accent)] text-white"
                     : "text-[var(--text-muted)] hover:text-[var(--text)]"
@@ -108,8 +188,11 @@ export function Analytics() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-40">
+        <div className="flex flex-col items-center justify-center h-40 gap-3">
           <div className="animate-spin w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
+          {progress && (
+            <p className="text-xs text-[var(--text-muted)]">{progress}</p>
+          )}
         </div>
       ) : stats.length === 0 ? (
         <div className="flex-1 flex items-center justify-center text-[var(--text-muted)] mt-20">
