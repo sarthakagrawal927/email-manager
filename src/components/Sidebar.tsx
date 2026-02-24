@@ -6,6 +6,7 @@ const navItems = [
   { id: "sent", label: "Sent", icon: "📤" },
   { id: "trash", label: "Trash", icon: "🗑" },
   { id: "subscriptions", label: "Subscriptions", icon: "📬" },
+  { id: "analytics", label: "Analytics", icon: "📊" },
 ];
 
 interface Props {

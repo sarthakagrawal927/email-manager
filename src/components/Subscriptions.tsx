@@ -6,6 +6,8 @@ import type { Email } from "@/lib/gmail";
 export function Subscriptions() {
   const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unsubbing, setUnsubbing] = useState<Set<string>>(new Set());
+  const [unsubbed, setUnsubbed] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     (async () => {
@@ -32,6 +34,34 @@ export function Subscriptions() {
       }
     })();
   }, []);
+
+  async function handleUnsubscribe(email: Email) {
+    if (!email.unsubscribePost) {
+      // Fallback: open link in new tab
+      window.open(email.unsubscribeLink!, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    setUnsubbing((prev) => new Set(prev).add(email.id));
+    try {
+      const res = await fetch(`/api/emails/${email.id}/unsubscribe`, { method: "POST" });
+      const data = await res.json();
+
+      if (data.ok) {
+        setUnsubbed((prev) => new Set(prev).add(email.id));
+      } else if (data.fallbackUrl) {
+        window.open(data.fallbackUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch {
+      window.open(email.unsubscribeLink!, "_blank", "noopener,noreferrer");
+    } finally {
+      setUnsubbing((prev) => {
+        const next = new Set(prev);
+        next.delete(email.id);
+        return next;
+      });
+    }
+  }
 
   if (loading) {
     return (
@@ -70,14 +100,24 @@ export function Subscriptions() {
               {email.subject}
             </div>
           </div>
-          <a
-            href={email.unsubscribeLink!}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-3 shrink-0 px-3 py-1.5 rounded-lg bg-[var(--danger)]/10 text-[var(--danger)] text-sm hover:bg-[var(--danger)]/20 transition"
-          >
-            Unsubscribe
-          </a>
+          <div className="ml-3 shrink-0 flex items-center gap-2">
+            {email.unsubscribePost && (
+              <span className="text-xs text-[var(--text-muted)]">1-click</span>
+            )}
+            {unsubbed.has(email.id) ? (
+              <span className="px-3 py-1.5 rounded-lg bg-green-500/10 text-green-600 text-sm">
+                Unsubscribed
+              </span>
+            ) : (
+              <button
+                onClick={() => handleUnsubscribe(email)}
+                disabled={unsubbing.has(email.id)}
+                className="px-3 py-1.5 rounded-lg bg-[var(--danger)]/10 text-[var(--danger)] text-sm hover:bg-[var(--danger)]/20 transition cursor-pointer disabled:opacity-50"
+              >
+                {unsubbing.has(email.id) ? "..." : "Unsubscribe"}
+              </button>
+            )}
+          </div>
         </div>
       ))}
     </div>

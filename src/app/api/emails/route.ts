@@ -15,12 +15,14 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q") ?? undefined;
   const label = searchParams.get("label") ?? undefined;
   const pageToken = searchParams.get("pageToken") ?? undefined;
+  const maxResults = searchParams.get("maxResults") ? Number(searchParams.get("maxResults")) : undefined;
 
   try {
     const result = await listEmails(token, {
       q,
       labelIds: label ? [label] : undefined,
       pageToken,
+      maxResults,
     });
     return NextResponse.json(result);
   } catch (err: any) {

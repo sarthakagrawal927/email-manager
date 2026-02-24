@@ -7,9 +7,10 @@ import { EmailList } from "@/components/EmailList";
 import { EmailDetail } from "@/components/EmailDetail";
 import { ComposeModal } from "@/components/ComposeModal";
 import { Subscriptions } from "@/components/Subscriptions";
+import { Analytics } from "@/components/Analytics";
 import type { Email } from "@/lib/gmail";
 
-type View = "inbox" | "starred" | "sent" | "trash" | "subscriptions";
+type View = "inbox" | "starred" | "sent" | "trash" | "subscriptions" | "analytics";
 
 const LABEL_MAP: Record<string, string> = {
   inbox: "INBOX",
@@ -128,6 +129,8 @@ export default function Home() {
       <main className="flex-1 flex overflow-hidden">
         {view === "subscriptions" ? (
           <Subscriptions />
+        ) : view === "analytics" ? (
+          <Analytics />
         ) : error ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center space-y-4">

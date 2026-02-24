@@ -34,26 +34,36 @@ export function EmailList({ emails, loading, search, onSearchChange, onSelect, o
           <div className="text-center text-[var(--text-muted)] mt-20">No emails found</div>
         ) : (
           <>
-            {emails.map((email) => (
-              <button
-                key={email.id}
-                onClick={() => onSelect(email)}
-                className="w-full text-left px-4 py-3 border-b border-[var(--border)] hover:bg-[var(--border)]/30 transition cursor-pointer"
-              >
-                <div className="flex justify-between items-baseline mb-1">
-                  <span className="font-medium text-sm truncate max-w-[70%]">
-                    {email.from.replace(/<[^>]+>/, "").trim()}
-                  </span>
-                  <span className="text-xs text-[var(--text-muted)] shrink-0 ml-2">
-                    {new Date(email.date).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="text-sm truncate">{email.subject}</div>
-                <div className="text-xs text-[var(--text-muted)] truncate mt-0.5">
-                  {email.snippet}
-                </div>
-              </button>
-            ))}
+            {emails.map((email) => {
+              const unread = email.labelIds.includes("UNREAD");
+              return (
+                <button
+                  key={email.id}
+                  onClick={() => onSelect(email)}
+                  className={`w-full text-left px-4 py-3 border-b border-[var(--border)] hover:bg-[var(--border)]/30 transition cursor-pointer ${
+                    unread ? "bg-[var(--accent)]/[0.03]" : ""
+                  }`}
+                >
+                  <div className="flex justify-between items-baseline mb-1">
+                    <span className="flex items-center gap-2 truncate max-w-[70%]">
+                      {unread && (
+                        <span className="w-2 h-2 rounded-full bg-[var(--accent)] shrink-0" />
+                      )}
+                      <span className={`text-sm truncate ${unread ? "font-semibold" : "font-medium text-[var(--text-muted)]"}`}>
+                        {email.from.replace(/<[^>]+>/, "").trim()}
+                      </span>
+                    </span>
+                    <span className="text-xs text-[var(--text-muted)] shrink-0 ml-2">
+                      {new Date(email.date).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className={`text-sm truncate ${unread ? "font-semibold" : ""}`}>{email.subject}</div>
+                  <div className="text-xs text-[var(--text-muted)] truncate mt-0.5">
+                    {email.snippet}
+                  </div>
+                </button>
+              );
+            })}
             {onLoadMore && (
               <button
                 onClick={onLoadMore}

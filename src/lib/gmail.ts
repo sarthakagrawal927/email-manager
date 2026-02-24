@@ -29,6 +29,7 @@ export interface Email {
   body: string;
   labelIds: string[];
   unsubscribeLink: string | null;
+  unsubscribePost: boolean;
 }
 
 function decodeBody(payload: any): string {
@@ -61,6 +62,7 @@ function getHeader(headers: any[], name: string): string {
 export function parseMessage(msg: any): Email {
   const hdrs = msg.payload?.headers ?? [];
   const unsubHeader = getHeader(hdrs, "List-Unsubscribe");
+  const unsubPostHeader = getHeader(hdrs, "List-Unsubscribe-Post");
   let unsubscribeLink: string | null = null;
 
   if (unsubHeader) {
@@ -80,6 +82,7 @@ export function parseMessage(msg: any): Email {
     body: decodeBody(msg.payload),
     labelIds: msg.labelIds ?? [],
     unsubscribeLink,
+    unsubscribePost: !!unsubPostHeader && !!unsubscribeLink?.startsWith("http"),
   };
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Email } from "@/lib/gmail";
 
 interface Props {
@@ -11,6 +11,18 @@ interface Props {
 
 export function EmailDetail({ email, onBack, onRefresh }: Props) {
   const [acting, setActing] = useState(false);
+
+  // Auto-mark as read when opened
+  useEffect(() => {
+    if (email.labelIds.includes("UNREAD")) {
+      fetch(`/api/emails/${email.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ removeLabels: ["UNREAD"] }),
+      });
+      email.labelIds = email.labelIds.filter((l) => l !== "UNREAD");
+    }
+  }, [email.id]);
 
   async function act(fn: () => Promise<void>) {
     setActing(true);
@@ -24,7 +36,7 @@ export function EmailDetail({ email, onBack, onRefresh }: Props) {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="flex items-center gap-2 p-3 border-b border-[var(--border)]">
+      <div className="flex items-center gap-2 p-3 border-b border-[var(--border)] flex-wrap">
         <button
           onClick={onBack}
           className="px-3 py-1.5 rounded-lg hover:bg-[var(--border)]/50 text-sm cursor-pointer"
@@ -32,6 +44,21 @@ export function EmailDetail({ email, onBack, onRefresh }: Props) {
           &larr; Back
         </button>
         <div className="flex-1" />
+        <button
+          disabled={acting}
+          onClick={() =>
+            act(async () => {
+              await fetch(`/api/emails/${email.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ addLabels: ["UNREAD"] }),
+              });
+            })
+          }
+          className="px-3 py-1.5 rounded-lg hover:bg-[var(--border)]/50 text-sm cursor-pointer"
+        >
+          Mark unread
+        </button>
         <button
           disabled={acting}
           onClick={() =>
@@ -78,14 +105,32 @@ export function EmailDetail({ email, onBack, onRefresh }: Props) {
           Delete
         </button>
         {email.unsubscribeLink && (
-          <a
-            href={email.unsubscribeLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded-lg bg-[var(--danger)]/10 text-[var(--danger)] text-sm hover:bg-[var(--danger)]/20"
-          >
-            Unsubscribe
-          </a>
+          email.unsubscribePost ? (
+            <button
+              disabled={acting}
+              onClick={() =>
+                act(async () => {
+                  const res = await fetch(`/api/emails/${email.id}/unsubscribe`, { method: "POST" });
+                  const data = await res.json();
+                  if (!data.ok && data.fallbackUrl) {
+                    window.open(data.fallbackUrl, "_blank", "noopener,noreferrer");
+                  }
+                })
+              }
+              className="px-3 py-1.5 rounded-lg bg-[var(--danger)]/10 text-[var(--danger)] text-sm hover:bg-[var(--danger)]/20 cursor-pointer"
+            >
+              Unsubscribe (1-click)
+            </button>
+          ) : (
+            <a
+              href={email.unsubscribeLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-lg bg-[var(--danger)]/10 text-[var(--danger)] text-sm hover:bg-[var(--danger)]/20"
+            >
+              Unsubscribe
+            </a>
+          )
         )}
       </div>
 
