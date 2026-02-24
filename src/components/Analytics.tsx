@@ -163,6 +163,18 @@ export function Analytics() {
     return () => abortRef.current?.abort();
   }, [bucket, fetchAnalytics]);
 
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  function getEmailsForDomain(domain: string): Email[] {
+    const sliced = cacheRef.current.slice(0, bucket);
+    return sliced
+      .filter((e) => {
+        const m = e.from.match(/@([^>]+)/);
+        return (m?.[1]?.toLowerCase() ?? "unknown") === domain;
+      })
+      .slice(0, 20);
+  }
+
   const maxCount = stats[0]?.count ?? 1;
 
   return (
@@ -214,37 +226,65 @@ export function Analytics() {
         </div>
       ) : (
         <div className="p-4 space-y-2">
-          {stats.map((sender) => (
-            <div key={sender.domain} className="flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium truncate">{sender.displayName}</span>
-                  <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <span className="text-xs text-[var(--text-muted)]">
-                      {sender.count} email{sender.count !== 1 ? "s" : ""}
-                    </span>
-                    {sender.unsubscribeLink && (
-                      <a
-                        href={sender.unsubscribeLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-[var(--danger)] hover:underline"
-                      >
-                        unsub
-                      </a>
-                    )}
+          {stats.map((sender) => {
+            const isExpanded = expanded === sender.domain;
+            return (
+              <div key={sender.domain}>
+                <div
+                  className="flex items-center gap-3 cursor-pointer rounded-lg px-2 py-1.5 -mx-2 hover:bg-[var(--border)]/30 transition"
+                  onClick={() => setExpanded(isExpanded ? null : sender.domain)}
+                >
+                  <span className={`text-xs text-[var(--text-muted)] transition-transform ${isExpanded ? "rotate-90" : ""}`}>
+                    ▶
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium truncate">{sender.displayName}</span>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <span className="text-xs text-[var(--text-muted)]">
+                          {sender.count} email{sender.count !== 1 ? "s" : ""}
+                        </span>
+                        {sender.unsubscribeLink && (
+                          <a
+                            href={sender.unsubscribeLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-[var(--danger)] hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            unsub
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <div className="h-2 rounded-full bg-[var(--border)] overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[var(--accent)] transition-all"
+                        style={{ width: `${(sender.count / maxCount) * 100}%` }}
+                      />
+                    </div>
+                    <div className="text-xs text-[var(--text-muted)] mt-0.5">{sender.domain}</div>
                   </div>
                 </div>
-                <div className="h-2 rounded-full bg-[var(--border)] overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-[var(--accent)] transition-all"
-                    style={{ width: `${(sender.count / maxCount) * 100}%` }}
-                  />
-                </div>
-                <div className="text-xs text-[var(--text-muted)] mt-0.5">{sender.domain}</div>
+
+                {isExpanded && (
+                  <div className="ml-7 mt-1 mb-2 border-l-2 border-[var(--border)] pl-3 space-y-1">
+                    {getEmailsForDomain(sender.domain).map((email) => (
+                      <div
+                        key={email.id}
+                        className="flex items-baseline gap-2 py-1 text-sm"
+                      >
+                        <span className="text-xs text-[var(--text-muted)] shrink-0 w-16">
+                          {new Date(email.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </span>
+                        <span className="truncate">{email.subject}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
