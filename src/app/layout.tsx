@@ -4,7 +4,7 @@ import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: "Email Manager",
-  description: "Manage your Gmail inbox",
+  description: "Read and analyze your Gmail inbox",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

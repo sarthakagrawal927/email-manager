@@ -5,7 +5,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { EmailList } from "@/components/EmailList";
 import { EmailDetail } from "@/components/EmailDetail";
-import { ComposeModal } from "@/components/ComposeModal";
 import { Subscriptions } from "@/components/Subscriptions";
 import { Analytics } from "@/components/Analytics";
 import type { Email } from "@/lib/gmail";
@@ -49,7 +48,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [composing, setComposing] = useState(false);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const fetchingRef = useRef(false);
 
@@ -125,7 +123,7 @@ export default function Home() {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center space-y-6">
           <h1 className="text-4xl font-bold">Email Manager</h1>
-          <p className="text-[var(--text-muted)]">Manage your Gmail — search, read, compose, and unsubscribe.</p>
+          <p className="text-[var(--text-muted)]">Manage your Gmail — search, read, and unsubscribe.</p>
           <button
             onClick={() => signIn("google")}
             className="px-6 py-3 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition cursor-pointer"
@@ -142,7 +140,6 @@ export default function Home() {
       <Sidebar
         view={view}
         onNavigate={(v) => setView(v as View)}
-        onCompose={() => setComposing(true)}
         onSignOut={() => signOut()}
         userImage={session.user?.image ?? undefined}
         userName={session.user?.name ?? ""}
@@ -169,7 +166,6 @@ export default function Home() {
           <EmailDetail
             email={selected}
             onBack={() => setSelected(null)}
-            onRefresh={() => fetchEmails()}
           />
         ) : (
           <EmailList
@@ -182,16 +178,6 @@ export default function Home() {
           />
         )}
       </main>
-
-      {composing && (
-        <ComposeModal
-          onClose={() => setComposing(false)}
-          onSent={() => {
-            setComposing(false);
-            if (view === "sent") fetchEmails();
-          }}
-        />
-      )}
     </div>
   );
 }

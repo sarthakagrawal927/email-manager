@@ -12,24 +12,14 @@ const navItems = [
 interface Props {
   view: string;
   onNavigate: (id: string) => void;
-  onCompose: () => void;
   onSignOut: () => void;
   userImage?: string;
   userName: string;
 }
 
-export function Sidebar({ view, onNavigate, onCompose, onSignOut, userImage, userName }: Props) {
+export function Sidebar({ view, onNavigate, onSignOut, userImage, userName }: Props) {
   return (
     <aside className="w-56 border-r border-[var(--border)] bg-[var(--bg-card)] flex flex-col h-screen shrink-0">
-      <div className="p-4">
-        <button
-          onClick={onCompose}
-          className="w-full py-2.5 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition font-medium cursor-pointer"
-        >
-          Compose
-        </button>
-      </div>
-
       <nav className="flex-1 px-2">
         {navItems.map((item) => (
           <button

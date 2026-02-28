@@ -144,35 +144,3 @@ export async function getEmail(accessToken: string, id: string) {
   const data = await gmailFetch(accessToken, `/messages/${id}?format=full`);
   return parseMessage(data);
 }
-
-export async function modifyEmail(
-  accessToken: string,
-  id: string,
-  addLabels: string[],
-  removeLabels: string[]
-) {
-  await gmailFetch(accessToken, `/messages/${id}/modify`, {
-    method: "POST",
-    body: JSON.stringify({ addLabelIds: addLabels, removeLabelIds: removeLabels }),
-  });
-}
-
-export async function trashEmail(accessToken: string, id: string) {
-  await gmailFetch(accessToken, `/messages/${id}/trash`, { method: "POST" });
-}
-
-export async function sendEmail(
-  accessToken: string,
-  to: string,
-  subject: string,
-  body: string
-) {
-  const raw = Buffer.from(
-    `To: ${to}\r\nSubject: ${subject}\r\nContent-Type: text/html; charset=utf-8\r\n\r\n${body}`
-  ).toString("base64url");
-
-  await gmailFetch(accessToken, `/messages/send`, {
-    method: "POST",
-    body: JSON.stringify({ raw }),
-  });
-}
