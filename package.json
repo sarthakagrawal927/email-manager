@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@saas-maker/sdk": "0.2.0",
     "next": "^15.1.0",
     "next-auth": "^4.24.0",
     "react": "^19.0.0",
