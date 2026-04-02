@@ -5,6 +5,7 @@ const navItems = [
   { id: "starred", label: "Starred", icon: "⭐" },
   { id: "sent", label: "Sent", icon: "📤" },
   { id: "trash", label: "Trash", icon: "🗑" },
+  { id: "search", label: "Search", icon: "🔍" },
   { id: "subscriptions", label: "Subscriptions", icon: "📬" },
   { id: "analytics", label: "Analytics", icon: "📊" },
 ];

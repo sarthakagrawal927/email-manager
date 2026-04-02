@@ -9,10 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.0.0",
     "@saas-maker/changelog-widget": "0.2.0",
     "@saas-maker/feedback": "0.2.0",
     "@saas-maker/sdk": "0.2.0",
     "@saas-maker/testimonials": "0.2.0",
+    "idb": "^8.0.3",
     "next": "^15.1.0",
     "next-auth": "^4.24.0",
     "react": "^19.0.0",

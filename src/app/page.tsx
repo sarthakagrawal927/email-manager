@@ -7,11 +7,12 @@ import { EmailList } from "@/components/EmailList";
 import { EmailDetail } from "@/components/EmailDetail";
 import { Subscriptions } from "@/components/Subscriptions";
 import { Analytics } from "@/components/Analytics";
+import { SemanticSearch } from "@/components/SemanticSearch";
 import type { Email } from "@/lib/gmail";
 
-type View = "inbox" | "starred" | "sent" | "trash" | "subscriptions" | "analytics";
+type View = "inbox" | "starred" | "sent" | "trash" | "subscriptions" | "analytics" | "search";
 
-const VIEWS = new Set<string>(["inbox", "starred", "sent", "trash", "subscriptions", "analytics"]);
+const VIEWS = new Set<string>(["inbox", "starred", "sent", "trash", "subscriptions", "analytics", "search"]);
 
 const LABEL_MAP: Record<string, string> = {
   inbox: "INBOX",
@@ -106,7 +107,7 @@ export default function Home() {
   useEffect(() => {
     if (session) {
       setSelected(null);
-      fetchEmails();
+      if (LABEL_MAP[view]) fetchEmails();
     }
   }, [session, view, fetchEmails]);
 
@@ -150,6 +151,13 @@ export default function Home() {
           <Subscriptions />
         ) : view === "analytics" ? (
           <Analytics />
+        ) : selected ? (
+          <EmailDetail
+            email={selected}
+            onBack={() => setSelected(null)}
+          />
+        ) : view === "search" ? (
+          <SemanticSearch onSelect={setSelected} />
         ) : error ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center space-y-4">
@@ -162,11 +170,6 @@ export default function Home() {
               </button>
             </div>
           </div>
-        ) : selected ? (
-          <EmailDetail
-            email={selected}
-            onBack={() => setSelected(null)}
-          />
         ) : (
           <EmailList
             emails={emails}
