@@ -1,91 +1,67 @@
-# Email Manager
+# agents.md — email-manager
 
-Gmail client web app -- read, search, analyze, and unsubscribe from emails via the Gmail API.
+## Purpose
+Email management app with semantic search — fully client-side ML via HuggingFace ONNX, emails stored in IndexedDB, no server DB. Status: done/stable.
 
-## Tech Stack
+## Stack
+- Framework: Next.js 16 (App Router)
+- Language: TypeScript
+- Styling: Tailwind CSS v4 (CSS custom properties for light/dark theming)
+- DB: IndexedDB (client-side via `idb`) — emails and embeddings stored locally; no server DB
+- Auth: NextAuth v4 (Google OAuth, `gmail.readonly` scope, offline access + manual token refresh)
+- Testing: Playwright (e2e)
+- Deploy: Vercel
+- Package manager: pnpm
 
-- **Framework**: Next.js 15 (App Router)
-- **Language**: TypeScript 5.7
-- **Styling**: Tailwind CSS 4 (via PostCSS plugin, CSS custom properties for theming)
-- **Auth**: NextAuth v4 with Google OAuth (gmail.readonly scope, token refresh flow)
-- **API**: Gmail REST API (no SDK -- raw fetch with retry/backoff in `src/lib/gmail.ts`)
-- **SaaS tooling**: @saas-maker/sdk, @saas-maker/feedback, @saas-maker/testimonials, @saas-maker/changelog-widget
-- **Package manager**: pnpm
-- **Deployment**: Vercel
-
-## Architecture
-
+## Repo structure
 ```
 src/
   app/
-    layout.tsx              # Root layout: Providers + SaasMaker widgets
-    page.tsx                # Main SPA -- all views (inbox/starred/sent/trash/subscriptions/analytics)
-    globals.css             # CSS vars for light/dark theming
+    page.tsx              # Main SPA (inbox/starred/sent/trash/subscriptions/analytics views)
+    layout.tsx            # Root layout
+    globals.css           # CSS vars for light/dark theming
     api/
-      auth/[...nextauth]/route.ts   # NextAuth handler
-      emails/route.ts               # GET /api/emails -- list/search with pagination
-      emails/[id]/route.ts          # GET /api/emails/:id -- single email full body
-      emails/[id]/unsubscribe/route.ts  # POST -- RFC 8058 one-click unsubscribe
+      auth/[...nextauth]/ # NextAuth handler
+      emails/             # GET list/search, GET :id, POST :id/unsubscribe
   components/
-    Providers.tsx           # SessionProvider wrapper
-    Sidebar.tsx             # Nav sidebar (inbox/starred/sent/trash/subscriptions/analytics)
-    EmailList.tsx           # Email list with search + infinite scroll
-    EmailDetail.tsx         # Email viewer with HTML iframe + unsubscribe button
-    Subscriptions.tsx       # Deduplicated unsubscribe-able senders list
-    Analytics.tsx           # Sender frequency analysis (50-5k emails, bar chart, expandable)
-    SaasMakerAnalytics.tsx  # Page view tracking
-    saasmaker-feedback.tsx  # Feedback widget + testimonials + changelog
+    Providers.tsx         # SessionProvider wrapper
+    Sidebar.tsx           # Nav
+    EmailList.tsx         # Email list with search + infinite scroll
+    EmailDetail.tsx       # Email viewer (sandboxed HTML iframe) + unsubscribe
+    Subscriptions.tsx     # Deduplicated unsubscribeable senders
+    Analytics.tsx         # Sender frequency analysis (bar charts)
+    SemanticSearch.tsx    # In-browser vector search UI (confirmed working)
+    SaasMakerAnalytics.tsx
+    saasmaker-feedback.tsx
   lib/
-    auth.ts                 # NextAuth config (Google provider, JWT callbacks, token refresh)
-    gmail.ts                # Gmail API helpers (listEmails, getEmail, parseMessage, rate-limit retry)
-    saasmaker.ts            # SaasMaker SDK client init
+    auth.ts               # NextAuth config + Google token refresh
+    gmail.ts              # Gmail REST API client (exponential backoff on 429)
+    db.ts                 # IndexedDB schema + helpers
+    embeddings.ts         # HuggingFace Transformers ONNX (in-browser)
+    semantic-search.ts    # Cosine similarity search over stored embeddings
+    saasmaker.ts          # SaasMaker SDK
+tests/
+  example.spec.ts         # Playwright e2e
 ```
 
-## Key Conventions
-
-- **Single-page app**: All views rendered in `page.tsx` controlled by `view` state synced to URL hash (`#inbox`, `#analytics`, etc.)
-- **No database**: Stateless -- all data comes from Gmail API per-request. No local storage or caching (except in-memory `cacheRef` for analytics).
-- **Server-side auth check**: Every API route calls `getServerSession()` and reads `session.accessToken` to proxy Gmail API calls.
-- **Theming**: CSS custom properties (`--bg`, `--text`, `--accent`, etc.) with `prefers-color-scheme` media query.
-- **No external state management**: Plain React state + `useCallback`/`useRef`.
-- **Path alias**: `@/*` maps to `./src/*`
-- **Email parsing**: Body decoded from base64url, prefers HTML over plaintext, handles nested MIME parts.
-- **Unsubscribe**: Supports RFC 8058 one-click POST and fallback to opening unsubscribe URL in browser.
-
-## Commands
-
+## Key commands
 ```bash
-pnpm dev        # Start dev server (localhost:3000)
-pnpm build      # Production build
-pnpm start      # Serve production build
-pnpm lint       # ESLint
+pnpm dev      # next dev (localhost:3000)
+pnpm build    # next build
+pnpm start    # next start
+pnpm lint     # next lint
 ```
 
-## Environment Variables
+## Architecture notes
+- **No server-side database.** All email data and embeddings live in IndexedDB. API routes only proxy Gmail API calls.
+- **Client-side ML**: HuggingFace Transformers (ONNX runtime) generates embeddings in-browser. `next.config.ts` aliases out `sharp` and `onnxruntime-node`, marks `@huggingface/transformers` as `serverExternalPackage`.
+- **Semantic search confirmed working** — `SemanticSearch.tsx` and `lib/semantic-search.ts` are functional.
+- **Single-page app pattern**: all views in `page.tsx` controlled by `view` state synced to URL hash.
+- **Token refresh**: `lib/auth.ts` manually refreshes Google OAuth tokens in NextAuth `jwt` callback.
+- **Rate limiting**: Gmail API retried on 429 with exponential backoff (1s/2s/4s); fetches batched in groups of 25.
+- **Read-only**: `gmail.readonly` scope only. No compose/reply/archive/delete.
+- **Unsubscribe**: RFC 8058 one-click POST + fallback browser-open for mailto/HTTP links.
+- Env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`.
+- Husky pre-push hook configured.
 
-```
-GOOGLE_CLIENT_ID          # Google OAuth client ID
-GOOGLE_CLIENT_SECRET      # Google OAuth client secret
-NEXTAUTH_SECRET           # Random secret for JWT encryption
-NEXTAUTH_URL              # App URL (http://localhost:3000 for dev)
-NEXT_PUBLIC_SAASMAKER_API_KEY  # SaasMaker project key (optional)
-```
-
-## Current State
-
-**Done:**
-- Google OAuth sign-in with token refresh
-- Email listing with label filtering (inbox/starred/sent/trash)
-- Search (Gmail query syntax)
-- Paginated loading (infinite scroll)
-- Email detail view with sandboxed HTML rendering
-- Subscription management (deduplicated by sender domain, one-click unsubscribe)
-- Sender analytics with configurable sample size (50-5k), bar charts, expandable email lists
-- Light/dark theme (system preference)
-- SaasMaker feedback widget + analytics tracking
-
-**Not done:**
-- No tests
-- No compose/reply/draft functionality (read-only -- gmail.readonly scope)
-- No email actions (archive, delete, label, mark read/unread)
-- No offline support or local caching
+## Active context
