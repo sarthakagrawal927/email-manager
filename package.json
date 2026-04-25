@@ -4,10 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "next lint",
-    "prepare": "husky"
+    "prepare": "husky",
+    "patch": "node --input-type=module < patches/opennext-cloudflare-externals.js",
+    "cf:build": "pnpm patch && opennextjs-cloudflare build",
+    "deploy": "pnpm cf:build && wrangler deploy"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
@@ -23,15 +26,22 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
+    "@opennextjs/cloudflare": "^1.19.4",
     "@playwright/test": "^1.59.1",
+    "@saas-maker/eslint-config": "^1.0.1",
+    "@saas-maker/prettier-config": "^1.0.0",
+    "@saas-maker/tsconfig": "^1.0.0",
     "@tailwindcss/postcss": "^4.2.4",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "eslint": "^10.2.1",
+    "eslint": "^9.39.4",
     "eslint-config-next": "16.2.4",
     "husky": "^9.1.7",
+    "patch-package": "^8.0.1",
     "tailwindcss": "^4.2.4",
-    "typescript": "^6.0.3"
-  }
+    "typescript": "^6.0.3",
+    "wrangler": "^4.85.0"
+  },
+  "prettier": "@saas-maker/prettier-config"
 }
