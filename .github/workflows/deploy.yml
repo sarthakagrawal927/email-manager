@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare Pages
+name: Deploy to Cloudflare Workers
 on:
   push:
     branches: [main]
@@ -18,18 +18,10 @@ jobs:
         with: { node-version: '20', cache: pnpm }
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm cf:build
-      - name: Prepare Pages deploy directory
-        run: |
-          mkdir -p .pages-deploy
-          cp -r .open-next/assets/. .pages-deploy/
-          cp -r .open-next/server-functions .pages-deploy/
-          cp -r .open-next/middleware .pages-deploy/
-          cp -r .open-next/.build .pages-deploy/
-          cp .open-next/worker.js .pages-deploy/_worker.js
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
-          command: pages deploy --project-name=email-manager --branch=main
+          command: deploy --minify
 
   deploy-preview:
     if: github.event_name == 'pull_request'
@@ -46,19 +38,11 @@ jobs:
         with: { node-version: '20', cache: pnpm }
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm cf:build
-      - name: Prepare Pages deploy directory
-        run: |
-          mkdir -p .pages-deploy
-          cp -r .open-next/assets/. .pages-deploy/
-          cp -r .open-next/server-functions .pages-deploy/
-          cp -r .open-next/middleware .pages-deploy/
-          cp -r .open-next/.build .pages-deploy/
-          cp .open-next/worker.js .pages-deploy/_worker.js
       - name: Deploy preview
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
-          command: pages deploy --project-name=email-manager --branch=${{ github.head_ref || github.ref_name }}
+          command: deploy --minify --env preview
       - name: Comment preview URL on PR
         uses: actions/github-script@v7
         with:
@@ -67,5 +51,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `Preview deployed: https://${{ github.head_ref || github.ref_name }}.email-manager-d0r.pages.dev`
+              body: `Preview deployed to: https://email-manager.sarthakagrawal927.workers.dev`
             })

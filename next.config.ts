@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
   serverExternalPackages: [
     "@libsql/client",
     "@libsql/hrana-client",
@@ -19,14 +18,6 @@ const nextConfig: NextConfig = {
       "node_modules/onnxruntime-common/**",
       "node_modules/sharp/**",
     ],
-  },
-  webpack(config) {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      "sharp$": false,
-      "onnxruntime-node$": false,
-    };
-    return config;
   },
 };
 

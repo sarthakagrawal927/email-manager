@@ -1,7 +1,9 @@
 name = "email-manager"
-pages_build_output_dir = ".pages-deploy"
+main = ".open-next/worker.js"
 compatibility_date = "2025-09-23"
 compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+
+assets = { directory = ".open-next/assets", binding = "ASSETS" }
 
 [vars]
 NODE_ENV = "production"
