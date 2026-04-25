@@ -1,7 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@huggingface/transformers"],
+  output: "standalone",
+  serverExternalPackages: [
+    "@libsql/client",
+    "@libsql/hrana-client",
+    "@libsql/isomorphic-ws",
+    "@libsql/isomorphic-fetch",
+    "libsql",
+    "drizzle-orm",
+    "better-auth",
+  ],
   images: { unoptimized: true },
   outputFileTracingExcludes: {
     "*": [

@@ -1,15 +1,11 @@
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { authOptions } from "@/lib/auth";
+import { headers } from "next/headers";
+import { getGmailAccessToken } from "@/lib/get-access-token";
 import { listEmails } from "@/lib/gmail";
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  const token = (session as any)?.accessToken;
+  const token = await getGmailAccessToken(await headers());
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if ((session as any)?.error === "RefreshAccessTokenError") {
-    return NextResponse.json({ error: "Token expired, please sign in again" }, { status: 401 });
-  }
 
   const { searchParams } = req.nextUrl;
   const q = searchParams.get("q") ?? undefined;

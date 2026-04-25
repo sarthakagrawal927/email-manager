@@ -1,82 +1,37 @@
-import { AuthOptions } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { drizzle } from "drizzle-orm/libsql";
+import { createClient } from "@libsql/client";
 
-async function refreshAccessToken(token: any) {
-  try {
-    const url = "https://oauth2.googleapis.com/token";
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: process.env.GOOGLE_CLIENT_ID!,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-        grant_type: "refresh_token",
-        refresh_token: token.refreshToken as string,
-      }),
-    });
-
-    const refreshed = await res.json();
-
-    if (!res.ok) throw refreshed;
-
-    return {
-      ...token,
-      accessToken: refreshed.access_token,
-      accessTokenExpires: Date.now() + refreshed.expires_in * 1000,
-      refreshToken: refreshed.refresh_token ?? token.refreshToken,
-    };
-  } catch (error) {
-    console.error("Error refreshing access token:", error);
-    return { ...token, error: "RefreshAccessTokenError" };
-  }
+function createDb() {
+  const client = createClient({
+    url: process.env.DATABASE_URL ?? "libsql://email-manager-sarthak927.aws-ap-south-1.turso.io",
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  });
+  return drizzle(client);
 }
 
-export const authOptions: AuthOptions = {
-  providers: [
-    // Explicitly provide all OAuth endpoints to bypass OIDC discovery (which uses
-    // https.request — not available on Cloudflare Workers with nodejs_compat).
-    GoogleProvider({
+const globalForDb = globalThis as unknown as { authDb: ReturnType<typeof createDb> | undefined };
+const authDb = globalForDb.authDb ?? createDb();
+if (process.env.NODE_ENV !== "production") globalForDb.authDb = authDb;
+
+export const auth = betterAuth({
+  database: drizzleAdapter(authDb, { provider: "sqlite" }),
+  socialProviders: {
+    google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      // Override wellKnown discovery with explicit endpoints so NextAuth uses
-      // fetch() instead of https.request() for all OAuth requests.
-      wellKnown: undefined,
-      authorization: {
-        url: "https://accounts.google.com/o/oauth2/v2/auth",
-        params: {
-          scope:
-            "openid email profile https://www.googleapis.com/auth/gmail.readonly",
-          access_type: "offline",
-          prompt: "consent",
-        },
-      },
-      token: "https://oauth2.googleapis.com/token",
-      userinfo: "https://openidconnect.googleapis.com/v1/userinfo",
-      idToken: true,
-      checks: ["pkce", "state"],
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, account }) {
-      if (account) {
-        token.accessToken = account.access_token;
-        token.refreshToken = account.refresh_token;
-        token.accessTokenExpires = Date.now() + (account.expires_in as number) * 1000;
-        return token;
-      }
-
-      // Return token if it hasn't expired yet
-      if (Date.now() < (token.accessTokenExpires as number)) {
-        return token;
-      }
-
-      // Token expired — refresh it
-      return refreshAccessToken(token);
-    },
-    async session({ session, token }) {
-      (session as any).accessToken = token.accessToken;
-      (session as any).error = token.error;
-      return session;
+      scope: [
+        "openid",
+        "email",
+        "profile",
+        "https://www.googleapis.com/auth/gmail.readonly",
+      ],
+      accessType: "offline",
+      prompt: "consent",
     },
   },
-};
+  trustedOrigins: [
+    process.env.BETTER_AUTH_URL || "https://email-manager-d0r.pages.dev",
+  ],
+});

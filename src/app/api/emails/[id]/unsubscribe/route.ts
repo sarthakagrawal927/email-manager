@@ -1,14 +1,13 @@
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { authOptions } from "@/lib/auth";
+import { headers } from "next/headers";
+import { getGmailAccessToken } from "@/lib/get-access-token";
 import { getEmail } from "@/lib/gmail";
 
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  const token = (session as any)?.accessToken;
+  const token = await getGmailAccessToken(await headers());
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
