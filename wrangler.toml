@@ -1,8 +1,7 @@
 name = "email-manager"
-pages_build_output_dir = ".open-next"
+pages_build_output_dir = ".pages-deploy"
 compatibility_date = "2025-09-23"
 compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 
 [vars]
-BETTER_AUTH_URL = "https://email-manager-d0r.pages.dev"
 NODE_ENV = "production"
