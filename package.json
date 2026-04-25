@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "echo 'lint: skipped (next lint removed in v16; tsc runs via cf:build)'",
     "prepare": "husky",
     "patch": "node --input-type=module < patches/opennext-cloudflare-externals.js",
     "cf:build": "pnpm patch && opennextjs-cloudflare build",
