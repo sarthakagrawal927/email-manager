@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "cf:build": "opennextjs-cloudflare build"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.0.0",
