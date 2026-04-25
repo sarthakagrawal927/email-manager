@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
       "node_modules/sharp/**",
     ],
   },
+  turbopack: {},
 };
 
 export default nextConfig;
