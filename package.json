@@ -4,31 +4,44 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "echo 'lint: skipped (next lint removed in v16; tsc runs via cf:build)'",
+    "prepare": "husky",
+    "patch": "node --input-type=module < patches/opennext-cloudflare-externals.js",
+    "cf:build": "pnpm patch && opennextjs-cloudflare build",
+    "deploy": "pnpm cf:build && wrangler deploy"
   },
   "dependencies": {
-    "@huggingface/transformers": "^4.0.0",
-    "@saas-maker/changelog-widget": "0.2.0",
-    "@saas-maker/feedback": "0.2.0",
-    "@saas-maker/sdk": "0.2.0",
-    "@saas-maker/testimonials": "0.2.0",
+    "@huggingface/transformers": "^4.2.0",
+    "@saas-maker/changelog-widget": "0.2.1",
+    "@saas-maker/feedback": "0.2.1",
+    "@saas-maker/sdk": "0.3.1",
+    "@saas-maker/testimonials": "0.2.1",
     "idb": "^8.0.3",
-    "next": "^15.1.0",
-    "next-auth": "^4.24.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "next": "^16.2.4",
+    "next-auth": "^4.24.14",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^22.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "eslint": "^9",
-    "eslint-config-next": "15.1.0",
-    "tailwindcss": "^4",
-    "typescript": "^5.7.0"
-  }
+    "@eslint/eslintrc": "^3.3.5",
+    "@opennextjs/cloudflare": "^1.19.4",
+    "@playwright/test": "^1.59.1",
+    "@saas-maker/eslint-config": "^1.0.1",
+    "@saas-maker/prettier-config": "^1.0.0",
+    "@saas-maker/tsconfig": "^1.0.0",
+    "@tailwindcss/postcss": "^4.2.4",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "16.2.4",
+    "husky": "^9.1.7",
+    "patch-package": "^8.0.1",
+    "tailwindcss": "^4.2.4",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.85.0"
+  },
+  "prettier": "@saas-maker/prettier-config"
 }
