@@ -33,10 +33,16 @@ async function refreshAccessToken(token: any) {
 
 export const authOptions: AuthOptions = {
   providers: [
+    // Explicitly provide all OAuth endpoints to bypass OIDC discovery (which uses
+    // https.request — not available on Cloudflare Workers with nodejs_compat).
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      // Override wellKnown discovery with explicit endpoints so NextAuth uses
+      // fetch() instead of https.request() for all OAuth requests.
+      wellKnown: undefined,
       authorization: {
+        url: "https://accounts.google.com/o/oauth2/v2/auth",
         params: {
           scope:
             "openid email profile https://www.googleapis.com/auth/gmail.readonly",
@@ -44,6 +50,10 @@ export const authOptions: AuthOptions = {
           prompt: "consent",
         },
       },
+      token: "https://oauth2.googleapis.com/token",
+      userinfo: "https://openidconnect.googleapis.com/v1/userinfo",
+      idToken: true,
+      checks: ["pkce", "state"],
     }),
   ],
   callbacks: {

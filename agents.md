@@ -63,5 +63,7 @@ pnpm lint     # next lint
 - **Unsubscribe**: RFC 8058 one-click POST + fallback browser-open for mailto/HTTP links.
 - Env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`.
 - Husky pre-push hook configured.
+- **CF Workers auth fix (2026-04-25)**: NextAuth v4 `GoogleProvider` uses OIDC discovery via `https.request` (Node.js built-in), which is not available on CF Workers even with `nodejs_compat`. Fixed by providing explicit OAuth endpoints (`authorization.url`, `token`, `userinfo`, `idToken: true`) directly in `src/lib/auth.ts`, bypassing discovery entirely. Also changed `package.json` build script to `next build --webpack` (Turbopack doesn't resolve `@/` path aliases correctly with the inherited `@saas-maker/tsconfig`).
+- **Remaining action needed**: Add `https://email-manager.sarthakagrawal927.workers.dev/api/auth/callback/google` as an authorized redirect URI in the Google Cloud Console OAuth app to complete the auth flow (currently hits `redirect_uri_mismatch`).
 
 ## Active context
