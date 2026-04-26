@@ -5,6 +5,13 @@ compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 
 assets = { directory = ".open-next/assets", binding = "ASSETS" }
 
+[observability]
+enabled = true
+head_sampling_rate = 0.1
+
+[limits]
+cpu_ms = 30000
+
 [[d1_databases]]
 binding = "DB"
 database_name = "email-manager-auth"
