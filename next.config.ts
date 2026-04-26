@@ -19,11 +19,14 @@ const nextConfig: NextConfig = {
       "node_modules/sharp/**",
     ],
   },
-  webpack(config) {
+  webpack(config, { isServer }) {
     config.resolve.alias = {
       ...config.resolve.alias,
       "sharp$": false,
       "onnxruntime-node$": false,
+      // HF runs only in the browser (called from a "use client" component).
+      // Stub it out on the server so OpenNext doesn't try to bundle it for the Worker.
+      ...(isServer ? { "@huggingface/transformers": false } : {}),
     };
     return config;
   },
