@@ -8,7 +8,7 @@ assets = { directory = ".open-next/assets", binding = "ASSETS" }
 [[d1_databases]]
 binding = "DB"
 database_name = "email-manager-auth"
-database_id = "ed0ea8d2-776f-4de3-a5ae-e5848ae7ed0e"
+database_id = "e770dfa2-1032-4a12-b0fb-52e77f5319e8"
 
 [vars]
 NODE_ENV = "production"
