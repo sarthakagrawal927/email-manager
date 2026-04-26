@@ -9,3 +9,7 @@ node_modules/
 next-env.d.ts
 .vercel
 .saasmaker.json
+
+# fallow cache
+.fallow/
+cache.bin
