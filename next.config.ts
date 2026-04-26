@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
     "libsql",
     "drizzle-orm",
     "better-auth",
+    "@huggingface/transformers",
+    "onnxruntime-node",
+    "onnxruntime-common",
+    "sharp",
   ],
   images: { unoptimized: true },
   outputFileTracingExcludes: {

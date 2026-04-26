@@ -1,8 +1,15 @@
 let pipelineInstance: any = null;
 
 async function getEmbedder() {
+  if (typeof window === "undefined") {
+    throw new Error("embeddings only run in the browser");
+  }
   if (!pipelineInstance) {
-    const { pipeline } = await import("@huggingface/transformers");
+    // Hide the specifier from server-side bundlers (opennext/esbuild) so
+    // onnxruntime-node never gets pulled into the Worker bundle. This module
+    // is only invoked from "use client" components.
+    const mod = "@huggingface/transformers";
+    const { pipeline } = await import(/* webpackIgnore: true */ /* @vite-ignore */ mod);
     pipelineInstance = await pipeline(
       "feature-extraction",
       "Xenova/all-MiniLM-L6-v2",
