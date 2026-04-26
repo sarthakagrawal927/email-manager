@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "tsc --noEmit",
+    "lint": "sh -c 'tsc --noEmit'",
     "cf:build": "opennextjs-cloudflare build",
     "deploy": "pnpm cf:build && wrangler deploy --minify"
   },
