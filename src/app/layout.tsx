@@ -2,7 +2,6 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Providers } from "@/components/Providers";
 import { SaasMakerAnalytics } from "@/components/SaasMakerAnalytics";
-import { SaaSMakerFeedback } from "@/components/saasmaker-feedback";
 
 export const metadata: Metadata = {
   title: "Email Manager",
@@ -14,7 +13,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <SaasMakerAnalytics />
-        <SaaSMakerFeedback />
         <Providers>{children}</Providers>
       </body>
     </html>
