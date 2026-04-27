@@ -1,11 +1,15 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { drizzle } from "drizzle-orm/d1";
+import { user, session, account, verification } from "@/db/schema";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createAuth(db: any) {
   return betterAuth({
-    database: drizzleAdapter(drizzle(db), { provider: "sqlite" }),
+    database: drizzleAdapter(drizzle(db), {
+      provider: "sqlite",
+      schema: { user, session, account, verification },
+    }),
     socialProviders: {
       google: {
         clientId: process.env.GOOGLE_CLIENT_ID!,
