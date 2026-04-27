@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { AnalyticsProvider } from "@/components/posthog-provider";
 import { Providers } from "@/components/Providers";
 import { SaasMakerAnalytics } from "@/components/SaasMakerAnalytics";
 import { SaaSMakerFeedback } from "@/components/saasmaker-feedback";
@@ -13,9 +14,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <SaasMakerAnalytics />
-        <SaaSMakerFeedback />
-        <Providers>{children}</Providers>
+        <AnalyticsProvider>
+          <SaasMakerAnalytics />
+          <SaaSMakerFeedback />
+          <Providers>{children}</Providers>
+        </AnalyticsProvider>
       </body>
     </html>
   );
