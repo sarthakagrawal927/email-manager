@@ -13,3 +13,6 @@ next-env.d.ts
 # fallow cache
 .fallow/
 cache.bin
+
+# CF Pages build output
+.cf-pages-bundle/
