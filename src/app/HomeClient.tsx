@@ -1,6 +1,7 @@
 "use client";
 
-import { authClient } from "@/lib/auth-client";
+import { signIn, signOut } from "@/lib/auth-client";
+import { useSession } from "@/lib/use-session";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { EmailList } from "@/components/EmailList";
@@ -28,8 +29,8 @@ function getViewFromHash(): View {
 }
 
 export default function HomeClient() {
-  const { data: sessionData, isPending } = authClient.useSession();
-  const session = sessionData?.session ? sessionData : null;
+  const { session: sessionData, loading: isPending } = useSession();
+  const session = sessionData?.user ? sessionData : null;
   const status = isPending ? "loading" : session ? "authenticated" : "unauthenticated";
   const [view, setViewState] = useState<View>("inbox");
 
@@ -69,7 +70,7 @@ export default function HomeClient() {
         const res = await fetch(`/api/emails?${params}`);
 
         if (res.status === 401) {
-          authClient.signOut();
+          signOut();
           return;
         }
 
@@ -106,11 +107,11 @@ export default function HomeClient() {
   );
 
   useEffect(() => {
-    if (sessionData?.session) {
+    if (sessionData?.user) {
       setSelected(null);
       if (LABEL_MAP[view]) fetchEmails();
     }
-  }, [session, view, fetchEmails]);
+  }, [session, view, fetchEmails, sessionData]);
 
   if (status === "loading") {
     return (
@@ -129,7 +130,7 @@ export default function HomeClient() {
             <span className="text-[var(--text)]">Kinetic</span>
           </div>
           <button
-            onClick={() => authClient.signIn.social({ provider: "google" })}
+            onClick={() => signIn()}
             className="text-[var(--text)] font-medium hover:text-[var(--accent)] transition"
           >
             Sign In
@@ -147,7 +148,7 @@ export default function HomeClient() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <button
-                onClick={() => authClient.signIn.social({ provider: "google" })}
+                onClick={() => signIn()}
                 className="px-8 py-4 bg-[var(--accent)] text-white rounded-xl font-semibold shadow-lg shadow-[var(--accent)]/20 hover:bg-[var(--accent-hover)] transition cursor-pointer"
               >
                 Get Started Free
@@ -199,7 +200,7 @@ export default function HomeClient() {
       <Sidebar
         view={view}
         onNavigate={(v) => setView(v as View)}
-        onSignOut={() => authClient.signOut()}
+        onSignOut={() => signOut()}
         userImage={sessionData?.user?.image ?? undefined}
         userName={sessionData?.user?.name ?? ""}
       />

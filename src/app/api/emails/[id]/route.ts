@@ -16,10 +16,8 @@ export async function GET(
     return NextResponse.json(email);
   } catch (err: any) {
     console.error("GET /api/emails/[id] error:", err?.message ?? err);
-    const status = err?.code ?? err?.status ?? 500;
-    return NextResponse.json(
-      { error: err?.message ?? "Failed to fetch email" },
-      { status: typeof status === "number" ? status : 500 }
-    );
+    const status = typeof (err?.status ?? err?.code) === "number" ? (err.status ?? err.code) : 500;
+    const clientMsg = status === 429 ? "Too many requests, try again later" : "Failed to fetch email";
+    return NextResponse.json({ error: clientMsg }, { status });
   }
 }

@@ -21,8 +21,19 @@ export async function POST(
       );
     }
 
+    // Validate the unsubscribe URL is a public HTTPS endpoint before proxying (SSRF guard)
+    let unsubUrl: URL;
+    try {
+      unsubUrl = new URL(email.unsubscribeLink);
+    } catch {
+      return NextResponse.json({ error: "Invalid unsubscribe URL" }, { status: 400 });
+    }
+    if (unsubUrl.protocol !== "https:") {
+      return NextResponse.json({ error: "Unsubscribe URL must be HTTPS" }, { status: 400 });
+    }
+
     // RFC 8058: POST to the List-Unsubscribe URL with the body from List-Unsubscribe-Post
-    const res = await fetch(email.unsubscribeLink, {
+    const res = await fetch(unsubUrl.href, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: "List-Unsubscribe=One-Click",
@@ -38,9 +49,6 @@ export async function POST(
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error("Unsubscribe error:", err?.message ?? err);
-    return NextResponse.json(
-      { error: err?.message ?? "Failed to unsubscribe" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to unsubscribe" }, { status: 500 });
   }
 }

@@ -69,7 +69,7 @@ export function EmailDetail({ email, onBack }: Props) {
         <iframe
           srcDoc={email.body || `<pre style="font-family:inherit;white-space:pre-wrap">${email.snippet}</pre>`}
           className="w-full h-full border-0"
-          sandbox="allow-same-origin"
+          sandbox="allow-popups allow-popups-to-escape-sandbox"
           title="Email body"
         />
       </div>

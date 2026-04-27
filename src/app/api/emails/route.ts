@@ -11,7 +11,8 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q") ?? undefined;
   const label = searchParams.get("label") ?? undefined;
   const pageToken = searchParams.get("pageToken") ?? undefined;
-  const maxResults = searchParams.get("maxResults") ? Number(searchParams.get("maxResults")) : undefined;
+  const maxResultsRaw = Number(searchParams.get("maxResults"));
+  const maxResults = maxResultsRaw > 0 && maxResultsRaw <= 500 ? maxResultsRaw : undefined;
   const metadataOnly = searchParams.get("metadataOnly") === "true";
 
   try {
@@ -25,10 +26,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(result);
   } catch (err: any) {
     console.error("GET /api/emails error:", err?.message ?? err);
-    const status = err?.code ?? err?.status ?? 500;
-    return NextResponse.json(
-      { error: err?.message ?? "Failed to fetch emails" },
-      { status: typeof status === "number" ? status : 500 }
-    );
+    const status = typeof (err?.status ?? err?.code) === "number" ? (err.status ?? err.code) : 500;
+    // Do not echo internal error details to the client
+    const clientMsg = status === 429 ? "Too many requests, try again later" : "Failed to fetch emails";
+    return NextResponse.json({ error: clientMsg }, { status });
   }
 }
