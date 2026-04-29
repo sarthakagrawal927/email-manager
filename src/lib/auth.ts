@@ -27,5 +27,8 @@ export function createAuth(db: any) {
     trustedOrigins: [
       process.env.BETTER_AUTH_URL || "https://email-manager-d0r.pages.dev",
     ],
+    rateLimit: {
+      enabled: false,
+    },
   });
 }
