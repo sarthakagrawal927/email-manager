@@ -2,8 +2,36 @@ name: Deploy to Cloudflare Workers
 on:
   push:
     branches: [main]
+    paths:
+      - '.github/workflows/deploy.yml'
+      - 'migrations/**'
+      - 'patches/**'
+      - 'public/**'
+      - 'src/**'
+      - 'eslint.config.js'
+      - 'next.config.ts'
+      - 'open-next.config.ts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'postcss.config.mjs'
+      - 'tsconfig.json'
+      - 'wrangler.toml'
   pull_request:
     branches: [main]
+    paths:
+      - '.github/workflows/deploy.yml'
+      - 'migrations/**'
+      - 'patches/**'
+      - 'public/**'
+      - 'src/**'
+      - 'eslint.config.js'
+      - 'next.config.ts'
+      - 'open-next.config.ts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'postcss.config.mjs'
+      - 'tsconfig.json'
+      - 'wrangler.toml'
 
 jobs:
   deploy-production:
@@ -22,6 +50,8 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           command: deploy --minify
+      - name: Smoke check production worker
+        run: curl --fail --silent --show-error --location --max-time 30 https://email-manager.sarthakagrawal927.workers.dev >/dev/null
 
   deploy-preview:
     if: github.event_name == 'pull_request'
