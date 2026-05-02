@@ -66,4 +66,25 @@ pnpm lint     # next lint
 - **CF Workers auth fix (2026-04-25)**: NextAuth v4 `GoogleProvider` uses OIDC discovery via `https.request` (Node.js built-in), which is not available on CF Workers even with `nodejs_compat`. Fixed by providing explicit OAuth endpoints (`authorization.url`, `token`, `userinfo`, `idToken: true`) directly in `src/lib/auth.ts`, bypassing discovery entirely. Also changed `package.json` build script to `next build --webpack` (Turbopack doesn't resolve `@/` path aliases correctly with the inherited `@saas-maker/tsconfig`).
 - **Remaining action needed**: Add `https://email-manager.sarthakagrawal927.workers.dev/api/auth/callback/google` as an authorized redirect URI in the Google Cloud Console OAuth app to complete the auth flow (currently hits `redirect_uri_mismatch`).
 
+<!-- FLEET-GUIDANCE:START -->
+
+## Fleet Guidance
+
+### Adding Tasks
+- Add durable work items in SaaS Maker Cockpit Tasks when the task affects product behavior, deployment, user feedback, or fleet maintenance.
+- Include the project slug, a concise title, acceptance criteria, priority/status, and links to relevant code, issues, traces, or dashboards.
+- If task discovery starts locally in an editor or agent session, mirror the durable next step back into SaaS Maker before handoff.
+
+### Using SaaS Maker
+- Treat SaaS Maker as the system of record for project metadata, feedback, tasks, analytics, testimonials, changelog, and fleet visibility.
+- Prefer API-first workflows through `fnd api`, the SDK, or widgets instead of one-off scripts when interacting with SaaS Maker features.
+- Keep this agent file aligned with the project record when operating rules, integrations, or deployment conventions change.
+
+### Free AI First
+- Prefer free/local AI paths for routine development and analysis: the `free-ai` gateway, local models, provider free tiers, and cached context.
+- Escalate to paid models only when complexity, correctness risk, or missing capability justifies the cost.
+- Note any paid-AI use in the task or handoff when it materially affects cost, reproducibility, or future maintenance.
+
+<!-- FLEET-GUIDANCE:END -->
+
 ## Active context
