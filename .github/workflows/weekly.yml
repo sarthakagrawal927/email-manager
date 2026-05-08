@@ -5,18 +5,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  quality-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "pnpm"
-
-      - run: pnpm install --frozen-lockfile --ignore-scripts
-      - run: pnpm lint
-      - run: pnpm cf:build
+  foundry-weekly:
+    uses: sarthakagrawal927/saas-maker/.github/workflows/foundry-weekly.yml@main
+    with:
+      node-version: '22'
