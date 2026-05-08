@@ -8,7 +8,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "sh -c 'tsc --noEmit'",
-    "cf:build": "opennextjs-cloudflare build",
+    "patch:opennext": "node patches/opennext-cloudflare-externals.js",
+    "cf:build": "pnpm patch:opennext && opennextjs-cloudflare build",
     "deploy": "pnpm cf:build && wrangler deploy"
   },
   "dependencies": {

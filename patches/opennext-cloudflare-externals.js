@@ -2,13 +2,14 @@
 // Patches @opennextjs/cloudflare bundle-server.js to mark native-binary
 // packages (onnxruntime-node, @huggingface/transformers, sharp) as esbuild
 // externals so they are not bundled into the Cloudflare Worker.
+import { dirname, resolve } from "path";
 import { readFileSync, writeFileSync } from "fs";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
-const bundleServerPath = require.resolve(
-  "@opennextjs/cloudflare/dist/cli/build/bundle-server.js"
-);
+const packageEntry = require.resolve("@opennextjs/cloudflare");
+const packageDist = resolve(dirname(packageEntry), "..");
+const bundleServerPath = resolve(packageDist, "cli/build/bundle-server.js");
 
 let src = readFileSync(bundleServerPath, "utf8");
 const OLD = `external: ["./middleware/handler.mjs"],`;
