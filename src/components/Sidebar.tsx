@@ -8,6 +8,7 @@ const navItems = [
   { id: "trash", label: "Trash", icon: "🗑" },
   { id: "search", label: "Search", icon: "🔍" },
   { id: "subscriptions", label: "Subscriptions", icon: "📬" },
+  { id: "filters", label: "Filters", icon: "⚙️" },
   { id: "analytics", label: "Analytics", icon: "📊" },
 ];
 

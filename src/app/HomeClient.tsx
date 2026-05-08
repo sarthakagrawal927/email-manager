@@ -10,11 +10,12 @@ import { Subscriptions } from "@/components/Subscriptions";
 import { Analytics } from "@/components/Analytics";
 import { SemanticSearch } from "@/components/SemanticSearch";
 import { TriageQueues } from "@/components/TriageQueues";
+import { GmailFilterBuilder } from "@/components/GmailFilterBuilder";
 import type { Email } from "@/lib/gmail";
 
-type View = "inbox" | "triage" | "starred" | "sent" | "trash" | "subscriptions" | "analytics" | "search";
+type View = "inbox" | "triage" | "starred" | "sent" | "trash" | "subscriptions" | "analytics" | "search" | "filters";
 
-const VIEWS = new Set<string>(["inbox", "triage", "starred", "sent", "trash", "subscriptions", "analytics", "search"]);
+const VIEWS = new Set<string>(["inbox", "triage", "starred", "sent", "trash", "subscriptions", "analytics", "search", "filters"]);
 
 const LABEL_MAP: Record<string, string> = {
   inbox: "INBOX",
@@ -212,6 +213,8 @@ export default function HomeClient() {
           <Subscriptions />
         ) : view === "analytics" ? (
           <Analytics />
+        ) : view === "filters" ? (
+          <GmailFilterBuilder />
         ) : view === "triage" && !selected ? (
           <TriageQueues
             emails={emails}
