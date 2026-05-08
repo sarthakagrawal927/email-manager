@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "sh -c 'tsc --noEmit'",
     "cf:build": "opennextjs-cloudflare build",
-    "deploy": "pnpm cf:build && wrangler deploy --minify"
+    "deploy": "pnpm cf:build && wrangler deploy"
   },
   "dependencies": {
     "@huggingface/transformers": "4.0.0",
