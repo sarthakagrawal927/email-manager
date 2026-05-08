@@ -2,6 +2,7 @@
 
 const navItems = [
   { id: "inbox", label: "Inbox", icon: "📥" },
+  { id: "triage", label: "AI Triage", icon: "⚡" },
   { id: "starred", label: "Starred", icon: "⭐" },
   { id: "sent", label: "Sent", icon: "📤" },
   { id: "trash", label: "Trash", icon: "🗑" },
