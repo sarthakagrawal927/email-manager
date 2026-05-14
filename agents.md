@@ -1,5 +1,9 @@
 # agents.md — email-manager
 
+## Shared Fleet Standard
+
+Also read and follow the shared fleet-level agent standard at `../AGENTS.md`. Treat this repository as owned product code: protect production stability, keep changes scoped, verify work, and record durable follow-up tasks when something remains incomplete or blocked.
+
 ## Purpose
 Email management app with semantic search — fully client-side ML via HuggingFace ONNX, emails stored in IndexedDB, no server DB. Status: done/stable.
 
