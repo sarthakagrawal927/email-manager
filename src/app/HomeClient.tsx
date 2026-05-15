@@ -126,74 +126,143 @@ export default function HomeClient() {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-[var(--bg)] flex flex-col items-center">
-        <nav className="w-full max-w-7xl px-8 py-6 flex justify-between items-center">
-          <div className="text-2xl font-bold flex items-center space-x-2">
-            <span className="w-8 h-8 bg-[var(--accent)] rounded-lg flex items-center justify-center text-white">K</span>
-            <span className="text-[var(--text)]">Kinetic</span>
+      <div className="min-h-screen overflow-hidden bg-[var(--bg)] text-[var(--text)]">
+        <nav className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent)] text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20">
+              K
+            </span>
+            <div>
+              <p className="text-lg font-bold leading-none">Kinetic</p>
+              <p className="mt-1 text-xs font-medium uppercase text-[var(--text-muted)]">Private Gmail cockpit</p>
+            </div>
           </div>
           <button
             onClick={() => signIn()}
-            className="text-[var(--text)] font-medium hover:text-[var(--accent)] transition"
+            className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-4 py-2 text-sm font-semibold text-[var(--text)] shadow-sm transition hover:border-[var(--accent)] hover:text-[var(--accent)] cursor-pointer"
           >
-            Sign In
+            Sign in
           </button>
         </nav>
 
-        <section className="max-w-7xl w-full px-8 py-20 flex flex-col md:flex-row items-center gap-12">
-          <div className="flex-1 space-y-8 text-center md:text-left">
-            <h1 className="text-6xl font-extrabold text-[var(--text)] leading-tight">
-              Take control of your <br />
-              <span className="text-[var(--accent)]">inbox with AI</span>
+        <main className="mx-auto grid w-full max-w-7xl gap-10 px-5 pb-12 pt-6 sm:px-8 lg:grid-cols-[minmax(0,0.96fr)_minmax(420px,1.04fr)] lg:items-center lg:pb-20 lg:pt-12">
+          <section className="max-w-2xl">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm font-semibold text-[var(--text-muted)] shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-[#19a974]" />
+              Gmail read-only, stored locally
+            </div>
+
+            <h1 className="text-5xl font-extrabold leading-tight text-[var(--text)] sm:text-6xl">
+              Clear the inbox without giving up control.
             </h1>
-            <p className="text-xl text-[var(--text-muted)] max-w-xl mx-auto md:mx-0">
-              Focus on what matters with intelligent AI-powered email management. Search, read, and unsubscribe effortlessly.
+            <p className="mt-6 max-w-xl text-lg leading-8 text-[var(--text-muted)]">
+              Kinetic turns Gmail into a focused command center for search, triage, sender analytics, and unsubscribes. Your messages and embeddings stay in your browser.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <button
                 onClick={() => signIn()}
-                className="px-8 py-4 bg-[var(--accent)] text-white rounded-xl font-semibold shadow-lg shadow-[var(--accent)]/20 hover:bg-[var(--accent-hover)] transition cursor-pointer"
+                className="inline-flex items-center justify-center rounded-lg bg-[var(--accent)] px-6 py-3 text-base font-bold text-white shadow-xl shadow-[var(--accent)]/20 transition hover:bg-[var(--accent-hover)] cursor-pointer"
               >
-                Get Started Free
+                Continue with Google
               </button>
-              <button
-                className="px-8 py-4 border-2 border-[var(--border)] text-[var(--text)] rounded-xl font-semibold hover:bg-[var(--bg-card)] transition cursor-pointer"
-              >
-                Watch Demo
-              </button>
-            </div>
-          </div>
-          <div className="flex-1 w-full max-w-xl">
-            <div className="aspect-video bg-[var(--bg-card)] rounded-2xl shadow-2xl border border-[var(--border)] relative overflow-hidden flex items-center justify-center">
-              <div className="absolute inset-0 bg-gradient-to-tr from-[var(--accent)]/10 to-transparent" />
-              <div className="w-3/4 space-y-4">
-                <div className="h-4 w-1/2 bg-[var(--border)] rounded" />
-                <div className="h-4 w-3/4 bg-[var(--border)] rounded" />
-                <div className="h-32 w-full bg-[var(--border)]/50 rounded-lg border-2 border-dashed border-[var(--border)]" />
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-sm text-[var(--text-muted)]">
+                Requires Gmail read-only permission. No compose, send, archive, or delete access.
               </div>
             </div>
-          </div>
-        </section>
 
-        <section className="w-full bg-[var(--bg-card)] py-20">
-          <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div className="p-8 rounded-2xl space-y-4 hover:bg-[var(--bg)] transition">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 text-blue-600 rounded-lg flex items-center justify-center mx-auto text-2xl">AI</div>
-              <h3 className="text-xl font-bold">AI Priority Inbox</h3>
-              <p className="text-[var(--text-muted)]">Our AI sorts your emails so you see the important stuff first.</p>
+            <dl className="mt-10 grid grid-cols-3 gap-3">
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4">
+                <dt className="text-2xl font-extrabold text-[var(--accent)]">25</dt>
+                <dd className="mt-1 text-xs font-medium text-[var(--text-muted)]">message batches</dd>
+              </div>
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4">
+                <dt className="text-2xl font-extrabold text-[var(--accent)]">AI</dt>
+                <dd className="mt-1 text-xs font-medium text-[var(--text-muted)]">semantic search</dd>
+              </div>
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4">
+                <dt className="text-2xl font-extrabold text-[var(--accent)]">0</dt>
+                <dd className="mt-1 text-xs font-medium text-[var(--text-muted)]">server inbox DB</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="relative">
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-3 shadow-2xl shadow-[var(--accent)]/10">
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)]">
+                <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+                  <div>
+                    <p className="text-sm font-bold">Today in Gmail</p>
+                    <p className="text-xs text-[var(--text-muted)]">Local analysis preview</p>
+                  </div>
+                  <span className="rounded-lg bg-[#d9f7ef] px-3 py-1 text-xs font-bold text-[#006a63]">
+                    Synced
+                  </span>
+                </div>
+
+                <div className="grid gap-0 md:grid-cols-[180px_1fr]">
+                  <aside className="hidden border-r border-[var(--border)] p-4 md:block">
+                    {["Inbox", "Triage", "Semantic", "Senders"].map((item, index) => (
+                      <div
+                        key={item}
+                        className={`mb-2 rounded-lg px-3 py-2 text-sm font-semibold ${
+                          index === 0
+                            ? "bg-[var(--accent)] text-white"
+                            : "text-[var(--text-muted)]"
+                        }`}
+                      >
+                        {item}
+                      </div>
+                    ))}
+                  </aside>
+
+                  <div className="p-4">
+                    <div className="mb-4 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
+                      <p className="text-xs font-bold uppercase text-[var(--text-muted)]">Semantic search</p>
+                      <p className="mt-1 text-sm font-semibold">"contracts waiting on my approval"</p>
+                    </div>
+
+                    <div className="space-y-3">
+                      {[
+                        ["AM", "Avery Moore", "Vendor contract needs review", "High intent", "#d9f7ef"],
+                        ["PK", "Priya Kapoor", "Follow-up from launch planning", "Reply", "#dee0ff"],
+                        ["NL", "Newsletters", "12 senders ready to unsubscribe", "Clean up", "#ffdad6"],
+                      ].map(([initials, sender, subject, label, color]) => (
+                        <div key={subject} className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4">
+                          <div className="flex items-start gap-3">
+                            <span
+                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-[var(--text)]"
+                              style={{ backgroundColor: color }}
+                            >
+                              {initials}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="font-bold">{sender}</p>
+                                <span className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs font-semibold text-[var(--text-muted)]">
+                                  {label}
+                                </span>
+                              </div>
+                              <p className="mt-1 truncate text-sm text-[var(--text-muted)]">{subject}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="p-8 rounded-2xl space-y-4 hover:bg-[var(--bg)] transition">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 text-green-600 rounded-lg flex items-center justify-center mx-auto text-2xl">S</div>
-              <h3 className="text-xl font-bold">Seamless Sync</h3>
-              <p className="text-[var(--text-muted)]">Connect your Gmail accounts and manage everything in one place.</p>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              {["Read-only Gmail", "IndexedDB storage", "One-click unsubscribe"].map((item) => (
+                <div key={item} className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-sm font-semibold text-[var(--text-muted)]">
+                  {item}
+                </div>
+              ))}
             </div>
-            <div className="p-8 rounded-2xl space-y-4 hover:bg-[var(--bg)] transition">
-              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 text-purple-600 rounded-lg flex items-center justify-center mx-auto text-2xl">P</div>
-              <h3 className="text-xl font-bold">Advanced Privacy</h3>
-              <p className="text-[var(--text-muted)]">Your data stays your data. We never sell your personal info.</p>
-            </div>
-          </div>
-        </section>
+          </section>
+        </main>
       </div>
     );
   }

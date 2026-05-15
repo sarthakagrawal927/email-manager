@@ -1,5 +1,9 @@
 "use client";
 
+import { useState } from "react";
+
+import { exportEmails } from "../lib/db";
+
 const navItems = [
   { id: "inbox", label: "Inbox", icon: "📥" },
   { id: "triage", label: "AI Triage", icon: "⚡" },

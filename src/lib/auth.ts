@@ -3,17 +3,43 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { drizzle } from "drizzle-orm/d1";
 import { user, session, account, verification } from "@/db/schema";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createAuth(db: any) {
+type AuthEnv = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  DB: any;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  BETTER_AUTH_SECRET?: string;
+  AUTH_SECRET?: string;
+  NEXTAUTH_SECRET?: string;
+  BETTER_AUTH_URL?: string;
+  NEXTAUTH_URL?: string;
+};
+
+function getEnvValue(env: AuthEnv, key: keyof AuthEnv): string | undefined {
+  const value = env[key] ?? process.env[key];
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+export function createAuth(env: AuthEnv) {
+  const baseURL =
+    getEnvValue(env, "BETTER_AUTH_URL") ??
+    getEnvValue(env, "NEXTAUTH_URL") ??
+    "https://email-manager-d0r.pages.dev";
+
   return betterAuth({
-    database: drizzleAdapter(drizzle(db), {
+    database: drizzleAdapter(drizzle(env.DB), {
       provider: "sqlite",
       schema: { user, session, account, verification },
     }),
+    baseURL,
+    secret:
+      getEnvValue(env, "BETTER_AUTH_SECRET") ??
+      getEnvValue(env, "AUTH_SECRET") ??
+      getEnvValue(env, "NEXTAUTH_SECRET"),
     socialProviders: {
       google: {
-        clientId: process.env.GOOGLE_CLIENT_ID!,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        clientId: getEnvValue(env, "GOOGLE_CLIENT_ID") ?? "",
+        clientSecret: getEnvValue(env, "GOOGLE_CLIENT_SECRET") ?? "",
         scope: [
           "openid",
           "email",
@@ -24,9 +50,7 @@ export function createAuth(db: any) {
         prompt: "consent",
       },
     },
-    trustedOrigins: [
-      process.env.BETTER_AUTH_URL || "https://email-manager-d0r.pages.dev",
-    ],
+    trustedOrigins: [baseURL],
     rateLimit: {
       enabled: false,
     },

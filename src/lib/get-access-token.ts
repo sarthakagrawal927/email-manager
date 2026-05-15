@@ -9,7 +9,7 @@ export async function getGmailAccessToken(
 ): Promise<string | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { env } = getCloudflareContext() as any;
-  const auth = createAuth(env.DB);
+  const auth = createAuth(env);
   const session = await auth.api.getSession({ headers });
   if (!session?.user?.id) return null;
 
