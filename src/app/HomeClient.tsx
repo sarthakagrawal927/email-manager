@@ -13,29 +13,48 @@ import { TriageQueues } from "@/components/TriageQueues";
 import { GmailFilterBuilder } from "@/components/GmailFilterBuilder";
 import type { Email } from "@/lib/gmail";
 
-type View = "inbox" | "triage" | "starred" | "sent" | "trash" | "subscriptions" | "analytics" | "search" | "filters";
+type View =
+  | "today"
+  | "inbox"
+  | "starred"
+  | "sent"
+  | "trash"
+  | "subscriptions"
+  | "analytics"
+  | "search"
+  | "filters";
 
-const VIEWS = new Set<string>(["inbox", "triage", "starred", "sent", "trash", "subscriptions", "analytics", "search", "filters"]);
+const VIEWS = new Set<string>([
+  "today",
+  "inbox",
+  "starred",
+  "sent",
+  "trash",
+  "subscriptions",
+  "analytics",
+  "search",
+  "filters",
+]);
 
 const LABEL_MAP: Record<string, string> = {
+  today: "INBOX",
   inbox: "INBOX",
-  triage: "INBOX",
   starred: "STARRED",
   sent: "SENT",
   trash: "TRASH",
 };
 
 function getViewFromHash(): View {
-  if (typeof window === "undefined") return "inbox";
+  if (typeof window === "undefined") return "today";
   const hash = window.location.hash.replace("#", "");
-  return VIEWS.has(hash) ? (hash as View) : "inbox";
+  return VIEWS.has(hash) ? (hash as View) : "today";
 }
 
 export default function HomeClient() {
   const { session: sessionData, loading: isPending } = useSession();
   const session = sessionData?.user ? sessionData : null;
   const status = isPending ? "loading" : session ? "authenticated" : "unauthenticated";
-  const [view, setViewState] = useState<View>("inbox");
+  const [view, setViewState] = useState<View>("today");
 
   useEffect(() => {
     setViewState(getViewFromHash());
@@ -126,146 +145,60 @@ export default function HomeClient() {
 
   if (!session) {
     return (
-      <div className="min-h-screen overflow-hidden bg-[var(--bg)] text-[var(--text)]">
-        <nav className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent)] text-sm font-bold text-white shadow-lg shadow-[var(--accent)]/20">
-              K
-            </span>
-            <div>
-              <p className="text-lg font-bold leading-none">Kinetic</p>
-              <p className="mt-1 text-xs font-medium uppercase text-[var(--text-muted)]">Private Gmail cockpit</p>
-            </div>
-          </div>
-          <button
-            onClick={() => signIn()}
-            className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-4 py-2 text-sm font-semibold text-[var(--text)] shadow-sm transition hover:border-[var(--accent)] hover:text-[var(--accent)] cursor-pointer"
-          >
-            Sign in
-          </button>
-        </nav>
-
-        <main className="mx-auto grid w-full max-w-7xl gap-10 px-5 pb-12 pt-6 sm:px-8 lg:grid-cols-[minmax(0,0.96fr)_minmax(420px,1.04fr)] lg:items-center lg:pb-20 lg:pt-12">
-          <section className="max-w-2xl">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-sm font-semibold text-[var(--text-muted)] shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-[#19a974]" />
-              Gmail read-only, stored locally
+      <div className="min-h-screen flex flex-col bg-[var(--bg)] text-[var(--text)]">
+        <main className="flex-1 flex items-center justify-center px-5 py-10">
+          <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-7 shadow-xl shadow-black/5">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent)] text-base font-bold text-white">
+                K
+              </span>
+              <div>
+                <p className="text-lg font-bold leading-tight">Kinetic</p>
+                <p className="text-xs text-[var(--text-muted)]">Private Gmail cockpit</p>
+              </div>
             </div>
 
-            <h1 className="text-5xl font-extrabold leading-tight text-[var(--text)] sm:text-6xl">
-              Clear the inbox without giving up control.
+            <h1 className="mt-6 text-2xl font-bold leading-snug">
+              Triage Gmail without giving up control.
             </h1>
-            <p className="mt-6 max-w-xl text-lg leading-8 text-[var(--text-muted)]">
-              Kinetic turns Gmail into a focused command center for search, triage, sender analytics, and unsubscribes. Your messages and embeddings stay in your browser.
+            <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+              Read-only access. Messages and embeddings stay in your browser. No server inbox database.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <button
-                onClick={() => signIn()}
-                className="inline-flex items-center justify-center rounded-lg bg-[var(--accent)] px-6 py-3 text-base font-bold text-white shadow-xl shadow-[var(--accent)]/20 transition hover:bg-[var(--accent-hover)] cursor-pointer"
-              >
-                Continue with Google
-              </button>
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-sm text-[var(--text-muted)]">
-                Requires Gmail read-only permission. No compose, send, archive, or delete access.
-              </div>
-            </div>
+            <button
+              onClick={() => signIn()}
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[var(--accent-hover)] cursor-pointer"
+            >
+              Continue with Google
+            </button>
 
-            <dl className="mt-10 grid grid-cols-3 gap-3">
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4">
-                <dt className="text-2xl font-extrabold text-[var(--accent)]">25</dt>
-                <dd className="mt-1 text-xs font-medium text-[var(--text-muted)]">message batches</dd>
-              </div>
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4">
-                <dt className="text-2xl font-extrabold text-[var(--accent)]">AI</dt>
-                <dd className="mt-1 text-xs font-medium text-[var(--text-muted)]">semantic search</dd>
-              </div>
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4">
-                <dt className="text-2xl font-extrabold text-[var(--accent)]">0</dt>
-                <dd className="mt-1 text-xs font-medium text-[var(--text-muted)]">server inbox DB</dd>
-              </div>
-            </dl>
-          </section>
+            <ul className="mt-6 space-y-2 text-xs text-[var(--text-muted)]">
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#19a974]" />
+                Triage queues, sender analytics, one-click unsubscribe
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#19a974]" />
+                Semantic search runs locally via in-browser embeddings
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#19a974]" />
+                No compose, send, archive, or delete permissions requested
+              </li>
+            </ul>
 
-          <section className="relative">
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-3 shadow-2xl shadow-[var(--accent)]/10">
-              <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)]">
-                <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
-                  <div>
-                    <p className="text-sm font-bold">Today in Gmail</p>
-                    <p className="text-xs text-[var(--text-muted)]">Local analysis preview</p>
-                  </div>
-                  <span className="rounded-lg bg-[#d9f7ef] px-3 py-1 text-xs font-bold text-[#006a63]">
-                    Synced
-                  </span>
-                </div>
-
-                <div className="grid gap-0 md:grid-cols-[180px_1fr]">
-                  <aside className="hidden border-r border-[var(--border)] p-4 md:block">
-                    {["Inbox", "Triage", "Semantic", "Senders"].map((item, index) => (
-                      <div
-                        key={item}
-                        className={`mb-2 rounded-lg px-3 py-2 text-sm font-semibold ${
-                          index === 0
-                            ? "bg-[var(--accent)] text-white"
-                            : "text-[var(--text-muted)]"
-                        }`}
-                      >
-                        {item}
-                      </div>
-                    ))}
-                  </aside>
-
-                  <div className="p-4">
-                    <div className="mb-4 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
-                      <p className="text-xs font-bold uppercase text-[var(--text-muted)]">Semantic search</p>
-                      <p className="mt-1 text-sm font-semibold">"contracts waiting on my approval"</p>
-                    </div>
-
-                    <div className="space-y-3">
-                      {[
-                        ["AM", "Avery Moore", "Vendor contract needs review", "High intent", "#d9f7ef"],
-                        ["PK", "Priya Kapoor", "Follow-up from launch planning", "Reply", "#dee0ff"],
-                        ["NL", "Newsletters", "12 senders ready to unsubscribe", "Clean up", "#ffdad6"],
-                      ].map(([initials, sender, subject, label, color]) => (
-                        <div key={subject} className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4">
-                          <div className="flex items-start gap-3">
-                            <span
-                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-[var(--text)]"
-                              style={{ backgroundColor: color }}
-                            >
-                              {initials}
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <p className="font-bold">{sender}</p>
-                                <span className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs font-semibold text-[var(--text-muted)]">
-                                  {label}
-                                </span>
-                              </div>
-                              <p className="mt-1 truncate text-sm text-[var(--text-muted)]">{subject}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {["Read-only Gmail", "IndexedDB storage", "One-click unsubscribe"].map((item) => (
-                <div key={item} className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3 text-sm font-semibold text-[var(--text-muted)]">
-                  {item}
-                </div>
-              ))}
-            </div>
-          </section>
+            <p className="mt-6 text-[11px] text-[var(--text-muted)]">
+              By continuing you agree to the{" "}
+              <a href="/privacy" className="underline hover:text-[var(--text)]">privacy notice</a>.
+              Learn more <a href="/about" className="underline hover:text-[var(--text)]">about Kinetic</a>.
+            </p>
+          </div>
         </main>
       </div>
     );
   }
+
+  const isPrimaryView = view === "today" || view === "inbox";
 
   return (
     <div className="flex h-screen">
@@ -284,12 +217,13 @@ export default function HomeClient() {
           <Analytics />
         ) : view === "filters" ? (
           <GmailFilterBuilder />
-        ) : view === "triage" && !selected ? (
+        ) : view === "today" && !selected ? (
           <TriageQueues
             emails={emails}
             loading={loading}
             onSelect={setSelected}
             onRefresh={() => fetchEmails()}
+            onOpenInbox={() => setView("inbox")}
           />
         ) : selected ? (
           <EmailDetail
@@ -300,13 +234,13 @@ export default function HomeClient() {
           <SemanticSearch onSelect={setSelected} />
         ) : error ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <p className="text-[var(--text-muted)]">{error}</p>
+            <div className="text-center space-y-4 max-w-sm px-6">
+              <p className="text-sm text-[var(--text-muted)]">{error}</p>
               <button
                 onClick={() => fetchEmails()}
-                className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition cursor-pointer"
+                className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition cursor-pointer text-sm font-medium"
               >
-                Retry
+                Try again
               </button>
             </div>
           </div>
@@ -315,9 +249,12 @@ export default function HomeClient() {
             emails={emails}
             loading={loading}
             search={search}
+            label={view}
             onSearchChange={setSearch}
             onSelect={setSelected}
+            onRefresh={() => fetchEmails()}
             onLoadMore={nextPageToken ? () => fetchEmails(nextPageToken) : undefined}
+            primary={isPrimaryView}
           />
         )}
       </main>

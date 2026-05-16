@@ -9,6 +9,7 @@ interface Props {
   loading: boolean;
   onSelect: (email: Email) => void;
   onRefresh: () => void;
+  onOpenInbox?: () => void;
 }
 
 function priorityClass(priority: TriageItem["priority"]) {
@@ -17,7 +18,7 @@ function priorityClass(priority: TriageItem["priority"]) {
   return "text-[var(--text-muted)] bg-[var(--border)]/40";
 }
 
-export function TriageQueues({ emails, loading, onSelect, onRefresh }: Props) {
+export function TriageQueues({ emails, loading, onSelect, onRefresh, onOpenInbox }: Props) {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const queues = triageEmails(emails).map((queue) => ({
     ...queue,
@@ -38,18 +39,28 @@ export function TriageQueues({ emails, loading, onSelect, onRefresh }: Props) {
       <div className="border-b border-[var(--border)] p-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">AI Triage</h1>
+            <h1 className="text-2xl font-semibold">Today</h1>
             <p className="mt-1 text-sm text-[var(--text-muted)]">
-              Local queues from the currently loaded inbox. Actions are safe: open, copy brief, or dismiss locally.
+              Local queues from the latest inbox fetch — open, copy a brief, or dismiss locally.
             </p>
           </div>
-          <button
-            onClick={onRefresh}
-            disabled={loading}
-            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-60"
-          >
-            {loading ? "Refreshing..." : "Refresh inbox"}
-          </button>
+          <div className="flex items-center gap-2">
+            {onOpenInbox && (
+              <button
+                onClick={onOpenInbox}
+                className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-medium text-[var(--text-muted)] transition hover:bg-[var(--border)]/40 cursor-pointer"
+              >
+                View full inbox
+              </button>
+            )}
+            <button
+              onClick={onRefresh}
+              disabled={loading}
+              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-60 cursor-pointer"
+            >
+              {loading ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -72,8 +83,16 @@ export function TriageQueues({ emails, loading, onSelect, onRefresh }: Props) {
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
         </div>
       ) : summary.total === 0 ? (
-        <div className="mt-20 text-center text-[var(--text-muted)]">
-          No loaded inbox messages to triage yet.
+        <div className="flex flex-col items-center justify-center mt-20 text-center px-6 gap-3">
+          <p className="text-sm text-[var(--text-muted)]">
+            No inbox messages loaded yet.
+          </p>
+          <button
+            onClick={onRefresh}
+            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)] cursor-pointer"
+          >
+            Load inbox
+          </button>
         </div>
       ) : (
         <div className="grid gap-4 p-5 xl:grid-cols-2">

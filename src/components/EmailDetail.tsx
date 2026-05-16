@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Email } from "@/lib/gmail";
 
 interface Props {
@@ -10,6 +10,26 @@ interface Props {
 
 export function EmailDetail({ email, onBack }: Props) {
   const [acting, setActing] = useState(false);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const isTyping =
+        document.activeElement instanceof HTMLInputElement ||
+        document.activeElement instanceof HTMLTextAreaElement;
+      if (isTyping) return;
+      if (e.key === "Escape") onBack();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onBack]);
+
+  async function handleCopySubject() {
+    try {
+      await navigator.clipboard.writeText(`${email.subject}\n${email.from}\n\n${email.snippet}`);
+    } catch {
+      // best-effort
+    }
+  }
 
   async function handleOneClickUnsubscribe() {
     setActing(true);
@@ -30,10 +50,17 @@ export function EmailDetail({ email, onBack }: Props) {
         <button
           onClick={onBack}
           className="px-3 py-1.5 rounded-lg hover:bg-[var(--border)]/50 text-sm cursor-pointer"
+          title="Back (Esc)"
         >
           &larr; Back
         </button>
         <div className="flex-1" />
+        <button
+          onClick={handleCopySubject}
+          className="px-3 py-1.5 rounded-lg border border-[var(--border)] text-xs text-[var(--text-muted)] hover:bg-[var(--border)]/40 cursor-pointer"
+        >
+          Copy brief
+        </button>
         {email.unsubscribeLink && (
           email.unsubscribePost ? (
             <button
