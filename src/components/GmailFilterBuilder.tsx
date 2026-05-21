@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { trackCoreAction } from "@/lib/analytics";
 import type { Email } from "@/lib/gmail";
 import {
   buildFilterRecipe,
@@ -298,7 +299,12 @@ export function GmailFilterBuilder() {
                 </p>
               </div>
               <button
-                onClick={() => copyText("xml", xml)}
+                onClick={() => {
+                  copyText("xml", xml);
+                  // Owner-facing analytics — exporting the filter XML for
+                  // Gmail import is the core action for this view.
+                  trackCoreAction("filter_installed");
+                }}
                 disabled={selectedSuggestions.length === 0}
                 className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-60"
               >

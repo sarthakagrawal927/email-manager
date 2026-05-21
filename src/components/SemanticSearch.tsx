@@ -25,6 +25,7 @@ export function SemanticSearch({ onSelect }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -105,9 +106,18 @@ export function SemanticSearch({ onSelect }: Props) {
 
   async function performSearch(q: string) {
     setSearching(true);
+    setSearchError(null);
     try {
       const res = await semanticSearch(q);
       if (mountedRef.current) setResults(res);
+    } catch (err) {
+      console.error("Semantic search error:", err);
+      if (mountedRef.current) {
+        setResults([]);
+        setSearchError(
+          "Search failed. The local AI model may not have loaded — try syncing again.",
+        );
+      }
     } finally {
       if (mountedRef.current) setSearching(false);
     }
@@ -146,7 +156,17 @@ export function SemanticSearch({ onSelect }: Props) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {results.length === 0 && query && !searching ? (
+        {searchError ? (
+          <div className="text-center mt-20 px-6 space-y-3">
+            <p className="text-sm text-[var(--text-muted)]">{searchError}</p>
+            <button
+              onClick={() => performSearch(query)}
+              className="px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm hover:bg-[var(--accent-hover)] transition cursor-pointer"
+            >
+              Try again
+            </button>
+          </div>
+        ) : results.length === 0 && query && !searching ? (
           <div className="text-center text-[var(--text-muted)] mt-20">
             No results found
           </div>

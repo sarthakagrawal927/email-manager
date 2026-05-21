@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { trackCoreAction } from "@/lib/analytics";
 import type { Email } from "@/lib/gmail";
 
 interface Props {
@@ -39,6 +40,8 @@ export function EmailDetail({ email, onBack }: Props) {
       if (!data.ok && data.fallbackUrl) {
         window.open(data.fallbackUrl, "_blank", "noopener,noreferrer");
       }
+      // Owner-facing analytics — unsubscribing is a core action.
+      trackCoreAction("unsubscribed");
     } finally {
       setActing(false);
     }

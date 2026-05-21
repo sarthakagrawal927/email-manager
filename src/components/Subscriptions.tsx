@@ -6,33 +6,39 @@ import type { Email } from "@/lib/gmail";
 export function Subscriptions() {
   const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [unsubbing, setUnsubbing] = useState<Set<string>>(new Set());
   const [unsubbed, setUnsubbed] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/emails?q=unsubscribe&label=INBOX");
-        if (!res.ok) {
-          setLoading(false);
-          return;
-        }
-        const data = await res.json();
-        const subs = (data.emails ?? []).filter((e: Email) => e.unsubscribeLink);
-        const seen = new Set<string>();
-        const unique = subs.filter((e: Email) => {
-          const domain = e.from.match(/@([^>]+)/)?.[1]?.toLowerCase();
-          if (!domain || seen.has(domain)) return false;
-          seen.add(domain);
-          return true;
-        });
-        setEmails(unique);
-      } catch (err) {
-        console.error("Subscriptions fetch error:", err);
-      } finally {
-        setLoading(false);
+  async function loadSubscriptions() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/emails?q=unsubscribe&label=INBOX");
+      if (!res.ok) {
+        setError(`Couldn't load subscriptions (${res.status}).`);
+        return;
       }
-    })();
+      const data = await res.json();
+      const subs = (data.emails ?? []).filter((e: Email) => e.unsubscribeLink);
+      const seen = new Set<string>();
+      const unique = subs.filter((e: Email) => {
+        const domain = e.from.match(/@([^>]+)/)?.[1]?.toLowerCase();
+        if (!domain || seen.has(domain)) return false;
+        seen.add(domain);
+        return true;
+      });
+      setEmails(unique);
+    } catch (err) {
+      console.error("Subscriptions fetch error:", err);
+      setError("Couldn't load subscriptions. Check your connection.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadSubscriptions();
   }, []);
 
   async function handleUnsubscribe(email: Email) {
@@ -67,6 +73,22 @@ export function Subscriptions() {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="animate-spin w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-sm px-6">
+          <p className="text-sm text-[var(--text-muted)]">{error}</p>
+          <button
+            onClick={loadSubscriptions}
+            className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition cursor-pointer text-sm font-medium"
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }
