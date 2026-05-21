@@ -41,6 +41,7 @@ function formatDateRange(oldest: string, newest: string): string {
 export function Analytics() {
   const [stats, setStats] = useState<SenderStat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState("");
   const [totalEmails, setTotalEmails] = useState(0);
   const [dateRange, setDateRange] = useState("");
@@ -113,6 +114,7 @@ export function Analytics() {
     abortRef.current = controller;
 
     setLoading(true);
+    setError(null);
     setStats([]);
     setProgress("Fetching...");
     setDateRange("");
@@ -135,7 +137,15 @@ export function Analytics() {
         setProgress(`Fetching... ${allEmails.length}/${target}`);
 
         const res = await fetch(`/api/emails?${params}`, { signal: controller.signal });
-        if (!res.ok) break;
+        if (!res.ok) {
+          if (allEmails.length === 0) {
+            setError(`Couldn't load email data (${res.status}).`);
+            setLoading(false);
+            setProgress("");
+            return;
+          }
+          break;
+        }
 
         const data = await res.json();
         const emails: Email[] = data.emails ?? [];
@@ -157,6 +167,7 @@ export function Analytics() {
     } catch (err: any) {
       if (err?.name === "AbortError") return;
       console.error("Analytics fetch error:", err);
+      setError("Couldn't load email data. Check your connection.");
       setLoading(false);
       setProgress("");
     }
@@ -218,7 +229,17 @@ export function Analytics() {
         </div>
       </div>
 
-      {loading ? (
+      {error ? (
+        <div className="flex flex-col items-center justify-center h-40 gap-3 px-6 text-center">
+          <p className="text-sm text-[var(--text-muted)]">{error}</p>
+          <button
+            onClick={() => fetchAnalytics(bucket)}
+            className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition cursor-pointer text-sm font-medium"
+          >
+            Try again
+          </button>
+        </div>
+      ) : loading ? (
         <div className="flex flex-col items-center justify-center h-40 gap-3">
           <div className="animate-spin w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
           {progress && (
