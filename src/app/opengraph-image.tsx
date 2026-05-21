@@ -5,7 +5,6 @@ import { ImageResponse } from "next/og";
  * Next.js serves this at `/opengraph-image` and wires it into the page's
  * OpenGraph + Twitter card metadata automatically. No binary asset to ship.
  */
-export const runtime = "edge";
 export const alt = "Kinetic — Triage Gmail without giving up control";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
