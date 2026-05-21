@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 
+import { captureError } from "@/lib/foundry-monitoring";
+
 export default function Error({
   error,
   reset,
@@ -10,7 +12,9 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
+    // Full detail goes to the console + PostHog — never to the user.
     console.error(error);
+    captureError(error, { scope: "root", digest: error.digest });
   }, [error]);
 
   return (
@@ -18,7 +22,9 @@ export default function Error({
       <div className="text-center max-w-md">
         <h2 className="text-2xl font-bold mb-3">Something went wrong</h2>
         <p className="text-sm opacity-70 mb-6">
-          {error.message || "An unexpected error occurred."}
+          An unexpected error occurred on our end. Your emails stay in your
+          browser and are safe — try again, and if it keeps happening, come back
+          in a few minutes.
         </p>
         <div className="flex gap-3 justify-center">
           <button
@@ -34,6 +40,9 @@ export default function Error({
             Home
           </button>
         </div>
+        {error.digest ? (
+          <p className="mt-6 text-xs opacity-40">Reference: {error.digest}</p>
+        ) : null}
       </div>
     </div>
   );
