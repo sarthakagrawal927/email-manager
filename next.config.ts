@@ -15,8 +15,8 @@ const securityHeaders = [
       // Gmail email bodies rendered in sandboxed iframe (allow-same-origin) need blob/data
       "frame-src 'self' blob:",
       // HuggingFace model weights fetched client-side for semantic search
-      "connect-src 'self' https://huggingface.co https://cdn-lfs.huggingface.co https://cdn-lfs-us-1.huggingface.co https://*.huggingface.co https://api.sassmaker.com",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "connect-src 'self' https://huggingface.co https://cdn-lfs.huggingface.co https://cdn-lfs-us-1.huggingface.co https://*.huggingface.co https://api.sassmaker.com https://us.i.posthog.com https://us-assets.i.posthog.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://us-assets.i.posthog.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https:",
       "font-src 'self' data:",
