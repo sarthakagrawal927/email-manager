@@ -15,6 +15,7 @@ interface Props {
   onSelect: (email: Email) => void;
   onRefresh: () => void;
   onOpenInbox?: () => void;
+  onNavigateFilters?: () => void;
 }
 
 function priorityClass(priority: TriageItem["priority"]) {
@@ -39,6 +40,7 @@ export function TriageQueues({
   onSelect,
   onRefresh,
   onOpenInbox,
+  onNavigateFilters,
 }: Props) {
   const { records, activeMap, counts, now, latestFor } = useTriageActions();
 
@@ -50,6 +52,12 @@ export function TriageQueues({
   const summary = triageSummary(queues);
   const recent = records.slice(-5).reverse();
   const totalProcessed = counts.applied + counts.queued + counts.skipped + counts.failed;
+
+  // Snoozed follow-up items — queued records with a future snoozeUntil.
+  const followUps = records
+    .filter((r) => r.state === "queued" && r.snoozeUntil && r.snoozeUntil > now)
+    .sort((a, b) => (a.snoozeUntil ?? 0) - (b.snoozeUntil ?? 0))
+    .slice(0, 10);
 
   const flatItems = useMemo(
     () => queues.flatMap((queue) => queue.items.map((item) => ({ queue, item }))),
@@ -151,6 +159,25 @@ export function TriageQueues({
           </div>
         ) : (
           <>
+            {/* Follow-up capture panel — snoozed items coming due */}
+            {followUps.length > 0 && (
+              <div className="border-b border-[var(--border)] px-4 py-3">
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                  Follow-ups
+                </h2>
+                <ul className="mt-2 space-y-1.5">
+                  {followUps.map((r, idx) => (
+                    <li key={`${r.emailId}-${r.at}-${idx}`} className="flex items-center gap-2 text-[11px]">
+                      <span className="shrink-0 rounded-full bg-sky-500/10 px-1.5 py-0.5 text-sky-500">
+                        {r.snoozeUntil ? formatRelative(r.snoozeUntil, now) : "due"}
+                      </span>
+                      <span className="truncate text-[var(--text)]">{r.emailSubject}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {totalProcessed > 0 && (
               <div className="border-b border-[var(--border)] px-4 py-3">
                 <div className="flex items-center justify-between gap-2">
@@ -208,6 +235,15 @@ export function TriageQueues({
                             </span>
                             <span className="text-[10px] text-[var(--text-muted)]">{queue.title}</span>
                             <TriageStateBadge emailId={item.email.id} />
+                            {queue.id === "unsubscribe" && onNavigateFilters && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); onNavigateFilters(); }}
+                                className="text-[10px] text-[var(--accent)] hover:underline"
+                              >
+                                → Filters
+                              </button>
+                            )}
                           </div>
                           <h3 className="mt-1 truncate text-sm font-medium">{item.email.subject}</h3>
                           <p className="truncate text-xs text-[var(--text-muted)]">{senderName(item.email)}</p>

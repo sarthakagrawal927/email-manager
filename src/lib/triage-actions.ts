@@ -73,6 +73,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export const DEFER_MS = DAY_MS;
 export const FOLLOWUP_MS = 3 * DAY_MS;
 
+function snoozeLabel(ms: number): string {
+  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m`;
+  if (ms < 86_400_000) return `${Math.round(ms / 3_600_000)}h`;
+  if (ms < 7 * 86_400_000) return `${Math.round(ms / 86_400_000)}d`;
+  return `${Math.round(ms / (7 * 86_400_000))}w`;
+}
+
 export function isActiveQueue(record: TriageActionRecord, now = Date.now()): boolean {
   if (record.state !== "queued") return false;
   if (!record.snoozeUntil) return true;
@@ -137,6 +144,7 @@ function extractEmailAddress(from: string): string | null {
 export async function runTriageAction(
   input: TriageActionInput,
   kind: TriageActionKind,
+  opts?: { snoozeMs?: number },
 ): Promise<TriageActionRecord> {
   const base: TriageActionRecord = {
     emailId: input.emailId,
@@ -168,10 +176,12 @@ export async function runTriageAction(
       return { ...base, state: "applied", message: `Replying to ${addr}` };
     }
     if (kind === "defer") {
-      return { ...base, state: "queued", snoozeUntil: Date.now() + DEFER_MS, message: "Snoozed 1 day" };
+      const ms = opts?.snoozeMs ?? DEFER_MS;
+      return { ...base, state: "queued", snoozeUntil: Date.now() + ms, message: `Snoozed ${snoozeLabel(ms)}` };
     }
     if (kind === "followup") {
-      return { ...base, state: "queued", snoozeUntil: Date.now() + FOLLOWUP_MS, message: "Follow-up in 3 days" };
+      const ms = opts?.snoozeMs ?? FOLLOWUP_MS;
+      return { ...base, state: "queued", snoozeUntil: Date.now() + ms, message: `Follow-up in ${snoozeLabel(ms)}` };
     }
     return { ...base, state: "skipped", message: "Ignored from triage" };
   } catch (err) {

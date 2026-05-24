@@ -27,7 +27,7 @@ interface TriageActionsContextValue {
   activeMap: Map<string, TriageActionRecord>;
   counts: ReturnType<typeof countByState>;
   latestFor: (emailId: string) => TriageActionRecord | undefined;
-  runAction: (input: TriageActionInput, kind: TriageActionKind) => Promise<TriageActionRecord>;
+  runAction: (input: TriageActionInput, kind: TriageActionKind, opts?: { snoozeMs?: number }) => Promise<TriageActionRecord>;
   undoLatest: (emailId: string) => void;
 }
 
@@ -69,8 +69,8 @@ export function TriageActionsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const runAction = useCallback(
-    async (input: TriageActionInput, kind: TriageActionKind) => {
-      const record = await runTriageAction(input, kind);
+    async (input: TriageActionInput, kind: TriageActionKind, opts?: { snoozeMs?: number }) => {
+      const record = await runTriageAction(input, kind, opts);
       pushRecord(record);
       return record;
     },

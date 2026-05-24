@@ -245,6 +245,7 @@ export default function HomeClient() {
                 onSelect={handleSelectEmail}
                 onRefresh={() => fetchEmails()}
                 onOpenInbox={() => setView("inbox")}
+                onNavigateFilters={() => setView("filters")}
               />
             }
             detail={

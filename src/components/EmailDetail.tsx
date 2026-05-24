@@ -110,6 +110,40 @@ export function EmailDetail({ email, onBack, showBack = true }: Props) {
           <span className="truncate">From: {email.from}</span>
           <span className="shrink-0">{new Date(email.date).toLocaleString()}</span>
         </div>
+
+        {/* Inline triage brief */}
+        {(() => {
+          const item = triageItemForEmail(email);
+          if (!item) return null;
+          return (
+            <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`rounded-full px-1.5 py-0.5 ${
+                  item.priority === "high"
+                    ? "text-red-500 bg-red-500/10"
+                    : item.priority === "medium"
+                    ? "text-amber-500 bg-amber-500/10"
+                    : "text-[var(--text-muted)] bg-[var(--border)]/40"
+                }`}>
+                  {item.priority}
+                </span>
+                <span className="text-[var(--text-muted)]">{item.email.labelIds.includes("UNREAD") ? "Unread · " : ""}{
+                  item.queue === "respond" ? "Needs response"
+                  : item.queue === "unsubscribe" ? "Unsubscribe candidate"
+                  : item.queue === "reference" ? "Reference"
+                  : "Quick review"
+                }</span>
+              </div>
+              <p className="mt-1 text-[var(--text-muted)]">
+                <span className="font-medium text-[var(--text)]">Why: </span>{item.reason}
+              </p>
+              <p className="mt-0.5 text-[var(--text-muted)]">
+                <span className="font-medium text-[var(--text)]">Action: </span>{item.action}
+              </p>
+            </div>
+          );
+        })()}
+
         <div className="mt-2">
           <TriageActionBar input={triageInput} />
         </div>
