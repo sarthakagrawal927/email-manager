@@ -17,6 +17,8 @@ import { Analytics } from "@/components/Analytics";
 import { SemanticSearch } from "@/components/SemanticSearch";
 import { TriageQueues } from "@/components/TriageQueues";
 import { GmailFilterBuilder } from "@/components/GmailFilterBuilder";
+import { WorkSurface } from "@/components/WorkSurface";
+import { TriageActionsProvider } from "@/components/TriageActionsProvider";
 import type { Email } from "@/lib/gmail";
 
 type View =
@@ -224,20 +226,78 @@ export default function HomeClient() {
         </header>
 
         <main className="flex flex-1 overflow-hidden">
+        <TriageActionsProvider>
         {view === "subscriptions" ? (
           <Subscriptions />
         ) : view === "analytics" ? (
           <Analytics />
         ) : view === "filters" ? (
           <GmailFilterBuilder />
-        ) : view === "today" && !selected ? (
-          <TriageQueues
-            emails={emails}
-            loading={loading}
-            onSelect={handleSelectEmail}
-            onRefresh={() => fetchEmails()}
-            onOpenInbox={() => setView("inbox")}
+        ) : view === "today" ? (
+          <WorkSurface
+            hasSelection={Boolean(selected)}
+            list={
+              <TriageQueues
+                emails={emails}
+                loading={loading}
+                error={error}
+                selectedId={selected?.id}
+                onSelect={handleSelectEmail}
+                onRefresh={() => fetchEmails()}
+                onOpenInbox={() => setView("inbox")}
+              />
+            }
+            detail={
+              selected ? (
+                <EmailDetail
+                  email={selected}
+                  onBack={() => setSelected(null)}
+                  showBack
+                />
+              ) : null
+            }
           />
+        ) : view === "inbox" ? (
+          error ? (
+            <div className="flex flex-1 items-center justify-center">
+              <div className="max-w-sm space-y-4 px-6 text-center">
+                <p className="text-sm text-[var(--text-muted)]">{error}</p>
+                <button
+                  onClick={() => fetchEmails()}
+                  className="cursor-pointer rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)]"
+                >
+                  Try again
+                </button>
+              </div>
+            </div>
+          ) : (
+            <WorkSurface
+              hasSelection={Boolean(selected)}
+              list={
+                <EmailList
+                  emails={emails}
+                  loading={loading}
+                  search={search}
+                  label={view}
+                  selectedId={selected?.id}
+                  onSearchChange={setSearch}
+                  onSelect={handleSelectEmail}
+                  onRefresh={() => fetchEmails()}
+                  onLoadMore={nextPageToken ? () => fetchEmails(nextPageToken) : undefined}
+                  primary={isPrimaryView}
+                />
+              }
+              detail={
+                selected ? (
+                  <EmailDetail
+                    email={selected}
+                    onBack={() => setSelected(null)}
+                    showBack
+                  />
+                ) : null
+              }
+            />
+          )
         ) : selected ? (
           <EmailDetail
             email={selected}
@@ -263,6 +323,7 @@ export default function HomeClient() {
             loading={loading}
             search={search}
             label={view}
+            selectedId={null}
             onSearchChange={setSearch}
             onSelect={handleSelectEmail}
             onRefresh={() => fetchEmails()}
@@ -270,6 +331,7 @@ export default function HomeClient() {
             primary={isPrimaryView}
           />
         )}
+        </TriageActionsProvider>
         </main>
       </div>
     </div>

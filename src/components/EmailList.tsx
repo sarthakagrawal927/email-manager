@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Email } from "@/lib/gmail";
+import { TriageStateBadge } from "@/components/TriageActionBar";
 
 interface Props {
   emails: Email[];
   loading: boolean;
   search: string;
   label?: string;
+  selectedId?: string | null;
   onSearchChange: (q: string) => void;
   onSelect: (email: Email) => void;
   onLoadMore?: () => void;
@@ -28,6 +30,7 @@ export function EmailList({
   loading,
   search,
   label,
+  selectedId,
   onSearchChange,
   onSelect,
   onLoadMore,
@@ -150,6 +153,7 @@ export function EmailList({
             {emails.map((email, idx) => {
               const unread = email.labelIds.includes("UNREAD");
               const focused = idx === focusIdx;
+              const selected = email.id === selectedId;
               return (
                 <button
                   key={email.id}
@@ -159,7 +163,7 @@ export function EmailList({
                   onClick={() => onSelect(email)}
                   onMouseEnter={() => setFocusIdx(idx)}
                   className={`w-full text-left px-4 py-3 border-b border-[var(--border)] transition cursor-pointer ${
-                    focused
+                    selected || focused
                       ? "bg-[var(--accent)]/[0.08]"
                       : unread
                       ? "bg-[var(--accent)]/[0.03] hover:bg-[var(--border)]/30"
@@ -175,8 +179,11 @@ export function EmailList({
                         {email.from.replace(/<[^>]+>/, "").trim()}
                       </span>
                     </span>
-                    <span className="text-xs text-[var(--text-muted)] shrink-0 ml-2">
-                      {new Date(email.date).toLocaleDateString()}
+                    <span className="flex shrink-0 items-center gap-2 ml-2">
+                      <TriageStateBadge emailId={email.id} />
+                      <span className="text-xs text-[var(--text-muted)]">
+                        {new Date(email.date).toLocaleDateString()}
+                      </span>
                     </span>
                   </div>
                   <div className={`text-sm truncate ${unread ? "font-semibold" : ""}`}>{email.subject}</div>

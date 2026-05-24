@@ -145,6 +145,10 @@ export function triageEmails(emails: Email[]): TriageQueue[] {
   }));
 }
 
+export function triageItemForEmail(email: Email): TriageItem | undefined {
+  return triageEmails([email]).flatMap((queue) => queue.items)[0];
+}
+
 export function triageSummary(queues: TriageQueue[]) {
   const all = queues.flatMap((queue) => queue.items);
   return {

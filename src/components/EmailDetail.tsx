@@ -1,16 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { trackCoreAction } from "@/lib/analytics";
 import type { Email } from "@/lib/gmail";
+import { triageItemForEmail } from "@/lib/triage";
+import { TriageActionBar } from "@/components/TriageActionBar";
 
 interface Props {
   email: Email;
   onBack: () => void;
+  showBack?: boolean;
 }
 
-export function EmailDetail({ email, onBack }: Props) {
+export function EmailDetail({ email, onBack, showBack = true }: Props) {
   const [acting, setActing] = useState(false);
+
+  const triageInput = useMemo(() => {
+    const item = triageItemForEmail(email);
+    return {
+      emailId: email.id,
+      emailSubject: email.subject,
+      from: email.from,
+      brief:
+        item?.brief ??
+        [`Subject: ${email.subject}`, `From: ${email.from}`, `Context: ${email.snippet}`].join("\n"),
+    };
+  }, [email]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -18,11 +33,11 @@ export function EmailDetail({ email, onBack }: Props) {
         document.activeElement instanceof HTMLInputElement ||
         document.activeElement instanceof HTMLTextAreaElement;
       if (isTyping) return;
-      if (e.key === "Escape") onBack();
+      if (e.key === "Escape" && showBack) onBack();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onBack]);
+  }, [onBack, showBack]);
 
   async function handleCopySubject() {
     try {
@@ -40,7 +55,6 @@ export function EmailDetail({ email, onBack }: Props) {
       if (!data.ok && data.fallbackUrl) {
         window.open(data.fallbackUrl, "_blank", "noopener,noreferrer");
       }
-      // Owner-facing analytics — unsubscribing is a core action.
       trackCoreAction("unsubscribed");
     } finally {
       setActing(false);
@@ -48,28 +62,33 @@ export function EmailDetail({ email, onBack }: Props) {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="flex items-center gap-2 p-3 border-b border-[var(--border)] flex-wrap">
-        <button
-          onClick={onBack}
-          className="px-3 py-1.5 rounded-lg hover:bg-[var(--border)]/50 text-sm cursor-pointer"
-          title="Back (Esc)"
-        >
-          &larr; Back
-        </button>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--border)] p-3">
+        {showBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="rounded-lg px-3 py-1.5 text-sm hover:bg-[var(--border)]/50 cursor-pointer md:hidden"
+            title="Back (Esc)"
+          >
+            &larr; Back
+          </button>
+        )}
         <div className="flex-1" />
         <button
+          type="button"
           onClick={handleCopySubject}
-          className="px-3 py-1.5 rounded-lg border border-[var(--border)] text-xs text-[var(--text-muted)] hover:bg-[var(--border)]/40 cursor-pointer"
+          className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-muted)] hover:bg-[var(--border)]/40 cursor-pointer"
         >
           Copy brief
         </button>
-        {email.unsubscribeLink && (
-          email.unsubscribePost ? (
+        {email.unsubscribeLink &&
+          (email.unsubscribePost ? (
             <button
+              type="button"
               disabled={acting}
               onClick={handleOneClickUnsubscribe}
-              className="px-3 py-1.5 rounded-lg bg-[var(--danger)]/10 text-[var(--danger)] text-sm hover:bg-[var(--danger)]/20 cursor-pointer"
+              className="rounded-lg bg-[var(--danger)]/10 px-3 py-1.5 text-sm text-[var(--danger)] hover:bg-[var(--danger)]/20 cursor-pointer"
             >
               Unsubscribe (1-click)
             </button>
@@ -78,27 +97,31 @@ export function EmailDetail({ email, onBack }: Props) {
               href={email.unsubscribeLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-1.5 rounded-lg bg-[var(--danger)]/10 text-[var(--danger)] text-sm hover:bg-[var(--danger)]/20"
+              className="rounded-lg bg-[var(--danger)]/10 px-3 py-1.5 text-sm text-[var(--danger)] hover:bg-[var(--danger)]/20"
             >
               Unsubscribe
             </a>
-          )
-        )}
+          ))}
       </div>
 
-      <div className="p-5 border-b border-[var(--border)]">
-        <h1 className="text-xl font-semibold mb-2">{email.subject}</h1>
-        <div className="flex justify-between text-sm text-[var(--text-muted)]">
-          <span>From: {email.from}</span>
-          <span>{new Date(email.date).toLocaleString()}</span>
+      <div className="shrink-0 border-b border-[var(--border)] p-4">
+        <h1 className="mb-2 text-lg font-semibold leading-snug">{email.subject}</h1>
+        <div className="flex flex-wrap justify-between gap-2 text-sm text-[var(--text-muted)]">
+          <span className="truncate">From: {email.from}</span>
+          <span className="shrink-0">{new Date(email.date).toLocaleString()}</span>
         </div>
-        <div className="text-sm text-[var(--text-muted)]">To: {email.to}</div>
+        <div className="mt-2">
+          <TriageActionBar input={triageInput} />
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <iframe
-          srcDoc={email.body || `<pre style="font-family:inherit;white-space:pre-wrap">${email.snippet}</pre>`}
-          className="w-full h-full border-0"
+          srcDoc={
+            email.body ||
+            `<pre style="font-family:inherit;white-space:pre-wrap">${email.snippet}</pre>`
+          }
+          className="h-full w-full border-0"
           sandbox="allow-popups allow-popups-to-escape-sandbox"
           title="Email body"
         />
