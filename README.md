@@ -62,7 +62,7 @@ Google OAuth must allow the local and production callback URLs:
 - `pnpm build` — `next build`
 - `pnpm start` — `next start`
 - `pnpm typecheck` — TypeScript check
-- `pnpm lint` — currently aliases to `pnpm typecheck`
+- `pnpm lint` — currently aliases to `pnpm typecheck` (ESLint config currently crashes in this repo)
 - `pnpm test:e2e` — Playwright e2e suite
 - `pnpm cf:build` — OpenNext Cloudflare build
 - `pnpm deploy` — build and deploy to Cloudflare Workers

@@ -1,12 +1,13 @@
-import { FlatCompat } from "@eslint/eslintrc";
-import js from "@eslint/js";
+const nextCoreWebVitals = require("eslint-config-next/core-web-vitals");
 
-const compat = new FlatCompat({
-  recommendedConfig: js.configs.recommended,
-});
-
-export default [
-  ...compat.extends("next/core-web-vitals"),
+module.exports = [
+  ...nextCoreWebVitals,
+  {
+    rules: {
+      "react-hooks/refs": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+    },
+  },
   {
     ignores: [".next/**", ".open-next/**", ".wrangler/**", "next-env.d.ts"],
   },
