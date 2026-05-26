@@ -105,6 +105,24 @@ For deployment work, also run:
 pnpm cf:build
 ```
 
+## Automation Safety
+
+This app is **read-only by design**. It does not send, reply, archive, delete, or
+modify any emails. The only non-read action available is unsubscribe, which always
+requires an explicit user click and opens the sender's unsubscribe flow — nothing
+happens automatically.
+
+If automation features are added in the future (e.g. scheduled triage, AI-suggested
+labels), the policy is:
+
+- No action is taken on any email without an explicit user confirmation step.
+- Bulk or destructive actions show a summary and require a deliberate "Review &
+  confirm" gesture before executing.
+- Automated suggestions are surfaced as drafts or previews, never applied silently.
+
+Users can rely on the app not taking any action on their mailbox unless they
+initiate it themselves.
+
 ## Current Status
 
 Stable maintenance app. The remaining production setup footgun is Google OAuth:
@@ -112,3 +130,15 @@ the deployed callback URL must be present in the Google Cloud Console OAuth app,
 otherwise sign-in fails with `redirect_uri_mismatch`.
 
 See `agents.md` for implementation conventions and deeper architecture notes.
+
+<!-- ACTIVE-AI-TASK-LOG:START -->
+## Active AI Task Log
+
+This section is maintained by the SaaS Maker Active-AI product/design loop so future agents do not reopen duplicate UI tasks.
+
+- Business lane: P2 Watch / maintenance
+- Rule: do not create another broad "improve the UI" task unless the acceptance criteria differ materially from the tasks listed here.
+- Source of truth for task status: SaaS Maker task board. README entries are durable context only.
+
+- 2026-05-26: Added "Automation Safety" section (task 74061467) — P2 trust maintenance. Documents read-only guarantee and review-before-send policy for any future automation features.
+<!-- ACTIVE-AI-TASK-LOG:END -->
