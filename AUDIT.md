@@ -8,10 +8,10 @@ No `.env`, `.pem`, `.key`, or service-account files were ever committed. Clean.
 - `.env.local` exists with `NEXT_PUBLIC_SAASMAKER_API_KEY=pk_6511f5...` (public key, low risk).
 - `.env.local` is properly gitignored and was never tracked.
 - `.env.example` contains only placeholder values. Good.
-- Google OAuth secrets (`GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`) are loaded from env vars at runtime, not hardcoded.
+- Google OAuth and better-auth secrets are loaded from env vars at runtime, not hardcoded.
 
 ## Deployment
-No `.vercel/`, `wrangler.toml`, `netlify.toml`, or `firebase.json` found. Project appears local-only / not deployed.
+Deployed on Cloudflare Workers via `@opennextjs/cloudflare` and Wrangler. Do not treat this as a local-only project.
 
 ## Code Security
 - **CORS**: No CORS headers or middleware found.

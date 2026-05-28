@@ -10,9 +10,7 @@ type AuthEnv = {
   GOOGLE_CLIENT_SECRET?: string;
   BETTER_AUTH_SECRET?: string;
   AUTH_SECRET?: string;
-  NEXTAUTH_SECRET?: string;
   BETTER_AUTH_URL?: string;
-  NEXTAUTH_URL?: string;
 };
 
 function getEnvValue(env: AuthEnv, key: keyof AuthEnv): string | undefined {
@@ -23,7 +21,6 @@ function getEnvValue(env: AuthEnv, key: keyof AuthEnv): string | undefined {
 export function createAuth(env: AuthEnv) {
   const baseURL =
     getEnvValue(env, "BETTER_AUTH_URL") ??
-    getEnvValue(env, "NEXTAUTH_URL") ??
     "https://email-manager-d0r.pages.dev";
 
   return betterAuth({
@@ -34,8 +31,7 @@ export function createAuth(env: AuthEnv) {
     baseURL,
     secret:
       getEnvValue(env, "BETTER_AUTH_SECRET") ??
-      getEnvValue(env, "AUTH_SECRET") ??
-      getEnvValue(env, "NEXTAUTH_SECRET"),
+      getEnvValue(env, "AUTH_SECRET"),
     socialProviders: {
       google: {
         clientId: getEnvValue(env, "GOOGLE_CLIENT_ID") ?? "",
