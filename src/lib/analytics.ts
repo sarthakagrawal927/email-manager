@@ -6,17 +6,17 @@
  * build one cross-fleet funnel (signup -> activated -> core_action) and a
  * D1/D7 retention insight, with no custom dashboard.
  *
- * Every event carries `project: "email-manager"`. This wrapper is intentionally
- * thin so it can later be folded into `@saas-maker/posthog-client`.
+ * Every event carries `project_id: "email-manager"`. This wrapper is intentionally
+ * thin so it can later be folded into `posthog-js`.
  *
  * email-manager is an entirely client-side SPA (no server inbox DB), so this
  * module only needs the browser path. It routes through
- * `@saas-maker/posthog-client` (`track`), which is initialized by
+ * `posthog-js` (`track`), which is initialized by
  * `installBrowserMonitoring()` in `foundry-monitoring.ts`.
  */
 "use client";
 
-import { track } from "@saas-maker/posthog-client";
+import posthog from "posthog-js";
 
 const PROJECT = "email-manager" as const;
 
@@ -32,24 +32,28 @@ export type CoreAction =
 
 interface AnalyticsEventMap {
   /** First session after an account is created. */
-  signup: { project: typeof PROJECT };
+  signup: { project_id: typeof PROJECT };
   /** The user reaches first real value — opens their first message. */
-  activated: { project: typeof PROJECT };
+  activated: { project_id: typeof PROJECT };
   /** The thing the product exists to do. */
-  core_action: { project: typeof PROJECT; action: CoreAction };
+  core_action: { project_id: typeof PROJECT; action: CoreAction };
   /** A return session by a user with prior activity. */
-  returned: { project: typeof PROJECT };
+  returned: { project_id: typeof PROJECT };
+}
+
+export function trackEvent(event: string, properties: Record<string, unknown> = {}): void {
+  try {
+    posthog.capture(event, { project_id: PROJECT, ...properties });
+  } catch {
+    // Analytics must never break a user flow. Swallow and move on.
+  }
 }
 
 function emit<K extends keyof AnalyticsEventMap>(
   event: K,
-  props: Omit<AnalyticsEventMap[K], "project">,
+  props: Omit<AnalyticsEventMap[K], "project_id">,
 ): void {
-  try {
-    track(event, { project: PROJECT, ...props });
-  } catch {
-    // Analytics must never break a user flow. Swallow and move on.
-  }
+  trackEvent(event, props);
 }
 
 /** Fire once, on the first session after an account is created. */
