@@ -25,6 +25,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Emit .next/standalone so Beasties' post-build inline-critical-css.mjs
+  // can modify the same HTML that OpenNext's --skipNextBuild consumes.
+  output: "standalone",
   async headers() {
     return [
       {

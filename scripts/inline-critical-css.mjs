@@ -16,11 +16,22 @@
 // async-load fallback. Worst case: the file is left as-is.
 
 import { readFile, writeFile, readdir, stat } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import Beasties from "beasties";
 
-const PRERENDERED_ROOT = resolve(".next/server/app");
+// Next.js writes prerendered HTML to two places when output: 'standalone'
+// is active (the OpenNext build relies on this):
+//   - .next/server/app/<route>.html
+//   - .next/standalone/.next/server/app/<route>.html
+// The OpenNext bundler reads from the standalone copy, so Beasties must
+// process both — modifying only the first leaves the deployed Worker
+// serving the original render-blocking HTML.
+const PRERENDERED_ROOTS = [
+  resolve(".next/server/app"),
+  resolve(".next/standalone/.next/server/app"),
+].filter((p) => existsSync(p));
 const STATIC_ROOT = resolve(".next");
 
 async function walkHtml(dir) {
@@ -38,7 +49,10 @@ async function walkHtml(dir) {
 }
 
 async function main() {
-  const htmls = await walkHtml(PRERENDERED_ROOT);
+  const htmls = [];
+  for (const root of PRERENDERED_ROOTS) {
+    htmls.push(...(await walkHtml(root)));
+  }
   if (htmls.length === 0) {
     console.log("[inline-critical-css] no .html files under .next/server/app — skipping");
     return;
