@@ -31,6 +31,24 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: securityHeaders,
       },
+      {
+        // Force CF Edge to cache the static homepage. revalidate=3600 alone
+        // emits only s-maxage which CF was treating as DYNAMIC; an explicit
+        // max-age (browser cache) + CDN-Cache-Control is what flips the
+        // edge response to HIT for HTML.
+        source: "/",
+        headers: [
+          {
+            key: "Cache-Control",
+            value:
+              "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800",
+          },
+          {
+            key: "CDN-Cache-Control",
+            value: "public, s-maxage=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
     ];
   },
   serverExternalPackages: [
