@@ -1,9 +1,10 @@
 import HomeClient from "./HomeClient";
 
-// Static shell — HomeClient hydrates the auth + Gmail UI on the client.
-// Dropping `force-dynamic` lets the Worker return a pre-rendered HTML
-// envelope instead of re-running the route per request. Email data lives
-// in IndexedDB (zero server reads), so SSR was buying nothing but TTFB.
+// s-maxage=3600 lets CF Edge cache the HTML envelope so warm hits skip
+// the Worker entirely. Verified 652ms TTFB on the static homepage was
+// Worker cold-start cost; cached hits should be <100ms.
+export const revalidate = 3600;
+
 export default function Page() {
   return <HomeClient />;
 }
