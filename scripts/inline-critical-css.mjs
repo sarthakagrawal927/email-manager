@@ -75,6 +75,25 @@ async function main() {
     logLevel: "warn",
   });
 
+  // Beasties emits BOTH a `<link rel="preload" as="style" onload=...>`
+  // AND keeps the original `<link rel="stylesheet">` for each CSS file
+  // it processed — the stylesheet is still render-blocking. Post-process
+  // to remove the redundant blocking stylesheet line; the preload+onload
+  // swap already covers the no-JS case via the matching <noscript> entry.
+  function deRenderBlockCss(html) {
+    return html.replace(
+      /<link rel="stylesheet" href="([^"]+\.css)"[^>]*\/?>(?!<\/noscript>)/g,
+      (match, href) => {
+        // Only drop if the same href appears as a preload+onload swap
+        // earlier in the document — never drop a lone stylesheet.
+        const preloadPattern = new RegExp(
+          `<link rel="preload" href="${href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*onload=`,
+        );
+        return preloadPattern.test(html) ? "" : match;
+      },
+    );
+  }
+
   let total = 0;
   let saved = 0;
   for (const file of htmls) {
@@ -86,6 +105,7 @@ async function main() {
       console.warn(`[inline-critical-css] skipping ${file}: ${err.message}`);
       continue;
     }
+    after = deRenderBlockCss(after);
     if (after === before) continue;
     await writeFile(file, after);
     const delta = before.length - after.length;
