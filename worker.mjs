@@ -25,6 +25,17 @@ const CACHE_PATH = "/";
 const CACHE_CONTROL =
   "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800";
 
+// Skip cache when ANY of these cookies are present — covers the better-auth
+// session in both prod (__Secure-) and dev variants so signed-in users
+// always see live SSR (e.g. redirect to /library).
+const AUTH_COOKIE_FRAGMENTS = ["session_token", "session-token"];
+
+function hasAuthCookie(request) {
+  const cookie = request.headers.get("cookie");
+  if (!cookie) return false;
+  return AUTH_COOKIE_FRAGMENTS.some((c) => cookie.includes(c));
+}
+
 export default {
   async fetch(request, env, ctx) {
     if (request.method !== "GET") {
@@ -34,11 +45,15 @@ export default {
     if (url.pathname !== CACHE_PATH) {
       return openNext.fetch(request, env, ctx);
     }
+    // Auth-bearing requests pass straight through; the user is likely
+    // going to be redirected by middleware to /library or /dashboard.
+    if (hasAuthCookie(request)) {
+      return openNext.fetch(request, env, ctx);
+    }
 
     const cache = caches.default;
     const cached = await cache.match(request);
     if (cached) {
-      // Clone so we can mark it; original cached Response body is locked.
       const hit = new Response(cached.body, cached);
       hit.headers.set("x-edge-cache", "HIT");
       return hit;
@@ -52,10 +67,29 @@ export default {
       return response;
     }
 
-    const cacheable = new Response(response.body, response);
-    cacheable.headers.set("Cache-Control", CACHE_CONTROL);
-    cacheable.headers.set("x-edge-cache", "MISS");
+    // Read the body into memory once so we can hand the same bytes to
+    // both the client response and the cache.put. The earlier pattern
+    // (`new Response(response.body, response)` then `.clone()`) was
+    // silently dropping the inlined critical-CSS chunk somewhere in the
+    // stream-fork; reading once and constructing both responses from
+    // the same Uint8Array sidesteps the streaming edge case entirely.
+    const body = await response.arrayBuffer();
+    const headers = new Headers(response.headers);
+    headers.set("Cache-Control", CACHE_CONTROL);
+
+    const cacheable = new Response(body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
     ctx.waitUntil(cache.put(request, cacheable.clone()));
-    return cacheable;
+
+    const clientResponse = new Response(body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+    clientResponse.headers.set("x-edge-cache", "MISS");
+    return clientResponse;
   },
 };

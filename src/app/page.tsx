@@ -1,9 +1,11 @@
 import HomeClient from "./HomeClient";
 
-// s-maxage=3600 lets CF Edge cache the HTML envelope so warm hits skip
-// the Worker entirely. Verified 652ms TTFB on the static homepage was
-// Worker cold-start cost; cached hits should be <100ms.
-export const revalidate = 3600;
+// No `revalidate` — the homepage is fully static (HomeClient is the
+// hydration shell; email data lives in IndexedDB). Without revalidate
+// the route is pure SSG: OpenNext serves the Beasties-inlined HTML
+// from .open-next/cache/<id>/index.cache directly on every request,
+// without going through the ISR re-render path that x-nextjs-cache
+// MISS triggers. Edge caching is set via next.config headers() instead.
 
 export default function Page() {
   return <HomeClient />;
