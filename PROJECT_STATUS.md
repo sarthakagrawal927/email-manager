@@ -7,7 +7,7 @@ Last updated: 2026-06-04
 - Gmail read-only inbox workspace (triage, semantic search, analytics, unsubscribe)
 - Client-side IndexedDB cache + in-browser embeddings
 - Cloudflare Workers deploy + better-auth on D1
-- **Email memories / weekly digest — planned** (brief + fixture-backed logic, no UI yet)
+- **Email memories / weekly digest prototype** (brief + fixture-backed logic + TLL export verification, no UI yet)
 
 ## Planned next
 
@@ -25,4 +25,4 @@ Last updated: 2026-06-04
 ## Reference
 
 - Digest plan: [docs/plans/2026-06-04-email-memories-digest.md](docs/plans/2026-06-04-email-memories-digest.md)
-- Fixture verify: `pnpm dlx tsx scripts/verify-digest-fixture.mjs`
+- Fixture verify: `pnpm digest:verify`
