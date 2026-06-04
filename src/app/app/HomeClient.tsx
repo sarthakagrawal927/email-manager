@@ -1,6 +1,6 @@
 "use client";
 
-import { signIn, signOut } from "@/lib/auth-client";
+import { signOut } from "@/lib/auth-client";
 import { useSession } from "@/lib/use-session";
 import {
   trackActivated,
@@ -188,7 +188,14 @@ export default function HomeClient() {
   }
 
   if (!session) {
-    return <Landing onSignIn={() => signIn()} />;
+    // Unauthenticated users at /app bounce to the marketing landing
+    // (Astro static page overlaid onto /). Sign-in is launched from
+    // there via the CTA which calls auth-client.signIn() through this
+    // same code path on return (callbackURL: "/app").
+    if (typeof window !== "undefined") {
+      window.location.replace("/");
+    }
+    return null;
   }
 
   const isPrimaryView = view === "today" || view === "inbox";
@@ -339,129 +346,8 @@ export default function HomeClient() {
   );
 }
 
-const LANDING_FEATURES = [
-  {
-    title: "Triage queues",
-    body: "Today view groups your inbox by sender behavior so you clear the noise first and read what matters.",
-  },
-  {
-    title: "Sender analytics",
-    body: "See which senders and lists fill your inbox, ranked by volume — the data behind every filter suggestion.",
-  },
-  {
-    title: "One-click unsubscribe",
-    body: "RFC 8058 one-click unsubscribe where supported, with a browser fallback for the rest.",
-  },
-];
-
-const LANDING_STEPS = [
-  {
-    title: "Connect Gmail",
-    body: "Sign in with Google. Kinetic requests read-only access — no compose, send, archive, or delete.",
-  },
-  {
-    title: "Work your inbox",
-    body: "Triage by queue, search semantically, and review sender volume — all in one keyboard-driven cockpit.",
-  },
-  {
-    title: "Export filters",
-    body: "Turn recurring noise into Gmail filter XML you import directly, so the rules apply even when Kinetic is closed.",
-  },
-];
-
-function Landing({ onSignIn }: { onSignIn: () => void }) {
-  return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
-      <header className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-        <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent)] text-sm font-bold text-white">
-            K
-          </span>
-          <span className="text-base font-bold">Kinetic</span>
-        </div>
-        <a
-          href="/about"
-          className="text-sm text-[var(--text-muted)] underline-offset-2 hover:underline"
-        >
-          About
-        </a>
-      </header>
-
-      <main className="mx-auto max-w-5xl px-5 pb-20">
-        {/* Hero */}
-        <section className="flex flex-col items-center gap-5 py-12 text-center md:py-20">
-          <h1 className="max-w-2xl text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
-            Triage Gmail without giving up control.
-          </h1>
-          <p className="max-w-xl text-base leading-7 text-[var(--text-muted)] sm:text-lg">
-            A read-only Gmail cockpit. Your messages and search embeddings stay
-            in your browser — there is no server inbox database.
-          </p>
-          <button
-            onClick={onSignIn}
-            className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[var(--accent-hover)] cursor-pointer"
-          >
-            Continue with Google
-          </button>
-          <p className="text-xs text-[var(--text-muted)]">
-            Read-only access — no compose, send, archive, or delete permissions.
-          </p>
-        </section>
-
-        {/* Features */}
-        <section className="grid gap-4 md:grid-cols-3">
-          {LANDING_FEATURES.map((feature) => (
-            <div
-              key={feature.title}
-              className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6"
-            >
-              <h3 className="text-base font-semibold">{feature.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
-                {feature.body}
-              </p>
-            </div>
-          ))}
-        </section>
-
-        {/* How it works */}
-        <section className="mt-16">
-          <h2 className="text-center text-2xl font-bold">How it works</h2>
-          <ol className="mt-6 grid gap-4 md:grid-cols-3">
-            {LANDING_STEPS.map((step, index) => (
-              <li
-                key={step.title}
-                className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6"
-              >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent)] text-sm font-semibold text-white">
-                  {index + 1}
-                </span>
-                <h3 className="mt-3 text-base font-semibold">{step.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
-                  {step.body}
-                </p>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        {/* Closing CTA */}
-        <section className="mt-16 flex flex-col items-center gap-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-8 text-center">
-          <h2 className="text-xl font-bold">Ready to clear the noise?</h2>
-          <button
-            onClick={onSignIn}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[var(--accent-hover)] cursor-pointer"
-          >
-            Continue with Google
-          </button>
-          <p className="text-[11px] text-[var(--text-muted)]">
-            By continuing you agree to the{" "}
-            <a href="/privacy" className="underline hover:text-[var(--text)]">
-              privacy notice
-            </a>
-            .
-          </p>
-        </section>
-      </main>
-    </div>
-  );
-}
+// The previous embedded `Landing` marketing copy lived here. It now
+// ships as a static Astro page at landing-astro/src/pages/index.astro,
+// overlaid onto .open-next/assets/index.html so the LCP path doesn't
+// pay the React-hydration cost. Unauthenticated visits to /app
+// redirect to / (see early-return above).

@@ -27,7 +27,7 @@ const CACHE_CONTROL =
 
 // Skip cache when ANY of these cookies are present — covers the better-auth
 // session in both prod (__Secure-) and dev variants so signed-in users
-// always see live SSR (e.g. redirect to /library).
+// always see live SSR (e.g. redirect to /app).
 const AUTH_COOKIE_FRAGMENTS = ["session_token", "session-token"];
 
 function hasAuthCookie(request) {
@@ -46,9 +46,30 @@ export default {
       return openNext.fetch(request, env, ctx);
     }
     // Auth-bearing requests pass straight through; the user is likely
-    // going to be redirected by middleware to /library or /dashboard.
+    // going to be redirected by middleware (or a server redirect on /)
+    // to /app.
     if (hasAuthCookie(request)) {
       return openNext.fetch(request, env, ctx);
+    }
+
+    // Short-circuit: the Astro landing is overlaid into
+    // `.open-next/assets/index.html` by `scripts/overlay-astro-landing.mjs`.
+    // For anon GET /, serve straight from the assets binding instead of
+    // booting the full OpenNext stack (next-server, middleware handler,
+    // Beasties pipeline, etc.). Cuts TTFB from ~250ms to ~30ms.
+    if (env.ASSETS) {
+      const assetResp = await env.ASSETS.fetch(request);
+      if (assetResp.ok) {
+        const body = await assetResp.arrayBuffer();
+        const headers = new Headers(assetResp.headers);
+        headers.set("Cache-Control", CACHE_CONTROL);
+        headers.set("x-edge-cache", "ASSET");
+        return new Response(body, {
+          status: assetResp.status,
+          statusText: assetResp.statusText,
+          headers,
+        });
+      }
     }
 
     const cache = caches.default;

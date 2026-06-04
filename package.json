@@ -14,7 +14,7 @@
     "test:e2e": "playwright test",
     "test:e2e:mobile": "playwright test --project=mobile",
     "patch:opennext": "node patches/opennext-cloudflare-externals.js",
-    "cf:build": "pnpm patch:opennext && next build --webpack && node scripts/inline-critical-css.mjs && opennextjs-cloudflare build --skipNextBuild && opennextjs-cloudflare populateCache local",
+    "cf:build": "pnpm patch:opennext && next build --webpack && node scripts/inline-critical-css.mjs && opennextjs-cloudflare build --skipNextBuild && opennextjs-cloudflare populateCache local && pnpm --filter ./landing-astro build && node scripts/overlay-astro-landing.mjs",
     "deploy": "pnpm cf:build && wrangler deploy"
   },
   "dependencies": {

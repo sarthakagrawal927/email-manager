@@ -24,7 +24,11 @@ export async function signIn() {
     credentials: "include",
     body: JSON.stringify({
       provider: "google",
-      callbackURL: "/",
+      // After OAuth completes, land users on /app (the cockpit). The
+      // marketing landing at / is the Astro static page; signed-in
+      // users skip it via the Worker's auth-cookie passthrough +
+      // server redirect.
+      callbackURL: "/app",
     }),
   });
 
@@ -34,7 +38,7 @@ export async function signIn() {
   }
 
   const data = (await res.json()) as { url?: string };
-  window.location.href = data.url ?? "/";
+  window.location.href = data.url ?? "/app";
 }
 
 export async function signOut() {

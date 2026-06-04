@@ -1,0 +1,11 @@
+# Cloudflare Pages config for the email-manager landing-astro project.
+#
+# Note: in production we do NOT deploy this as a separate Pages project.
+# The Astro `dist/` is overlaid onto the Next.js + OpenNext build via
+# `scripts/overlay-astro-landing.mjs`, producing a single Worker
+# (`email-manager`) whose ASSETS binding serves `index.html` for `/`.
+# This wrangler.toml is here only so the Astro project can stand alone
+# for local preview or future split-deploy scenarios.
+name = "email-manager-landing"
+compatibility_date = "2026-06-04"
+pages_build_output_dir = "dist"

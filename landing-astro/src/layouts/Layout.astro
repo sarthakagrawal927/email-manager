@@ -1,0 +1,53 @@
+---
+import '@/styles/landing.css';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+
+const SITE_URL = 'https://email-manager.sarthakagrawal927.workers.dev';
+// OG image lives on the Next.js Worker at /opengraph-image (file
+// convention → dynamic JSX → PNG). Astro can't trivially reproduce
+// that. The Worker still serves every non-`/` route so this URL
+// resolves after the static landing takes over `/`.
+const OG_IMAGE = `${SITE_URL}/opengraph-image`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="application-name" content="Kinetic" />
+    <meta name="theme-color" content="#fbf8ff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a1b22" media="(prefers-color-scheme: dark)" />
+
+    <link rel="canonical" href={SITE_URL} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={SITE_URL} />
+    <meta property="og:site_name" content="Kinetic" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={OG_IMAGE} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={OG_IMAGE} />
+
+    <meta name="keywords" content="Gmail triage, email filters, inbox cleanup, semantic email search, IndexedDB email" />
+
+    {/* No external fonts — the main app uses a system stack and the
+       LCP path stays one round-trip. */}
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

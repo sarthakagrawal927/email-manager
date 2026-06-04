@@ -1,0 +1,144 @@
+---
+import Layout from '@/layouts/Layout.astro';
+
+// Kinetic landing — single static page.
+//
+// Static marketing landing for /. The full Next.js app (HomeClient)
+// lives at /app. The Worker's ASSETS binding serves this `index.html`
+// directly for anon GET /, bypassing OpenNext entirely so the LCP path
+// is purely CDN-served HTML (no SSR, no React hydration, no Beasties
+// pipeline, no cold-start). Copy is hand-written from agents.md so the
+// pitch matches the product (Gmail triage, in-browser semantic search,
+// IndexedDB privacy, RFC 8058 one-click unsubscribe, sender analytics).
+
+const TITLE = 'Kinetic — Triage Gmail without giving up control';
+const DESCRIPTION =
+  'A read-only Gmail cockpit. Triage by sender behavior, search semantically in-browser, and export Gmail filters — your messages never leave your browser.';
+---
+
+<Layout title={TITLE} description={DESCRIPTION}>
+  <div class="page">
+    <nav class="nav">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">K</span>
+        <span>Kinetic</span>
+      </a>
+      <div class="nav-links">
+        <a href="/about">About</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/app">Open app</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <span class="hero-eyebrow">Read-only Gmail cockpit</span>
+      <h1>
+        Triage Gmail<br />
+        <span class="accent">without giving up control.</span>
+      </h1>
+      <p class="lede">
+        Kinetic reads your inbox to surface the senders that fill it,
+        ranks them by your actual behavior, and turns the pattern into
+        Gmail filters you can install in one click. Your messages and
+        search embeddings stay in your browser — there is no server
+        inbox database.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="/app">Open Kinetic</a>
+        <a class="btn btn-ghost" href="/about">How it works</a>
+      </div>
+      <p class="fine">
+        Read-only Gmail scope. No compose, send, archive, or delete
+        permissions.
+      </p>
+    </section>
+
+    <section class="features" aria-label="Features">
+      <article class="card">
+        <span class="card-tag">In-browser ML</span>
+        <h3>Semantic search, locally</h3>
+        <p>
+          HuggingFace Transformers (ONNX) builds embeddings inside your
+          browser and ranks results by cosine similarity. The model
+          runs client-side; queries never leave your device.
+        </p>
+      </article>
+
+      <article class="card">
+        <span class="card-tag">Privacy by default</span>
+        <h3>IndexedDB, not a server</h3>
+        <p>
+          Emails and embeddings persist in IndexedDB. API routes only
+          proxy live Gmail calls — there is no server-side inbox copy
+          and no third party in the loop.
+        </p>
+      </article>
+
+      <article class="card">
+        <span class="card-tag">RFC 8058</span>
+        <h3>One-click unsubscribe</h3>
+        <p>
+          For senders that support it, Kinetic POSTs the standards
+          one-click unsubscribe endpoint directly. For the rest, it
+          opens the unsubscribe URL in a new tab.
+        </p>
+      </article>
+
+      <article class="card">
+        <span class="card-tag">Behavioral signal</span>
+        <h3>Sender frequency analytics</h3>
+        <p>
+          See which senders and lists actually fill your inbox, ranked
+          by volume. The same ranking powers Kinetic&rsquo;s suggested
+          Gmail filter rules.
+        </p>
+      </article>
+    </section>
+
+    <section class="how" aria-label="How it works">
+      <h2>Three steps. One afternoon.</h2>
+      <ol>
+        <li class="step">
+          <span class="num">1</span>
+          <h3>Connect Gmail</h3>
+          <p>
+            Sign in with Google. Kinetic requests read-only access — no
+            compose, send, archive, or delete.
+          </p>
+        </li>
+        <li class="step">
+          <span class="num">2</span>
+          <h3>Work your inbox</h3>
+          <p>
+            Triage by queue, search semantically in-browser, and review
+            sender volume in one keyboard-driven cockpit.
+          </p>
+        </li>
+        <li class="step">
+          <span class="num">3</span>
+          <h3>Export Gmail filters</h3>
+          <p>
+            Turn recurring noise into Gmail filter XML you import
+            directly, so the rules apply even when Kinetic is closed.
+          </p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="closing">
+      <h2>Ready to clear the noise?</h2>
+      <p>
+        Open Kinetic and connect Gmail. The triage queues populate from
+        your last few thousand messages — no setup, no server upload.
+      </p>
+      <a class="btn btn-primary" href="/app">Get started</a>
+    </section>
+
+    <footer class="footer">
+      <a href="/about">About</a><span class="footer-sep">·</span>
+      <a href="/privacy">Privacy</a><span class="footer-sep">·</span>
+      <a href="/app">Open app</a>
+      <div style="margin-top:8px;">&copy; MMXXVI &middot; Kinetic</div>
+    </footer>
+  </div>
+</Layout>
