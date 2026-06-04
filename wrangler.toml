@@ -5,6 +5,12 @@ compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 
 assets = { directory = ".open-next/assets", binding = "ASSETS" }
 
+# psi-swarm flagged the LCP as 4.6s on mobile-mid with high render delay.
+# Smart placement puts the Worker near D1 so auth/session round-trips
+# don't dominate first-byte time.
+[placement]
+mode = "smart"
+
 [observability]
 enabled = true
 head_sampling_rate = 0.1
