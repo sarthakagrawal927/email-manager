@@ -1,0 +1,51 @@
+{
+  "format": "email-manager-weekly-digest",
+  "formatVersion": 1,
+  "periodStart": "2026-05-25",
+  "periodEnd": "2026-06-01",
+  "generatedAt": "2026-06-04T12:00:00.000Z",
+  "relationshipsQuiet": [
+    {
+      "senderEmail": "alice@company.com",
+      "displayName": "Alice Chen",
+      "lastMessageAt": "2026-03-15T11:00:00.000Z",
+      "priorMessageCount": 4,
+      "quietDays": 81,
+      "reason": "no_messages_in_quiet_window"
+    },
+    {
+      "senderEmail": "evan@company.com",
+      "displayName": "Evan Moss",
+      "lastMessageAt": "2026-03-23T10:00:00.000Z",
+      "priorMessageCount": 4,
+      "quietDays": 73,
+      "reason": "no_messages_in_quiet_window"
+    }
+  ],
+  "threadsToRevisit": [
+    {
+      "threadId": "t-long",
+      "subject": "Thread about onboarding",
+      "lastMessageAt": "2026-03-23T10:00:00.000Z",
+      "reason": "long_thread_stale",
+      "messageCount": 4
+    },
+    {
+      "threadId": "t-starred",
+      "subject": "Follow up on proposal",
+      "lastMessageAt": "2026-04-01T12:00:00.000Z",
+      "reason": "starred_stale",
+      "messageCount": 1
+    }
+  ],
+  "weeklyThemes": [
+    {
+      "id": "scheduling",
+      "label": "Meetings & scheduling",
+      "messageCount": 2,
+      "topDomains": [
+        "company.com"
+      ]
+    }
+  ]
+}

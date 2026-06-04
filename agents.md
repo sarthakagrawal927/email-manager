@@ -92,3 +92,5 @@ pnpm lint     # next lint
 <!-- FLEET-GUIDANCE:END -->
 
 ## Active context
+
+- **Email memories / weekly digest** — planned in `docs/plans/2026-06-04-email-memories-digest.md`; pure builder in `src/lib/digest.ts`, fixtures in `fixtures/`. Verify: `pnpm dlx tsx scripts/verify-digest-fixture.mjs`. No `#digest` UI yet.

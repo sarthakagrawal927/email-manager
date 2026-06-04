@@ -1,0 +1,110 @@
+[
+  {
+    "id": "e1",
+    "threadId": "t-alice-1",
+    "subject": "Project kickoff",
+    "from": "Alice Chen <alice@company.com>",
+    "date": "2026-01-10T10:00:00.000Z",
+    "snippet": "Let's align on milestones.",
+    "labelIds": ["INBOX"]
+  },
+  {
+    "id": "e2",
+    "threadId": "t-alice-1",
+    "subject": "Re: Project kickoff",
+    "from": "Alice Chen <alice@company.com>",
+    "date": "2026-02-05T14:00:00.000Z",
+    "snippet": "Updated timeline attached.",
+    "labelIds": ["INBOX"]
+  },
+  {
+    "id": "e3",
+    "threadId": "t-alice-2",
+    "subject": "Invoice #4412",
+    "from": "Alice Chen <alice@company.com>",
+    "date": "2026-03-01T09:00:00.000Z",
+    "snippet": "Please review the invoice.",
+    "labelIds": ["INBOX"]
+  },
+  {
+    "id": "e4",
+    "threadId": "t-alice-2",
+    "subject": "Re: Invoice #4412",
+    "from": "Alice Chen <alice@company.com>",
+    "date": "2026-03-15T11:00:00.000Z",
+    "snippet": "Thanks for confirming.",
+    "labelIds": ["INBOX"]
+  },
+  {
+    "id": "e5",
+    "threadId": "t-carol-1",
+    "subject": "Meeting invite: design review",
+    "from": "Carol Diaz <carol@company.com>",
+    "date": "2026-05-28T16:00:00.000Z",
+    "snippet": "Thursday 3pm PT.",
+    "labelIds": ["INBOX"]
+  },
+  {
+    "id": "e6",
+    "threadId": "t-carol-1",
+    "subject": "Re: Meeting invite: design review",
+    "from": "Carol Diaz <carol@company.com>",
+    "date": "2026-06-01T08:00:00.000Z",
+    "snippet": "Works for me.",
+    "labelIds": ["INBOX"]
+  },
+  {
+    "id": "e7",
+    "threadId": "t-starred",
+    "subject": "Follow up on proposal",
+    "from": "Dana Lee <dana@partner.io>",
+    "date": "2026-04-01T12:00:00.000Z",
+    "snippet": "Can we revisit terms?",
+    "labelIds": ["INBOX", "STARRED"]
+  },
+  {
+    "id": "e8",
+    "threadId": "t-long",
+    "subject": "Thread about onboarding",
+    "from": "Evan Moss <evan@company.com>",
+    "date": "2026-03-20T10:00:00.000Z",
+    "snippet": "Step 1 docs.",
+    "labelIds": ["INBOX"]
+  },
+  {
+    "id": "e9",
+    "threadId": "t-long",
+    "subject": "Re: Thread about onboarding",
+    "from": "Evan Moss <evan@company.com>",
+    "date": "2026-03-21T10:00:00.000Z",
+    "snippet": "Step 2 docs.",
+    "labelIds": ["INBOX"]
+  },
+  {
+    "id": "e10",
+    "threadId": "t-long",
+    "subject": "Re: Thread about onboarding",
+    "from": "Evan Moss <evan@company.com>",
+    "date": "2026-03-22T10:00:00.000Z",
+    "snippet": "Step 3 docs.",
+    "labelIds": ["INBOX"]
+  },
+  {
+    "id": "e11",
+    "threadId": "t-long",
+    "subject": "Re: Thread about onboarding",
+    "from": "Evan Moss <evan@company.com>",
+    "date": "2026-03-23T10:00:00.000Z",
+    "snippet": "Step 4 docs.",
+    "labelIds": ["INBOX"]
+  },
+  {
+    "id": "e12",
+    "threadId": "t-newsletter",
+    "subject": "Weekly digest from SaaS Weekly",
+    "from": "SaaS Weekly <newsletter@saasweekly.com>",
+    "date": "2026-05-30T07:00:00.000Z",
+    "snippet": "Top stories this week.",
+    "labelIds": ["INBOX"]
+  }
+]
