@@ -27,7 +27,7 @@ const CACHE_CONTROL =
 
 // Skip cache when ANY of these cookies are present — covers the better-auth
 // session in both prod (__Secure-) and dev variants so signed-in users
-// always see live SSR (e.g. redirect to /app).
+// always see live SSR (e.g. redirect to /library).
 const AUTH_COOKIE_FRAGMENTS = ["session_token", "session-token"];
 
 function hasAuthCookie(request) {
@@ -46,8 +46,7 @@ export default {
       return openNext.fetch(request, env, ctx);
     }
     // Auth-bearing requests pass straight through; the user is likely
-    // going to be redirected by middleware (or a server redirect on /)
-    // to /app.
+    // going to be redirected by middleware to /library or /dashboard.
     if (hasAuthCookie(request)) {
       return openNext.fetch(request, env, ctx);
     }
@@ -57,14 +56,41 @@ export default {
     // For anon GET /, serve straight from the assets binding instead of
     // booting the full OpenNext stack (next-server, middleware handler,
     // Beasties pipeline, etc.). Cuts TTFB from ~250ms to ~30ms.
+    //
+    // The Workers Static Assets binding does NOT auto-compress its
+    // responses (Lighthouse flagged ~80 KB wasted on uncompressed HTML
+    // even with CF Edge cache HIT). Compress with gzip here so the
+    // response — and the downstream CF Edge cache entry — is small.
     if (env.ASSETS) {
       const assetResp = await env.ASSETS.fetch(request);
-      if (assetResp.ok) {
-        const body = await assetResp.arrayBuffer();
+      if (assetResp.ok && assetResp.body) {
+        const acceptEnc = request.headers.get("accept-encoding") ?? "";
+        const wantsGzip = acceptEnc.includes("gzip");
         const headers = new Headers(assetResp.headers);
         headers.set("Cache-Control", CACHE_CONTROL);
         headers.set("x-edge-cache", "ASSET");
-        return new Response(body, {
+
+        if (wantsGzip && !headers.has("content-encoding")) {
+          headers.set("content-encoding", "gzip");
+          headers.delete("content-length");
+          // `Vary: Accept-Encoding` so a future no-encoding client
+          // gets a separately negotiated entry.
+          const vary = headers.get("vary");
+          headers.set(
+            "vary",
+            vary ? `${vary}, Accept-Encoding` : "Accept-Encoding",
+          );
+          return new Response(
+            assetResp.body.pipeThrough(new CompressionStream("gzip")),
+            {
+              status: assetResp.status,
+              statusText: assetResp.statusText,
+              headers,
+            },
+          );
+        }
+
+        return new Response(assetResp.body, {
           status: assetResp.status,
           statusText: assetResp.statusText,
           headers,
