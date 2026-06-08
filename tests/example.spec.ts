@@ -26,25 +26,14 @@ test.describe("landing page", () => {
       }),
     ).toBeVisible();
 
-    // The three feature cards.
+    await expect(page.getByText(/Read-only Gmail cockpit/i)).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Triage queues" }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Sender analytics" }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "One-click unsubscribe" }),
-    ).toBeVisible();
-
-    // "How it works" section.
-    await expect(
-      page.getByRole("heading", { name: /how it works/i }),
+      page.getByText(/search semantically in-browser/i),
     ).toBeVisible();
 
     // The primary CTA.
     await expect(
-      page.getByRole("button", { name: /continue with google/i }).first(),
+      page.getByRole("link", { name: /open kinetic/i }).first(),
     ).toBeVisible();
 
     // No horizontal scroll at this viewport.
@@ -58,9 +47,7 @@ test.describe("landing page", () => {
 
   test("the primary CTA is a large enough touch target", async ({ page }) => {
     await page.goto("/");
-    const cta = page
-      .getByRole("button", { name: /continue with google/i })
-      .first();
+    const cta = page.getByRole("link", { name: /open kinetic/i }).first();
     const box = await cta.boundingBox();
     expect(box).not.toBeNull();
     // WCAG 2.5.5 / iOS HIG: tap targets must be at least 44x44px.
