@@ -63,6 +63,16 @@ export default {
     // response — and the downstream CF Edge cache entry — is small.
     if (env.ASSETS) {
       const assetResp = await env.ASSETS.fetch(request);
+      // The assets binding answers If-None-Match revalidations with 304.
+      // Pass those through — falling through would hand the request to
+      // Next.js, which serves the fallback landing instead of the Astro
+      // page browsers already hold in cache.
+      if (assetResp.status === 304) {
+        const headers = new Headers(assetResp.headers);
+        headers.set("Cache-Control", CACHE_CONTROL);
+        headers.set("x-edge-cache", "ASSET");
+        return new Response(null, { status: 304, headers });
+      }
       if (assetResp.ok && assetResp.body) {
         const acceptEnc = request.headers.get("accept-encoding") ?? "";
         const wantsGzip = acceptEnc.includes("gzip");
@@ -86,6 +96,13 @@ export default {
               status: assetResp.status,
               statusText: assetResp.statusText,
               headers,
+              // The body is ALREADY gzip-encoded. Without this flag the
+              // Workers runtime treats it as raw and gzips it a second
+              // time (encodeBody defaults to "automatic"), so every
+              // gzip-accepting browser received double-compressed bytes
+              // — i.e. a garbled landing page. Verified against local
+              // workerd; Cloudflare's own asset server sets the same.
+              encodeBody: "manual",
             },
           );
         }

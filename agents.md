@@ -61,7 +61,7 @@ pnpm lint     # next lint
 - **Client-side ML**: HuggingFace Transformers (ONNX runtime) generates embeddings in-browser. `next.config.ts` aliases out `sharp` and `onnxruntime-node`, marks `@huggingface/transformers` as `serverExternalPackage`.
 - **Semantic search confirmed working** — `SemanticSearch.tsx` and `lib/semantic-search.ts` are functional.
 - **Single-page app pattern**: all views in `page.tsx` controlled by `view` state synced to URL hash.
-- **Token refresh**: `lib/auth.ts` manually refreshes Google OAuth tokens via a better-auth callback.
+- **Token refresh**: `lib/get-access-token.ts` refreshes expired Google OAuth tokens via better-auth's `auth.api.getAccessToken` (refresh token stored thanks to `accessType: "offline"`).
 - **Rate limiting**: Gmail API retried on 429 with exponential backoff (1s/2s/4s); fetches batched in groups of 25.
 - **Read-only**: `gmail.readonly` scope only. No compose/reply/archive/delete.
 - **Unsubscribe**: RFC 8058 one-click POST + fallback browser-open for mailto/HTTP links.

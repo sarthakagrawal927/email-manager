@@ -1,6 +1,6 @@
 "use client";
 
-import { signOut } from "@/lib/auth-client";
+import { signIn, signOut } from "@/lib/auth-client";
 import { useSession } from "@/lib/use-session";
 import {
   trackActivated,
@@ -188,14 +188,38 @@ export default function HomeClient() {
   }
 
   if (!session) {
-    // Unauthenticated users at /app bounce to the marketing landing
-    // (Astro static page overlaid onto /). Sign-in is launched from
-    // there via the CTA which calls auth-client.signIn() through this
-    // same code path on return (callbackURL: "/app").
-    if (typeof window !== "undefined") {
-      window.location.replace("/");
-    }
-    return null;
+    // Unauthenticated users at /app get the sign-in screen. The Astro
+    // landing at / is static (no JS), so its "Open Kinetic" CTA links
+    // here — this is the only place that can launch the Google OAuth
+    // flow (auth-client.signIn(), callbackURL: "/app"). Redirecting
+    // back to / would loop: / → /app → / forever.
+    return (
+      <main className="flex h-screen flex-col items-center justify-center gap-4 px-6 text-center">
+        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent)] text-xl font-bold text-white">
+          K
+        </span>
+        <h1 className="text-xl font-semibold">Sign in to Kinetic</h1>
+        <p className="max-w-sm text-sm text-[var(--text-muted)]">
+          Connect Gmail with read-only access to start triaging. Your
+          messages and search embeddings stay in your browser.
+        </p>
+        <button
+          type="button"
+          onClick={() => signIn()}
+          className="cursor-pointer rounded-lg bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)]"
+        >
+          Sign in with Google
+        </button>
+        {/* Plain <a>, not next/link: `/` must be a full document load so
+            the Worker's ASSETS short-circuit serves the static Astro
+            landing — client-side navigation would render the Next.js
+            fallback page instead. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a href="/" className="text-xs text-[var(--text-muted)] underline">
+          Back to landing
+        </a>
+      </main>
+    );
   }
 
   const isPrimaryView = view === "today" || view === "inbox";

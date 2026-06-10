@@ -1,6 +1,4 @@
 import { createAuth } from "@/lib/auth";
-import { drizzle } from "drizzle-orm/d1";
-import { sql } from "drizzle-orm";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/headers";
 
@@ -13,11 +11,23 @@ export async function getGmailAccessToken(
   const session = await auth.api.getSession({ headers });
   if (!session?.user?.id) return null;
 
-  const db = drizzle(env.DB);
-  const result = await db.run(
-    sql`SELECT accessToken FROM "account" WHERE userId = ${session.user.id} AND providerId = 'google' ORDER BY createdAt DESC LIMIT 1`
-  );
-
-  const row = result.results?.[0] as Record<string, unknown> | undefined;
-  return (row?.accessToken as string) ?? null;
+  // better-auth's getAccessToken returns the stored Google access token
+  // and transparently refreshes it (via the stored refresh token —
+  // accessType: "offline") when it is about to expire. The previous raw
+  // `SELECT accessToken FROM account` never refreshed, so Gmail calls
+  // started failing with 401 an hour after sign-in and the client
+  // force-signed the user out.
+  try {
+    const tokens = await auth.api.getAccessToken({
+      body: { providerId: "google", userId: session.user.id },
+      headers,
+    });
+    return tokens?.accessToken ?? null;
+  } catch (err) {
+    console.error(
+      "getGmailAccessToken: failed to get/refresh Google access token:",
+      err instanceof Error ? err.message : err
+    );
+    return null;
+  }
 }
