@@ -108,7 +108,18 @@ export function GmailFilterBuilder() {
   }, [fetchPatterns, sampleSize]);
 
   useEffect(() => {
-    setSelectedIds(new Set(suggestions.slice(0, 8).map((suggestion) => suggestion.id)));
+    setSelectedIds((current) => {
+      const validIds = new Set(suggestions.map((suggestion) => suggestion.id));
+      const preserved = new Set(
+        [...current].filter((id) => validIds.has(id)),
+      );
+
+      if (preserved.size > 0) {
+        return preserved;
+      }
+
+      return new Set(suggestions.slice(0, 8).map((suggestion) => suggestion.id));
+    });
   }, [suggestions]);
 
   async function copyText(id: string, text: string) {
