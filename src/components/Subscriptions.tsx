@@ -23,9 +23,9 @@ export function Subscriptions() {
       const subs = (data.emails ?? []).filter((e: Email) => e.unsubscribeLink);
       const seen = new Set<string>();
       const unique = subs.filter((e: Email) => {
-        const domain = e.from.match(/@([^>]+)/)?.[1]?.toLowerCase();
-        if (!domain || seen.has(domain)) return false;
-        seen.add(domain);
+        const sender = e.from.match(/<([^>]+)>/)?.[1]?.toLowerCase().trim() ?? e.from.toLowerCase().trim();
+        if (!sender || seen.has(sender)) return false;
+        seen.add(sender);
         return true;
       });
       setEmails(unique);

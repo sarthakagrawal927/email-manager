@@ -40,6 +40,7 @@ export function EmailList({
   const [focusIdx, setFocusIdx] = useState(-1);
   const itemsRef = useRef<HTMLButtonElement[]>([]);
   const searchRef = useRef<HTMLInputElement>(null);
+  const safeFocusIdx = emails.length === 0 ? -1 : Math.min(focusIdx, emails.length - 1);
 
   const unreadCount = useMemo(
     () => emails.filter((e) => e.labelIds.includes("UNREAD")).length,
@@ -66,20 +67,20 @@ export function EmailList({
       } else if (e.key === "k" || e.key === "ArrowUp") {
         e.preventDefault();
         setFocusIdx((i) => Math.max(i - 1, 0));
-      } else if (e.key === "Enter" && focusIdx >= 0) {
+      } else if (e.key === "Enter" && safeFocusIdx >= 0) {
         e.preventDefault();
-        onSelect(emails[focusIdx]);
+        onSelect(emails[safeFocusIdx]);
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [emails, focusIdx, onSelect]);
+  }, [emails, safeFocusIdx, onSelect]);
 
   useEffect(() => {
-    if (focusIdx >= 0 && itemsRef.current[focusIdx]) {
-      itemsRef.current[focusIdx].scrollIntoView({ block: "nearest" });
+    if (safeFocusIdx >= 0 && itemsRef.current[safeFocusIdx]) {
+      itemsRef.current[safeFocusIdx].scrollIntoView({ block: "nearest" });
     }
-  }, [focusIdx]);
+  }, [safeFocusIdx]);
 
   const title = label ? LABEL_NAMES[label] ?? label : "Mail";
 
@@ -152,7 +153,7 @@ export function EmailList({
           <>
             {emails.map((email, idx) => {
               const unread = email.labelIds.includes("UNREAD");
-              const focused = idx === focusIdx;
+              const focused = idx === safeFocusIdx;
               const selected = email.id === selectedId;
               return (
                 <button
