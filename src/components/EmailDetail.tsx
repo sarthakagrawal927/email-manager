@@ -52,10 +52,11 @@ export function EmailDetail({ email, onBack, showBack = true }: Props) {
     try {
       const res = await fetch(`/api/emails/${email.id}/unsubscribe`, { method: "POST" });
       const data = await res.json();
-      if (!data.ok && data.fallbackUrl) {
+      if (data.ok) {
+        trackCoreAction("unsubscribed");
+      } else if (data.fallbackUrl) {
         window.open(data.fallbackUrl, "_blank", "noopener,noreferrer");
       }
-      trackCoreAction("unsubscribed");
     } finally {
       setActing(false);
     }
