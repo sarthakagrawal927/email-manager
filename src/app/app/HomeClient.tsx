@@ -73,7 +73,7 @@ export default function HomeClient() {
 
   const setView = useCallback((v: View) => {
     setViewState(v);
-    window.history.pushState(null, "", `#${v}`);
+    window.location.hash = v;
   }, []);
 
   const [emails, setEmails] = useState<Email[]>([]);
