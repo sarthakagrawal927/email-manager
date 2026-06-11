@@ -78,7 +78,13 @@ export function parseMessage(msg: any): Email {
   if (unsubHeader) {
     const httpMatch = unsubHeader.match(/<(https?:\/\/[^>]+)>/);
     const mailtoMatch = unsubHeader.match(/<(mailto:[^>]+)>/);
-    unsubscribeLink = httpMatch?.[1] ?? mailtoMatch?.[1] ?? null;
+    // Prefer the HTTPS one-click endpoint when both forms are present,
+    // even if the mailto URI appears first in the header.
+    if (httpMatch?.[1]) {
+      unsubscribeLink = httpMatch[1];
+    } else if (mailtoMatch?.[1]) {
+      unsubscribeLink = mailtoMatch[1];
+    }
   }
 
   return {
