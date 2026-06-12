@@ -84,6 +84,7 @@ export default function HomeClient() {
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const fetchingRef = useRef(false);
+  const fetchSeqRef = useRef(0);
   const trackedSessionRef = useRef<string | null>(null);
   const activatedRef = useRef(false);
 
@@ -124,6 +125,7 @@ export default function HomeClient() {
     async (pageToken?: string) => {
       if (fetchingRef.current) return;
       fetchingRef.current = true;
+      const requestSeq = ++fetchSeqRef.current;
       setLoading(true);
       setError(null);
 
@@ -155,6 +157,10 @@ export default function HomeClient() {
           return;
         }
 
+        // Ignore stale responses if the user changed view/search and a
+        // newer request has already started.
+        if (requestSeq !== fetchSeqRef.current) return;
+
         if (pageToken) {
           setEmails((prev) => [...prev, ...data.emails]);
         } else {
@@ -162,9 +168,11 @@ export default function HomeClient() {
         }
         setNextPageToken(data.nextPageToken);
       } catch (err) {
+        if (requestSeq !== fetchSeqRef.current) return;
         console.error("Email fetch exception:", err);
         setError("Failed to load emails");
       } finally {
+        if (requestSeq !== fetchSeqRef.current) return;
         setLoading(false);
         fetchingRef.current = false;
       }
