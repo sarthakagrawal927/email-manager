@@ -48,6 +48,14 @@ export function EmailList({
   );
 
   useEffect(() => {
+    if (emails.length === 0) {
+      setFocusIdx(-1);
+      return;
+    }
+    setFocusIdx((current) => Math.min(current, emails.length - 1));
+  }, [emails.length]);
+
+  useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const isTyping =
         document.activeElement instanceof HTMLInputElement ||
