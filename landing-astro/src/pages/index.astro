@@ -11,9 +11,9 @@ import Layout from '@/layouts/Layout.astro';
 // pitch matches the product (Gmail triage, in-browser semantic search,
 // IndexedDB privacy, RFC 8058 one-click unsubscribe, sender analytics).
 
-const TITLE = 'Kinetic — Triage Gmail without giving up control';
+const TITLE = 'Kinetic — Semantic Gmail search that runs in your browser';
 const DESCRIPTION =
-  'A read-only Gmail cockpit. Triage by sender behavior, search semantically in-browser, and export Gmail filters — your messages never leave your browser.';
+  'Gmail inbox workspace with local-first semantic search. Your emails and embeddings stay in your browser. Read-only Gmail scope, zero server storage.';
 ---
 
 <Layout title={TITLE} description={DESCRIPTION}>
@@ -31,26 +31,70 @@ const DESCRIPTION =
     </nav>
 
     <section class="hero">
-      <span class="hero-eyebrow">Read-only Gmail cockpit</span>
+      <span class="hero-eyebrow">Local-first Gmail search</span>
       <h1>
-        Triage Gmail<br />
-        <span class="accent">without giving up control.</span>
+        Search your Gmail by meaning<br />
+        <span class="accent">without uploading a single email.</span>
       </h1>
       <p class="lede">
-        Kinetic reads your inbox to surface the senders that fill it,
-        ranks them by your actual behavior, and turns the pattern into
-        Gmail filters you can install in one click. Your messages and
-        search embeddings stay in your browser — there is no server
-        inbox database.
+        Kinetic is a Gmail workspace with semantic search that runs
+        100% in your browser. Type what you remember — &ldquo;the lease
+        renewal from last spring&rdquo; — and find it without keywords.
+        Your inbox and embeddings stay in IndexedDB. Zero server-side
+        email storage.
       </p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="/app">Open Kinetic</a>
-        <a class="btn btn-ghost" href="/about">How it works</a>
+        <a class="btn btn-primary" href="/app">Connect Gmail and search</a>
       </div>
       <p class="fine">
-        Read-only Gmail scope. No compose, send, archive, or delete
-        permissions.
+        Read-only Gmail scope. 0 bytes of email content stored on our
+        servers.
       </p>
+
+      <div class="demo" aria-label="Semantic search preview">
+        <div class="demo-frame">
+          <div class="demo-bar">
+            <span class="demo-dot" aria-hidden="true"></span>
+            <span class="demo-dot" aria-hidden="true"></span>
+            <span class="demo-dot" aria-hidden="true"></span>
+            <span class="demo-url">kinetic / semantic search</span>
+          </div>
+          <div class="demo-body">
+            <div class="demo-search">
+              <span class="demo-search-icon" aria-hidden="true">&#9906;</span>
+              <span class="demo-query">flight confirmation from last summer</span>
+              <span class="demo-kbd">Enter</span>
+            </div>
+            <ul class="demo-results">
+              <li>
+                <span class="demo-rank">0.91</span>
+                <div>
+                  <strong>United Airlines</strong>
+                  <span>Your trip to SFO — boarding pass for Jul 14</span>
+                </div>
+              </li>
+              <li>
+                <span class="demo-rank">0.87</span>
+                <div>
+                  <strong>Airbnb</strong>
+                  <span>Reservation confirmed: Mission, San Francisco</span>
+                </div>
+              </li>
+              <li>
+                <span class="demo-rank">0.82</span>
+                <div>
+                  <strong>Google Calendar</strong>
+                  <span>Flight UA 215 — Wed, Jul 14, 6:40 AM</span>
+                </div>
+              </li>
+            </ul>
+            <p class="demo-foot">
+              Ranked by cosine similarity against embeddings generated
+              locally with HuggingFace Transformers (ONNX).
+            </p>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="features" aria-label="Features">
@@ -126,19 +170,27 @@ const DESCRIPTION =
     </section>
 
     <section class="closing">
-      <h2>Ready to clear the noise?</h2>
+      <h2>The only inbox tool that can&rsquo;t leak your email.</h2>
       <p>
-        Open Kinetic and connect Gmail. The triage queues populate from
-        your last few thousand messages — no setup, no server upload.
+        We physically cannot read your messages. Embeddings, search
+        index, and message bodies live in your browser&rsquo;s
+        IndexedDB. The server only proxies live Gmail calls.
       </p>
-      <a class="btn btn-primary" href="/app">Get started</a>
+      <a class="btn btn-primary" href="/app">Connect Gmail and search</a>
     </section>
 
     <footer class="footer">
-      <a href="/about">About</a><span class="footer-sep">·</span>
-      <a href="/privacy">Privacy</a><span class="footer-sep">·</span>
-      <a href="/app">Open app</a>
-      <div style="margin-top:8px;">&copy; MMXXVI &middot; Kinetic</div>
+      <p class="footer-line">
+        Built by one engineer who got tired of Gmail&rsquo;s keyword
+        search. Open source-ready stack: Next.js, IndexedDB, ONNX
+        Transformers, RFC 8058.
+      </p>
+      <div class="footer-links">
+        <a href="/about">About</a><span class="footer-sep">·</span>
+        <a href="/privacy">Privacy</a><span class="footer-sep">·</span>
+        <a href="/app">Open app</a>
+      </div>
+      <div class="footer-copy">&copy; MMXXVI &middot; Kinetic</div>
     </footer>
   </div>
 </Layout>
