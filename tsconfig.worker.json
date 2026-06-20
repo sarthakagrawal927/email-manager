@@ -10,9 +10,7 @@
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "ignoreDeprecations": "6.0",
     "types": ["@cloudflare/workers-types", "node"],
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }

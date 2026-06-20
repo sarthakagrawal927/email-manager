@@ -87,7 +87,6 @@ function SidebarBody({ view, onNavigate, onSignOut, userImage, userName }: Props
 
       <div className="p-3 border-t border-[var(--border)] flex items-center gap-2">
         {userImage && (
-          // eslint-disable-next-line @next/next/no-img-element
           <img src={userImage} alt="" className="w-7 h-7 rounded-full" />
         )}
         <span className="text-sm truncate flex-1" title={userName}>

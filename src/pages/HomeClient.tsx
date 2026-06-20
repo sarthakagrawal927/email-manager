@@ -222,7 +222,6 @@ export default function HomeClient() {
             the Worker's ASSETS short-circuit serves the static Astro
             landing — client-side navigation would render the Next.js
             fallback page instead. */}
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a href="/" className="text-xs text-[var(--text-muted)] underline">
           Back to landing
         </a>
