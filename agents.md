@@ -35,15 +35,12 @@ src/
     Subscriptions.tsx     # Deduplicated unsubscribeable senders
     Analytics.tsx         # Sender frequency analysis (bar charts)
     SemanticSearch.tsx    # In-browser vector search UI (confirmed working)
-    SaasMakerAnalytics.tsx
-    saasmaker-feedback.tsx
   lib/
     auth.ts               # better-auth config + Google token refresh
     gmail.ts              # Gmail REST API client (exponential backoff on 429)
     db.ts                 # IndexedDB schema + helpers
     embeddings.ts         # HuggingFace Transformers ONNX (in-browser)
     semantic-search.ts    # Cosine similarity search over stored embeddings
-    saasmaker.ts          # SaasMaker SDK
 tests/
   example.spec.ts         # Playwright e2e
 ```
