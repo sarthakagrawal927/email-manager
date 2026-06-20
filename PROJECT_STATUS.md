@@ -10,7 +10,7 @@ Email Manager is a Gmail inbox workspace with local-first semantic search. It si
 
 - Gmail read-only inbox workspace (triage, semantic search, analytics, unsubscribe)
 - Client-side IndexedDB cache + in-browser embeddings
-- **De-OpenNext migration (2026-06-20):** Vite SPA + Hono worker on Cloudflare Workers; Astro landing at `/`; better-auth on D1
+- **De-OpenNext migration (2026-06-20):** Vite SPA + Hono worker on Cloudflare Workers; Astro landing at `/`; better-auth on D1; D1 is the only server database (Turso `@libsql/client` residue removed)
 - **Email memories / weekly digest prototype** (brief + fixture-backed logic + TLL export verification, no UI yet)
 
 ## Planned Next
