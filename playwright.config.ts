@@ -16,21 +16,17 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:8787",
     trace: "on-first-retry",
   },
   webServer: {
-    // `--webpack` matches the project's build config (Next 16 defaults to
-    // Turbopack, but email-manager carries a webpack config).
-    command: "pnpm exec next dev --webpack",
-    url: "http://localhost:3000",
+    command: "pnpm build && wrangler dev",
+    url: "http://localhost:8787",
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 300_000,
   },
   projects: [
-    // Desktop baseline.
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    // Mobile-viewport project — iPhone 13 is 390px wide, the mobile target.
     { name: "mobile", use: { ...devices["iPhone 13"] } },
   ],
 });

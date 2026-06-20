@@ -1,14 +1,17 @@
-const nextCoreWebVitals = require("eslint-config-next/core-web-vitals");
+import eslint from "@eslint/js";
+import tseslint from "typescript-eslint";
 
-module.exports = [
-  ...nextCoreWebVitals,
+export default tseslint.config(
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
   {
     rules: {
-      "react-hooks/refs": "warn",
-      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/refs": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
   {
-    ignores: [".next/**", ".open-next/**", ".wrangler/**", "next-env.d.ts"],
+    ignores: [".next/**", ".open-next/**", ".wrangler/**", "dist/**", "landing-astro/dist/**"],
   },
-];
+);

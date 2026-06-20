@@ -1,1 +1,0 @@
-This folder contains the built output assets for the worker "email-manager" generated at 2026-04-26T05:10:03.189Z.

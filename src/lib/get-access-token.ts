@@ -1,12 +1,9 @@
-import { createAuth } from "@/lib/auth";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-import type { ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/headers";
+import { createAuth, type AuthEnv } from "./auth";
 
 export async function getGmailAccessToken(
-  headers: ReadonlyHeaders
+  env: AuthEnv,
+  headers: Headers,
 ): Promise<string | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { env } = getCloudflareContext() as any;
   const auth = createAuth(env);
   const session = await auth.api.getSession({ headers });
   if (!session?.user?.id) return null;
@@ -26,7 +23,7 @@ export async function getGmailAccessToken(
   } catch (err) {
     console.error(
       "getGmailAccessToken: failed to get/refresh Google access token:",
-      err instanceof Error ? err.message : err
+      err instanceof Error ? err.message : err,
     );
     return null;
   }

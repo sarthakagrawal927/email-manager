@@ -18,39 +18,32 @@ test.describe("landing page", () => {
 
     await expect(page).toHaveTitle(/Kinetic/i);
 
-    // Hero value prop.
     await expect(
       page.getByRole("heading", {
-        name: /triage gmail without giving up control/i,
+        name: /search your gmail by meaning/i,
         level: 1,
       }),
     ).toBeVisible();
 
-    await expect(page.getByText(/Read-only Gmail cockpit/i)).toBeVisible();
+    await expect(page.getByText(/local-first gmail search/i)).toBeVisible();
+    await expect(page.getByText(/100% in your browser/i)).toBeVisible();
+
     await expect(
-      page.getByText(/search semantically in-browser/i),
+      page.getByRole("link", { name: /connect gmail and search/i }).first(),
     ).toBeVisible();
 
-    // The primary CTA.
-    await expect(
-      page.getByRole("link", { name: /open kinetic/i }).first(),
-    ).toBeVisible();
-
-    // No horizontal scroll at this viewport.
     const overflow = await page.evaluate(
       () =>
-        document.documentElement.scrollWidth >
-        document.documentElement.clientWidth,
+        document.documentElement.scrollWidth > document.documentElement.clientWidth,
     );
     expect(overflow).toBe(false);
   });
 
   test("the primary CTA is a large enough touch target", async ({ page }) => {
     await page.goto("/");
-    const cta = page.getByRole("link", { name: /open kinetic/i }).first();
+    const cta = page.getByRole("link", { name: /connect gmail and search/i }).first();
     const box = await cta.boundingBox();
     expect(box).not.toBeNull();
-    // WCAG 2.5.5 / iOS HIG: tap targets must be at least 44x44px.
     expect(box!.height).toBeGreaterThanOrEqual(44);
   });
 });

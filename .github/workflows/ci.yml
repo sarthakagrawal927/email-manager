@@ -20,4 +20,4 @@ jobs:
 
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm lint
-      - run: pnpm cf:build
+      - run: pnpm build

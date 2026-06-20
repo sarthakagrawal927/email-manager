@@ -4,7 +4,11 @@ function headers(accessToken: string) {
   return { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" };
 }
 
-async function gmailFetch(accessToken: string, path: string, init?: RequestInit) {
+async function gmailFetch<T = unknown>(
+  accessToken: string,
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
   for (let attempt = 0; attempt < 3; attempt++) {
     const res = await fetch(`${GMAIL_API}${path}`, {
       ...init,
@@ -21,7 +25,7 @@ async function gmailFetch(accessToken: string, path: string, init?: RequestInit)
       try { err.details = await res.json(); } catch {}
       throw err;
     }
-    return res.json();
+    return res.json() as Promise<T>;
   }
   const err: any = new Error("Gmail API 429: Too Many Requests (after retries)");
   err.status = 429;
@@ -42,19 +46,30 @@ export interface Email {
   unsubscribePost: boolean;
 }
 
+function decodeBase64Url(data: string): string {
+  const base64 = data.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
+}
+
 function decodeBody(payload: any): string {
   if (payload.body?.data) {
-    return Buffer.from(payload.body.data, "base64url").toString("utf-8");
+    return decodeBase64Url(payload.body.data);
   }
   if (payload.parts) {
     for (const part of payload.parts) {
       if (part.mimeType === "text/html" && part.body?.data) {
-        return Buffer.from(part.body.data, "base64url").toString("utf-8");
+        return decodeBase64Url(part.body.data);
       }
     }
     for (const part of payload.parts) {
       if (part.mimeType === "text/plain" && part.body?.data) {
-        return Buffer.from(part.body.data, "base64url").toString("utf-8");
+        return decodeBase64Url(part.body.data);
       }
       if (part.parts) {
         const nested = decodeBody(part);
@@ -114,7 +129,10 @@ export async function listEmails(
     for (const l of options.labelIds) params.append("labelIds", l);
   }
 
-  const listData = await gmailFetch(accessToken, `/messages?${params}`);
+  const listData = await gmailFetch<{
+    messages?: Array<{ id: string }>;
+    nextPageToken?: string;
+  }>(accessToken, `/messages?${params}`);
 
   if (!listData.messages?.length) {
     return { emails: [], nextPageToken: null };

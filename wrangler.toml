@@ -1,16 +1,10 @@
 name = "email-manager"
-# Custom entry wraps OpenNext to add CF Edge cache on GET / — see worker.mjs.
-# The wrapped OpenNext handler is imported as the inner fetch; DOs are
-# re-exported from the same source so wrangler can still bind them.
-main = "worker.mjs"
+main = "src/worker.ts"
 compatibility_date = "2025-09-23"
 compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 
-assets = { directory = ".open-next/assets", binding = "ASSETS" }
+assets = { directory = "dist", binding = "ASSETS", not_found_handling = "single-page-application" }
 
-# psi-swarm flagged the LCP as 4.6s on mobile-mid with high render delay.
-# Smart placement puts the Worker near D1 so auth/session round-trips
-# don't dominate first-byte time.
 [placement]
 mode = "smart"
 

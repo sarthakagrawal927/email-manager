@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-06-04
+Last updated: 2026-06-20
 
 ## Current Scope
 
@@ -10,7 +10,7 @@ Email Manager is a Gmail inbox workspace with local-first semantic search. It si
 
 - Gmail read-only inbox workspace (triage, semantic search, analytics, unsubscribe)
 - Client-side IndexedDB cache + in-browser embeddings
-- Cloudflare Workers deploy + better-auth on D1
+- **De-OpenNext migration (2026-06-20):** Vite SPA + Hono worker on Cloudflare Workers; Astro landing at `/`; better-auth on D1
 - **Email memories / weekly digest prototype** (brief + fixture-backed logic + TLL export verification, no UI yet)
 
 ## Planned Next
@@ -29,4 +29,5 @@ Email Manager is a Gmail inbox workspace with local-first semantic search. It si
 ## Reference
 
 - Digest plan: [docs/plans/2026-06-04-email-memories-digest.md](docs/plans/2026-06-04-email-memories-digest.md)
+- De-OpenNext PRD: [../prds/de-opennext-program.md](../prds/de-opennext-program.md) §6.2
 - Fixture verify: `pnpm digest:verify`

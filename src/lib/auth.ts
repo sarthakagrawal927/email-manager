@@ -1,9 +1,9 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { drizzle } from "drizzle-orm/d1";
-import { user, session, account, verification } from "@/db/schema";
+import { user, session, account, verification } from "../db/schema";
 
-type AuthEnv = {
+export type AuthEnv = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   DB: any;
   GOOGLE_CLIENT_ID?: string;
@@ -14,7 +14,7 @@ type AuthEnv = {
 };
 
 function getEnvValue(env: AuthEnv, key: keyof AuthEnv): string | undefined {
-  const value = env[key] ?? process.env[key];
+  const value = env[key];
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 

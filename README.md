@@ -27,10 +27,10 @@ is fetched on demand and cached locally in IndexedDB inside the browser.
 
 | Concern | Service |
 |---------|---------|
-| Hosting | Cloudflare Workers (`email-manager`, email-manager.sarthakagrawal927.workers.dev) via `@opennextjs/cloudflare` |
+| Hosting | Cloudflare Workers (`email-manager`, email-manager.sarthakagrawal927.workers.dev) — Vite SPA + Hono worker |
 | Database | Cloudflare D1 (`email-manager-auth`) for auth, via Drizzle ORM; email data + embeddings stored client-side in IndexedDB |
 | Auth | better-auth + Google OAuth |
-| Analytics | PostHog (`local posthog-js wrapper`) |
+| Analytics | PostHog (`posthog-js`) |
 | AI | `@huggingface/transformers` — runs client-side in the browser for semantic search |
 | CI/CD | GitHub Actions — auto-deploy to Cloudflare Workers on push to `main` |
 
@@ -38,48 +38,63 @@ is fetched on demand and cached locally in IndexedDB inside the browser.
 
 ```bash
 pnpm install
-cp .env.example .env.local
+cp .env.example .dev.vars   # wrangler reads secrets from .dev.vars locally
 pnpm dev
 ```
 
-The local app runs at <http://localhost:3000>.
+`pnpm dev` runs **two processes**:
 
-Required environment variables:
+- **Vite** at <http://localhost:5173> — SPA routes (`/app`, `/about`, `/privacy`); proxies `/api/*` to wrangler
+- **Wrangler** at <http://localhost:8787> — Hono API + static assets after `pnpm build`
+
+For a full production-like stack (Astro landing at `/` + API), build first then use wrangler alone:
+
+```bash
+pnpm build
+pnpm dev:api
+```
+
+Open <http://localhost:8787>.
+
+Required secrets (`.dev.vars` / `wrangler secret put`):
 
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_URL`
 
+Optional client build var (`.env` or `.env.local` for Vite):
+
+- `VITE_POSTHOG_KEY`
+
 Google OAuth must allow the local and production callback URLs:
 
-- `http://localhost:3000/api/auth/callback/google`
+- `http://localhost:8787/api/auth/callback/google`
 - `https://email-manager.sarthakagrawal927.workers.dev/api/auth/callback/google`
 
 ## Scripts
 
-- `pnpm dev` — `next dev`
-- `pnpm build` — `next build`
-- `pnpm start` — `next start`
-- `pnpm typecheck` — TypeScript check
-- `pnpm lint` — currently aliases to `pnpm typecheck` (ESLint config currently crashes in this repo)
+- `pnpm dev` — Vite SPA + `wrangler dev` (API)
+- `pnpm dev:api` — `wrangler dev` only
+- `pnpm dev:spa` — Vite only
+- `pnpm build` — Vite build + Astro landing overlay → `dist/`
+- `pnpm typecheck` — TypeScript check (app + worker)
+- `pnpm lint` — ESLint
 - `pnpm test:e2e` — Playwright e2e suite
-- `pnpm cf:build` — OpenNext Cloudflare build
 - `pnpm deploy` — build and deploy to Cloudflare Workers
 
 ## Architecture
 
 ```text
-src/app/                 Next.js App Router pages and API routes
-src/app/api/auth/        better-auth handler
-src/app/api/emails/      Gmail proxy endpoints
+src/worker.ts            Hono worker — /api/*, SPA shell routing, Astro landing at /
+src/pages/HomeClient.tsx Gmail cockpit (/app)
+landing-astro/           Static marketing landing (overlaid to dist/index.html)
 src/components/          mailbox, search, analytics, unsubscribe UI
 src/lib/auth.ts          better-auth + Google token refresh
 src/lib/gmail.ts         Gmail REST client with 429 backoff
 src/lib/db.ts            IndexedDB schema and helpers
 src/lib/embeddings.ts    browser-side embedding model loading
-src/lib/semantic-search.ts
-tests/                   Playwright coverage
+dist/spa-index.html      Vite SPA shell served for /app, /about, /privacy
 ```
 
 Key constraints:
@@ -87,7 +102,7 @@ Key constraints:
 - Gmail OAuth scope is read-only.
 - Email content and embeddings stay client-side.
 - Hugging Face Transformers must remain browser-safe; avoid adding Node-only ML dependencies.
-- `next build --webpack` is used for the production build path because the Cloudflare/OpenNext stack depends on webpack-compatible output.
+- D1 bindings resolve only under `wrangler dev` / deployed worker — use `pnpm dev` or `pnpm dev:api` for `/api/*`.
 
 ## Verification
 
@@ -97,12 +112,6 @@ Before changing behavior, run the smallest relevant check:
 pnpm typecheck
 pnpm build
 pnpm test:e2e
-```
-
-For deployment work, also run:
-
-```bash
-pnpm cf:build
 ```
 
 ## Automation Safety
@@ -125,9 +134,10 @@ initiate it themselves.
 
 ## Current Status
 
-Stable maintenance app. The remaining production setup footgun is Google OAuth:
-the deployed callback URL must be present in the Google Cloud Console OAuth app,
-otherwise sign-in fails with `redirect_uri_mismatch`.
+Stable maintenance app. Migrated off OpenNext to Vite SPA + Hono worker (2026-06-20).
+The remaining production setup footgun is Google OAuth: the deployed callback URL
+must be present in the Google Cloud Console OAuth app, otherwise sign-in fails with
+`redirect_uri_mismatch`.
 
 See `agents.md` for implementation conventions and deeper architecture notes.
 
@@ -141,4 +151,5 @@ This section is maintained by the SaaS Maker Active-AI product/design loop so fu
 - Source of truth for task status: SaaS Maker task board. README entries are durable context only.
 
 - 2026-05-26: Added "Automation Safety" section (task 74061467) — P2 trust maintenance. Documents read-only guarantee and review-before-send policy for any future automation features.
+- 2026-06-20: De-OpenNext migration — Vite SPA + Hono worker per fleet PRD §6.2.
 <!-- ACTIVE-AI-TASK-LOG:END -->
