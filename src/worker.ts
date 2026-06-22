@@ -114,7 +114,9 @@ app.post("/api/emails/:id/unsubscribe", async (c) => {
   if (!token) return c.json({ error: "Unauthorized" }, 401);
 
   try {
-    const email = await getEmail(token, c.req.param("id"));
+    // Only the unsubscribe headers are needed here; a metadata fetch avoids
+    // downloading and base64-decoding the full message body.
+    const email = await getEmail(token, c.req.param("id"), { metadataOnly: true });
 
     if (!email.unsubscribeLink || !email.unsubscribePost) {
       return c.json(

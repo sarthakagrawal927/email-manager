@@ -117,6 +117,12 @@ export function parseMessage(msg: any): Email {
   };
 }
 
+// Header set reused for metadata-format message fetches. These are the only
+// headers parseMessage needs for subject/from/to/date + unsubscribe detection,
+// so a metadata fetch is equivalent to a full fetch for everything except the
+// decoded body.
+const METADATA_HEADERS = ["Subject", "From", "To", "Date", "List-Unsubscribe", "List-Unsubscribe-Post"];
+
 export async function listEmails(
   accessToken: string,
   options: { q?: string; labelIds?: string[]; maxResults?: number; pageToken?: string; metadataOnly?: boolean }
@@ -142,7 +148,7 @@ export async function listEmails(
   const format = options.metadataOnly ? "metadata" : "full";
   const msgParams = new URLSearchParams({ format });
   if (options.metadataOnly) {
-    for (const h of ["Subject", "From", "To", "Date", "List-Unsubscribe", "List-Unsubscribe-Post"]) {
+    for (const h of METADATA_HEADERS) {
       msgParams.append("metadataHeaders", h);
     }
   }
@@ -164,7 +170,19 @@ export async function listEmails(
   return { emails, nextPageToken: listData.nextPageToken ?? null };
 }
 
-export async function getEmail(accessToken: string, id: string) {
-  const data = await gmailFetch(accessToken, `/messages/${id}?format=full`);
+export async function getEmail(
+  accessToken: string,
+  id: string,
+  options?: { metadataOnly?: boolean },
+) {
+  let path: string;
+  if (options?.metadataOnly) {
+    const params = new URLSearchParams({ format: "metadata" });
+    for (const h of METADATA_HEADERS) params.append("metadataHeaders", h);
+    path = `/messages/${id}?${params}`;
+  } else {
+    path = `/messages/${id}?format=full`;
+  }
+  const data = await gmailFetch(accessToken, path);
   return parseMessage(data);
 }
