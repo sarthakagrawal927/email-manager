@@ -4,9 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { trackCoreAction } from "@/lib/analytics";
 import type { Email } from "@/lib/gmail";
 import {
+  archiveImpactLabel,
   buildFilterRecipe,
   buildGmailFilterSuggestions,
   buildGmailFilterXml,
+  buildRecipeExplanation,
+  buildSelectedRecipeSummary,
+  suggestedActionLines,
   type GmailFilterSuggestion,
 } from "@/lib/filter-builder";
 
@@ -36,6 +40,9 @@ export function GmailFilterBuilder() {
 
   const suggestions = useMemo(() => buildGmailFilterSuggestions(emails), [emails]);
   const selectedSuggestions = suggestions.filter((suggestion) => selectedIds.has(suggestion.id));
+  const xml = buildGmailFilterXml(selectedSuggestions);
+  const explanation = buildRecipeExplanation(selectedSuggestions);
+  const recipeSummary = buildSelectedRecipeSummary(selectedSuggestions);
 
   const fetchPatterns = useCallback(async (target: number) => {
     if (cacheRef.current.length >= target) {
@@ -90,8 +97,8 @@ export function GmailFilterBuilder() {
         cacheRef.current = allEmails;
       }
       setEmails(allEmails.slice(0, target));
-    } catch (err: any) {
-      if (err?.name === "AbortError") return;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") return;
       console.error("Filter builder fetch error:", err);
       setError("Failed to sample inbox");
     } finally {
@@ -110,9 +117,7 @@ export function GmailFilterBuilder() {
   useEffect(() => {
     setSelectedIds((current) => {
       const validIds = new Set(suggestions.map((suggestion) => suggestion.id));
-      const preserved = new Set(
-        [...current].filter((id) => validIds.has(id)),
-      );
+      const preserved = new Set([...current].filter((id) => validIds.has(id)));
 
       if (preserved.size > 0) {
         return preserved;
@@ -148,19 +153,15 @@ export function GmailFilterBuilder() {
     setSelectedIds(new Set(suggestions.map((suggestion) => suggestion.id)));
   }
 
-  const xml = buildGmailFilterXml(selectedSuggestions);
-
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="border-b border-[var(--border)] p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Gmail Filter Builder</h1>
+            <h1 className="text-2xl font-semibold">Filter recipe studio</h1>
             <p className="mt-1 text-sm text-[var(--text-muted)]">
-              Generates local filter candidates from repeated inbox senders and message patterns.
-            </p>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
-              Read-only mode: filters are exported for Gmail import instead of created automatically.
+              Sample inbox patterns, review why each recipe exists, and export Gmail-compatible
+              filter XML — all locally, read-only.
             </p>
           </div>
 
@@ -169,9 +170,10 @@ export function GmailFilterBuilder() {
               {SAMPLE_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
+                  type="button"
                   onClick={() => setSampleSize(opt.value)}
                   disabled={loading}
-                  className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
+                  className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition cursor-pointer ${
                     sampleSize === opt.value
                       ? "bg-[var(--accent)] text-white"
                       : "text-[var(--text-muted)] hover:text-[var(--text)]"
@@ -182,11 +184,12 @@ export function GmailFilterBuilder() {
               ))}
             </div>
             <button
+              type="button"
               onClick={() => fetchPatterns(sampleSize)}
               disabled={loading}
-              className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-medium transition hover:bg-[var(--border)]/40 disabled:opacity-60"
+              className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-medium transition hover:bg-[var(--border)]/40 disabled:opacity-60 cursor-pointer"
             >
-              {loading ? "Sampling..." : "Refresh"}
+              {loading ? "Sampling..." : "Refresh sample"}
             </button>
           </div>
         </div>
@@ -194,12 +197,20 @@ export function GmailFilterBuilder() {
         <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
             { label: "sampled", value: emails.length },
-            { label: "candidates", value: suggestions.length },
+            { label: "recipes", value: suggestions.length },
             { label: "selected", value: selectedSuggestions.length },
-            { label: "auto-archive", value: selectedSuggestions.filter((item) => item.shouldArchive).length },
+            {
+              label: "would skip inbox",
+              value: selectedSuggestions.filter((item) => item.shouldArchive).length,
+            },
           ].map((metric) => (
-            <div key={metric.label} className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-              <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{metric.label}</div>
+            <div
+              key={metric.label}
+              className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4"
+            >
+              <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">
+                {metric.label}
+              </div>
               <div className="mt-2 text-2xl font-semibold">{metric.value}</div>
             </div>
           ))}
@@ -215,8 +226,9 @@ export function GmailFilterBuilder() {
         <div className="mt-20 text-center">
           <p className="text-[var(--text-muted)]">{error}</p>
           <button
+            type="button"
             onClick={() => fetchPatterns(sampleSize)}
-            className="mt-4 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)]"
+            className="mt-4 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)] cursor-pointer"
           >
             Retry
           </button>
@@ -229,10 +241,11 @@ export function GmailFilterBuilder() {
         <div className="grid gap-5 p-5 xl:grid-cols-[minmax(0,1fr)_420px]">
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="font-semibold">Candidate filters</h2>
+              <h2 className="font-semibold">Recipe candidates</h2>
               <button
+                type="button"
                 onClick={toggleAll}
-                className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs transition hover:bg-[var(--border)]/40"
+                className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs transition hover:bg-[var(--border)]/40 cursor-pointer"
               >
                 {selectedIds.size === suggestions.length ? "Clear all" : "Select all"}
               </button>
@@ -241,7 +254,11 @@ export function GmailFilterBuilder() {
             {suggestions.map((suggestion) => (
               <article
                 key={suggestion.id}
-                className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4"
+                className={`rounded-xl border bg-[var(--bg-card)] p-4 transition ${
+                  selectedIds.has(suggestion.id)
+                    ? "border-[var(--accent)]/40"
+                    : "border-[var(--border)]"
+                }`}
               >
                 <div className="flex items-start gap-3">
                   <input
@@ -261,11 +278,38 @@ export function GmailFilterBuilder() {
                       </span>
                     </div>
                     <h3 className="mt-2 font-medium">{suggestion.displayName}</h3>
-                    <p className="mt-1 break-all text-xs text-[var(--text-muted)]">{suggestion.senderEmail}</p>
-                    <p className="mt-3 text-sm">{suggestion.reason}</p>
+                    <p className="mt-1 break-all text-xs text-[var(--text-muted)]">
+                      {suggestion.senderEmail}
+                    </p>
+
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <div className="rounded-lg bg-[var(--bg)] p-3">
+                        <div className="text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
+                          Match rationale
+                        </div>
+                        <p className="mt-1 text-sm">{suggestion.reason}</p>
+                      </div>
+                      <div className="rounded-lg bg-[var(--bg)] p-3">
+                        <div className="text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
+                          Suggested action
+                        </div>
+                        <ul className="mt-1 space-y-0.5 text-sm">
+                          {suggestedActionLines(suggestion).map((line) => (
+                            <li key={line}>{line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+
+                    <p className="mt-2 text-xs text-[var(--text-muted)]">
+                      <span className="font-medium text-[var(--text)]">Archive impact: </span>
+                      {archiveImpactLabel(suggestion)}
+                    </p>
 
                     <div className="mt-3 rounded-lg bg-[var(--bg)] p-3">
-                      <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Gmail search</div>
+                      <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">
+                        Gmail search
+                      </div>
                       <p className="mt-1 break-all font-mono text-xs">{suggestion.searchQuery}</p>
                     </div>
 
@@ -281,19 +325,12 @@ export function GmailFilterBuilder() {
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button
+                        type="button"
                         onClick={() => copyText(suggestion.id, buildFilterRecipe(suggestion))}
-                        className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-hover)]"
+                        className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-hover)] cursor-pointer"
                       >
                         {copied === suggestion.id ? "Copied" : "Copy recipe"}
                       </button>
-                      <span className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-muted)]">
-                        {suggestion.label}
-                      </span>
-                      {suggestion.shouldArchive && (
-                        <span className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-muted)]">
-                          Skip inbox
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -301,30 +338,60 @@ export function GmailFilterBuilder() {
             ))}
           </section>
 
-          <aside className="h-fit rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="font-semibold">Selected export</h2>
-                <p className="mt-1 text-xs text-[var(--text-muted)]">
-                  {selectedSuggestions.length} Gmail filter{selectedSuggestions.length !== 1 ? "s" : ""}
+          <aside className="h-fit space-y-4 xl:sticky xl:top-5">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+              <h2 className="font-semibold">Selected recipes</h2>
+              {selectedSuggestions.length === 0 ? (
+                <p className="mt-2 text-xs text-[var(--text-muted)]">
+                  Select candidates to preview the export.
                 </p>
-              </div>
-              <button
-                onClick={() => {
-                  copyText("xml", xml);
-                  // Owner-facing analytics — exporting the filter XML for
-                  // Gmail import is the core action for this view.
-                  trackCoreAction("filter_installed");
-                }}
-                disabled={selectedSuggestions.length === 0}
-                className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-60"
-              >
-                {copied === "xml" ? "Copied" : "Copy XML"}
-              </button>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {selectedSuggestions.map((suggestion) => (
+                    <li
+                      key={suggestion.id}
+                      className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs"
+                    >
+                      <p className="font-medium">{suggestion.displayName}</p>
+                      <p className="text-[var(--text-muted)]">
+                        {CATEGORY_LABELS[suggestion.category]} · {archiveImpactLabel(suggestion)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            <pre className="mt-4 max-h-[520px] overflow-auto rounded-lg bg-[var(--bg)] p-3 text-xs leading-5 text-[var(--text-muted)]">
-              {selectedSuggestions.length === 0 ? "Select filters to build an export." : xml}
-            </pre>
+
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-semibold">Export preview</h2>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => copyText("summary", recipeSummary)}
+                    disabled={selectedSuggestions.length === 0}
+                    className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs transition hover:bg-[var(--border)]/40 disabled:opacity-50 cursor-pointer"
+                  >
+                    {copied === "summary" ? "Copied" : "Copy summary"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      copyText("xml", xml);
+                      trackCoreAction("filter_installed");
+                    }}
+                    disabled={selectedSuggestions.length === 0}
+                    className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-50 cursor-pointer"
+                  >
+                    {copied === "xml" ? "Copied" : "Copy XML"}
+                  </button>
+                </div>
+              </div>
+              <p className="mt-3 text-sm text-[var(--text-muted)]">{explanation}</p>
+              <pre className="mt-4 max-h-[360px] overflow-auto rounded-lg bg-[var(--bg)] p-3 text-xs leading-5 text-[var(--text-muted)]">
+                {selectedSuggestions.length === 0 ? "Select recipes to build Gmail filter XML." : xml}
+              </pre>
+            </div>
           </aside>
         </div>
       )}

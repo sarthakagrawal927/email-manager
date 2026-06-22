@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { trackCoreAction } from "@/lib/analytics";
 import type { Email } from "@/lib/gmail";
 import { triageItemForEmail } from "@/lib/triage";
-import { TriageActionBar } from "@/components/TriageActionBar";
+import { TriageActionBar, TriageStateBadge } from "@/components/TriageActionBar";
 
 interface Props {
   email: Email;
@@ -106,6 +106,9 @@ export function EmailDetail({ email, onBack, showBack = true }: Props) {
       </div>
 
       <div className="shrink-0 border-b border-[var(--border)] p-4">
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <TriageStateBadge emailId={email.id} />
+        </div>
         <h1 className="mb-2 text-lg font-semibold leading-snug">{email.subject}</h1>
         <div className="flex flex-wrap justify-between gap-2 text-sm text-[var(--text-muted)]">
           <span className="truncate">From: {email.from}</span>

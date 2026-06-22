@@ -229,8 +229,55 @@ export function buildFilterRecipe(suggestion: GmailFilterSuggestion) {
     `Search: ${suggestion.searchQuery}`,
     `From: ${suggestion.fromCriteria}`,
     `Has words: ${suggestion.hasWords}`,
-    `Apply label: ${suggestion.label}`,
-    `Skip inbox: ${suggestion.shouldArchive ? "yes" : "no"}`,
-    `Mark as read: ${suggestion.shouldMarkAsRead ? "yes" : "no"}`,
+    ...suggestedActionLines(suggestion),
+    `Archive impact: ${archiveImpactLabel(suggestion)}`,
+    `Rationale: ${suggestion.reason}`,
   ].join("\n");
+}
+
+/** Plain-language action lines for a single recipe. */
+export function suggestedActionLines(suggestion: GmailFilterSuggestion): string[] {
+  const lines = [`Apply label: ${suggestion.label}`];
+  if (suggestion.shouldArchive) lines.push("Skip inbox (archive incoming)");
+  else lines.push("Keep in inbox");
+  if (suggestion.shouldMarkAsRead) lines.push("Mark as read");
+  return lines;
+}
+
+/** Likely inbox impact from the sampled matches. */
+export function archiveImpactLabel(suggestion: GmailFilterSuggestion): string {
+  if (!suggestion.shouldArchive) {
+    return `${suggestion.matchCount} sampled message${suggestion.matchCount === 1 ? "" : "s"} stay in inbox`;
+  }
+  return `~${suggestion.matchCount} sampled message${suggestion.matchCount === 1 ? "" : "s"} would skip inbox`;
+}
+
+/** Human-readable summary for the selected recipe set. */
+export function buildSelectedRecipeSummary(suggestions: GmailFilterSuggestion[]): string {
+  if (suggestions.length === 0) return "No recipes selected.";
+  const byCategory = new Map<FilterCategory, number>();
+  for (const s of suggestions) {
+    byCategory.set(s.category, (byCategory.get(s.category) ?? 0) + 1);
+  }
+  const categoryBits = [...byCategory.entries()]
+    .map(([cat, n]) => `${n} ${CATEGORY_META[cat].label.replace("Kinetic/", "")}`)
+    .join(", ");
+  const archiveCount = suggestions.filter((s) => s.shouldArchive).length;
+  return [
+    `${suggestions.length} filter${suggestions.length === 1 ? "" : "s"} selected (${categoryBits}).`,
+    archiveCount > 0
+      ? `${archiveCount} would skip inbox based on sampled matches.`
+      : "All selected filters keep mail in the inbox.",
+    "Paste the XML into Gmail Settings → Filters and Blocked Addresses → Import filters.",
+  ].join(" ");
+}
+
+/** Short explanation string for the export preview panel. */
+export function buildRecipeExplanation(suggestions: GmailFilterSuggestion[]): string {
+  if (suggestions.length === 0) {
+    return "Select one or more suggestions to preview the Gmail filter recipe.";
+  }
+  const senders = suggestions.slice(0, 3).map((s) => s.displayName);
+  const more = suggestions.length > 3 ? ` and ${suggestions.length - 3} more` : "";
+  return `When mail arrives from ${senders.join(", ")}${more}, matching messages get labeled and routed per each recipe's action. ${buildSelectedRecipeSummary(suggestions)}`;
 }

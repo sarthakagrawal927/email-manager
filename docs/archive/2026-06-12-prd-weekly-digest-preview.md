@@ -1,6 +1,6 @@
 # Weekly digest preview and export loop
 
-**Status:** Draft
+**Status:** Shipped (2026-06-20)
 **Product:** Email Manager
 **Theme:** Personal memory OS
 **Primary surface:** `#digest` or folded into `#analytics`

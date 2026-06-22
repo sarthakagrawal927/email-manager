@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Email } from "@/lib/gmail";
 import { TriageStateBadge } from "@/components/TriageActionBar";
+import { TriageQueueLedger } from "@/components/TriageQueueLedger";
 
 interface Props {
   emails: Email[];
@@ -15,6 +16,8 @@ interface Props {
   onLoadMore?: () => void;
   onRefresh?: () => void;
   primary?: boolean;
+  /** Show triage queue ledger above the message list. */
+  triageLedger?: boolean;
 }
 
 const LABEL_NAMES: Record<string, string> = {
@@ -36,6 +39,7 @@ export function EmailList({
   onLoadMore,
   onRefresh,
   primary,
+  triageLedger,
 }: Props) {
   const [focusIdx, setFocusIdx] = useState(-1);
   const itemsRef = useRef<HTMLButtonElement[]>([]);
@@ -129,6 +133,14 @@ export function EmailList({
             press /
           </span>
         </div>
+        {triageLedger && (
+          <div>
+            <p className="mb-2 text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
+              Triage queue
+            </p>
+            <TriageQueueLedger />
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto" tabIndex={-1}>

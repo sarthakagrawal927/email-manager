@@ -16,7 +16,8 @@ const browseNav = [
 
 const toolsNav = [
   { id: "subscriptions", label: "Subscriptions", icon: "📬" },
-  { id: "filters", label: "Filters", icon: "⚙️" },
+  { id: "digest", label: "Digest", icon: "📓" },
+  { id: "filters", label: "Recipe studio", icon: "⚙️" },
   { id: "analytics", label: "Analytics", icon: "📊" },
 ];
 

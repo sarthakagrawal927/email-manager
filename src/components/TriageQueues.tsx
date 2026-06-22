@@ -5,6 +5,7 @@ import type { Email } from "@/lib/gmail";
 import { senderName, triageEmails, triageSummary, type TriageItem } from "@/lib/triage";
 import { useTriageActions } from "@/components/TriageActionsProvider";
 import { TriageActionBar, TriageStateBadge } from "@/components/TriageActionBar";
+import { TriageQueueLedger } from "@/components/TriageQueueLedger";
 import { actionLabel, stateClass, stateLabel } from "@/lib/triage-actions";
 
 interface Props {
@@ -95,23 +96,7 @@ export function TriageQueues({
           </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {[
-            { label: "remaining", value: summary.total, tone: "text-[var(--text)]" },
-            { label: "applied", value: counts.applied, tone: "text-emerald-500" },
-            { label: "queued", value: counts.queued, tone: "text-sky-500" },
-            {
-              label: "ignored / failed",
-              value: counts.skipped + counts.failed,
-              tone: counts.failed > 0 ? "text-red-500" : "text-[var(--text-muted)]",
-            },
-          ].map((metric) => (
-            <div key={metric.label} className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2">
-              <div className="text-[10px] uppercase tracking-wide text-[var(--text-muted)]">{metric.label}</div>
-              <div className={`text-lg font-semibold ${metric.tone}`}>{metric.value}</div>
-            </div>
-          ))}
-        </div>
+        <TriageQueueLedger remaining={summary.total} className="mt-3" />
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">

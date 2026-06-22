@@ -1,6 +1,6 @@
 # Gmail filter recipe studio
 
-**Status:** Draft
+**Status:** Shipped (2026-06-20)
 **Product:** Email Manager
 **Theme:** Filter discovery and export
 **Primary surface:** `GmailFilterBuilder`

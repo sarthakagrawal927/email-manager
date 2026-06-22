@@ -17,6 +17,7 @@ import { Analytics } from "@/components/Analytics";
 import { SemanticSearch } from "@/components/SemanticSearch";
 import { TriageQueues } from "@/components/TriageQueues";
 import { GmailFilterBuilder } from "@/components/GmailFilterBuilder";
+import { WeeklyDigestView } from "@/components/WeeklyDigestView";
 import { WorkSurface } from "@/components/WorkSurface";
 import { TriageActionsProvider } from "@/components/TriageActionsProvider";
 import type { Email } from "@/lib/gmail";
@@ -30,6 +31,7 @@ type View =
   | "subscriptions"
   | "analytics"
   | "search"
+  | "digest"
   | "filters";
 
 const VIEWS = new Set<string>([
@@ -41,6 +43,7 @@ const VIEWS = new Set<string>([
   "subscriptions",
   "analytics",
   "search",
+  "digest",
   "filters",
 ]);
 
@@ -229,6 +232,19 @@ export default function HomeClient() {
     );
   }
 
+  const openDigestContext = useCallback(
+    (kind: "sender" | "thread", value: string, subject?: string) => {
+      if (kind === "sender") {
+        setSearch(`from:${value}`);
+      } else {
+        setSearch(subject ? `subject:"${subject.replace(/"/g, "")}"` : "");
+      }
+      setSelected(null);
+      setView("inbox");
+    },
+    [setView],
+  );
+
   const isPrimaryView = view === "today" || view === "inbox";
   const viewLabel = view.charAt(0).toUpperCase() + view.slice(1);
 
@@ -269,6 +285,12 @@ export default function HomeClient() {
           <Subscriptions />
         ) : view === "analytics" ? (
           <Analytics />
+        ) : view === "digest" ? (
+          <WeeklyDigestView
+            onOpenSender={(email) => openDigestContext("sender", email)}
+            onOpenThread={(_threadId, subject) => openDigestContext("thread", "", subject)}
+            onNavigateSearch={() => setView("search")}
+          />
         ) : view === "filters" ? (
           <GmailFilterBuilder />
         ) : view === "today" ? (
@@ -324,6 +346,7 @@ export default function HomeClient() {
                   onRefresh={() => fetchEmails()}
                   onLoadMore={nextPageToken ? () => fetchEmails(nextPageToken) : undefined}
                   primary={isPrimaryView}
+                  triageLedger
                 />
               }
               detail={

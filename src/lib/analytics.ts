@@ -28,7 +28,9 @@ const PROJECT = "email-manager" as const;
 export type CoreAction =
   | "email_opened"
   | "filter_installed"
-  | "unsubscribed";
+  | "unsubscribed"
+  | "digest_generated"
+  | "digest_exported";
 
 interface AnalyticsEventMap {
   /** First session after an account is created. */

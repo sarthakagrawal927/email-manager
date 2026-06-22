@@ -1,6 +1,6 @@
 # Triage action queue with deferred follow-up
 
-**Status:** Draft
+**Status:** Shipped (2026-06-20)
 **Product:** Email Manager
 **Theme:** Inbox workflow automation
 **Primary surface:** `TriageQueues` + `EmailDetail`
