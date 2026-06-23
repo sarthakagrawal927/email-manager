@@ -41,6 +41,9 @@ importers:
       react-router-dom:
         specifier: 7.6.2
         version: 7.6.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      web-vitals:
+        specifier: ^4.2.4
+        version: 4.2.4
     devDependencies:
       '@biomejs/biome':
         specifier: 2.5.0
@@ -3599,6 +3602,9 @@ packages:
   web-namespaces@2.0.1:
     resolution: {integrity: sha512-bKr1DkiNa2krS7qxNtdrtHAmzuYGFQLiQ13TsorsdT6ULTkPLKuu5+GsFpDlg6JFjUTwX2DyhMPG2be8uPrqsQ==}
 
+  web-vitals@4.2.4:
+    resolution: {integrity: sha512-r4DIlprAGwJ7YM11VZp4R884m0Vmgr6EAKe3P+kO0PPj3Unqyvv59rczf6UiGcb9Z8QxZVcqKNwv/g0WNdWwsw==}
+
   web-vitals@5.2.0:
     resolution: {integrity: sha512-i2z98bEmaCqSDiHEDu+gHl/dmR4Q+TxFmG3/13KkMO+o8UxQzCqWaDRCiLgEa41nlO4VpXSI0ASa1xWmO9sBlA==}
 
@@ -6919,6 +6925,8 @@ snapshots:
       - msw
 
   web-namespaces@2.0.1: {}
+
+  web-vitals@4.2.4: {}
 
   web-vitals@5.2.0: {}
 
