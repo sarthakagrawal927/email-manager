@@ -4,6 +4,7 @@ import { createAuth, type AuthEnv } from "./lib/auth";
 import { getGmailAccessToken } from "./lib/get-access-token";
 import { getEmail, listEmails } from "./lib/gmail";
 import { SECURITY_HEADERS, withSecurityHeaders } from "./lib/security-headers";
+import { withTiming } from "./lib/timing";
 
 export type Env = AuthEnv & {
   ASSETS: Fetcher;
@@ -214,30 +215,32 @@ async function serveLanding(request: Request, env: Env): Promise<Response> {
 }
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    const url = new URL(request.url);
+  fetch: withTiming(
+    async (request: Request, env: Env, ctx: ExecutionContext): Promise<Response> => {
+      const url = new URL(request.url);
 
-    if (url.pathname.startsWith("/api/")) {
-      return app.fetch(request, env, ctx);
-    }
+      if (url.pathname.startsWith("/api/")) {
+        return app.fetch(request, env, ctx);
+      }
 
-    if (request.method === "GET" && url.pathname === "/" && hasAuthCookie(request)) {
-      return Response.redirect(`${url.origin}/app`, 302);
-    }
+      if (request.method === "GET" && url.pathname === "/" && hasAuthCookie(request)) {
+        return Response.redirect(`${url.origin}/app`, 302);
+      }
 
-    if (request.method === "GET" && isSpaRoute(url.pathname)) {
-      return serveSpaIndex(env, request);
-    }
+      if (request.method === "GET" && isSpaRoute(url.pathname)) {
+        return serveSpaIndex(env, request);
+      }
 
-    if (request.method === "GET" && url.pathname === "/") {
-      return serveLanding(request, env);
-    }
+      if (request.method === "GET" && url.pathname === "/") {
+        return serveLanding(request, env);
+      }
 
-    const assetResponse = await env.ASSETS.fetch(request);
-    if (assetResponse.status === 404 && request.method === "GET" && isSpaRoute(url.pathname)) {
-      return serveSpaIndex(env, request);
-    }
+      const assetResponse = await env.ASSETS.fetch(request);
+      if (assetResponse.status === 404 && request.method === "GET" && isSpaRoute(url.pathname)) {
+        return serveSpaIndex(env, request);
+      }
 
-    return assetResponse.ok ? withSecurityHeaders(assetResponse) : assetResponse;
-  },
+      return assetResponse.ok ? withSecurityHeaders(assetResponse) : assetResponse;
+    },
+  ),
 };
