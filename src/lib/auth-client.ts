@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 export type Session = {
   user?: { id: string; email: string; name?: string; image?: string };
@@ -8,7 +8,7 @@ export type Session = {
 
 export async function getSession(): Promise<Session> {
   try {
-    const res = await fetch("/api/auth/get-session", { credentials: "include" });
+    const res = await fetch('/api/auth/get-session', { credentials: 'include' });
     if (!res.ok) return null;
     const data = await res.json();
     return data?.user ? data : null;
@@ -18,30 +18,30 @@ export async function getSession(): Promise<Session> {
 }
 
 export async function signIn() {
-  const res = await fetch("/api/auth/sign-in/social", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
+  const res = await fetch('/api/auth/sign-in/social', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({
-      provider: "google",
+      provider: 'google',
       // After OAuth completes, land users on /app (the cockpit). The
       // marketing landing at / is the Astro static page; signed-in
       // users skip it via the Worker's auth-cookie passthrough +
       // server redirect.
-      callbackURL: "/app",
+      callbackURL: '/app',
     }),
   });
 
   if (!res.ok) {
-    window.location.href = "/?auth_error=google";
+    window.location.href = '/?auth_error=google';
     return;
   }
 
   const data = (await res.json()) as { url?: string };
-  window.location.href = data.url ?? "/app";
+  window.location.href = data.url ?? '/app';
 }
 
 export async function signOut() {
-  await fetch("/api/auth/sign-out", { method: "POST", credentials: "include" });
-  window.location.href = "/";
+  await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'include' });
+  window.location.href = '/';
 }

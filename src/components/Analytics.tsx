@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import type { Email } from "@/lib/gmail";
+import { useState, useEffect, useCallback, useRef } from 'react';
+import type { Email } from '@/lib/gmail';
 
 interface SenderStat {
   email: string;
@@ -13,11 +13,11 @@ interface SenderStat {
 }
 
 const BUCKET_OPTIONS = [
-  { label: "50", value: 50 },
-  { label: "100", value: 100 },
-  { label: "500", value: 500 },
-  { label: "1k", value: 1000 },
-  { label: "5k", value: 5000 },
+  { label: '50', value: 50 },
+  { label: '100', value: 100 },
+  { label: '500', value: 500 },
+  { label: '1k', value: 1000 },
+  { label: '5k', value: 5000 },
 ];
 
 function formatDateRange(oldest: string, newest: string): string {
@@ -26,14 +26,14 @@ function formatDateRange(oldest: string, newest: string): string {
   const diffMs = n.getTime() - o.getTime();
   const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
-  const fmtDate = (d: Date) =>
-    d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const fmtDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
   if (diffDays === 0) return `today (${fmtDate(n)})`;
   if (diffDays === 1) return `last 1 day`;
   if (diffDays < 30) return `${diffDays} days (${fmtDate(o)} – ${fmtDate(n)})`;
   const diffMonths = Math.round(diffDays / 30);
-  if (diffMonths < 12) return `~${diffMonths} month${diffMonths > 1 ? "s" : ""} (${fmtDate(o)} – ${fmtDate(n)})`;
+  if (diffMonths < 12)
+    return `~${diffMonths} month${diffMonths > 1 ? 's' : ''} (${fmtDate(o)} – ${fmtDate(n)})`;
   const diffYears = (diffDays / 365).toFixed(1);
   return `~${diffYears} years (${fmtDate(o)} – ${fmtDate(n)})`;
 }
@@ -42,9 +42,9 @@ export function Analytics() {
   const [stats, setStats] = useState<SenderStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState("");
+  const [progress, setProgress] = useState('');
   const [totalEmails, setTotalEmails] = useState(0);
-  const [dateRange, setDateRange] = useState("");
+  const [dateRange, setDateRange] = useState('');
   const [bucket, setBucket] = useState(100);
   const abortRef = useRef<AbortController | null>(null);
   const cacheRef = useRef<Email[]>([]);
@@ -56,16 +56,18 @@ export function Analytics() {
     if (emails.length > 0) {
       const dates = emails
         .map((e) => new Date(e.date).getTime())
-        .filter((t) => !isNaN(t))
+        .filter((t) => !Number.isNaN(t))
         .sort((a, b) => a - b);
       if (dates.length > 0) {
-        setDateRange(formatDateRange(
-          new Date(dates[0]).toISOString(),
-          new Date(dates[dates.length - 1]).toISOString()
-        ));
+        setDateRange(
+          formatDateRange(
+            new Date(dates[0]).toISOString(),
+            new Date(dates[dates.length - 1]).toISOString()
+          )
+        );
       }
     } else {
-      setDateRange("");
+      setDateRange('');
     }
 
     // Aggregate by sender email address
@@ -74,8 +76,8 @@ export function Analytics() {
       const emailMatch = email.from.match(/<([^>]+)>/);
       const senderEmail = (emailMatch?.[1] ?? email.from).toLowerCase().trim();
       const domainMatch = senderEmail.match(/@(.+)/);
-      const domain = domainMatch?.[1] ?? "unknown";
-      const displayName = email.from.replace(/<[^>]+>/, "").trim() || senderEmail;
+      const domain = domainMatch?.[1] ?? 'unknown';
+      const displayName = email.from.replace(/<[^>]+>/, '').trim() || senderEmail;
 
       const existing = senderMap.get(senderEmail);
       if (existing) {
@@ -98,7 +100,7 @@ export function Analytics() {
 
     setStats(Array.from(senderMap.values()).sort((a, b) => b.count - a.count));
     setLoading(false);
-    setProgress("");
+    setProgress('');
   }
 
   const fetchAnalytics = useCallback(async (target: number) => {
@@ -116,8 +118,8 @@ export function Analytics() {
     setLoading(true);
     setError(null);
     setStats([]);
-    setProgress("Fetching...");
-    setDateRange("");
+    setProgress('Fetching...');
+    setDateRange('');
 
     try {
       const allEmails: Email[] = [];
@@ -128,11 +130,11 @@ export function Analytics() {
         if (controller.signal.aborted) return;
 
         const params = new URLSearchParams({
-          label: "INBOX",
+          label: 'INBOX',
           maxResults: String(perPage),
-          metadataOnly: "true",
+          metadataOnly: 'true',
         });
-        if (pageToken) params.set("pageToken", pageToken);
+        if (pageToken) params.set('pageToken', pageToken);
 
         setProgress(`Fetching... ${allEmails.length}/${target}`);
 
@@ -141,7 +143,7 @@ export function Analytics() {
           if (allEmails.length === 0) {
             setError(`Couldn't load email data (${res.status}).`);
             setLoading(false);
-            setProgress("");
+            setProgress('');
             return;
           }
           break;
@@ -165,11 +167,11 @@ export function Analytics() {
 
       computeStats(allEmails.slice(0, target));
     } catch (err: any) {
-      if (err?.name === "AbortError") return;
-      console.error("Analytics fetch error:", err);
+      if (err?.name === 'AbortError') return;
+      console.error('Analytics fetch error:', err);
       setError("Couldn't load email data. Check your connection.");
       setLoading(false);
-      setProgress("");
+      setProgress('');
     }
   }, []);
 
@@ -200,14 +202,10 @@ export function Analytics() {
           <div className="min-w-0">
             <h2 className="text-lg font-semibold">Sender Analytics</h2>
             <p className="text-sm text-[var(--text-muted)] mt-1">
-              {loading
-                ? progress
-                : `${stats.length} unique senders across ${totalEmails} emails`}
+              {loading ? progress : `${stats.length} unique senders across ${totalEmails} emails`}
             </p>
             {dateRange && !loading && (
-              <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                Spanning {dateRange}
-              </p>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">Spanning {dateRange}</p>
             )}
           </div>
           <div className="flex gap-1 bg-[var(--border)]/50 rounded-lg p-0.5 shrink-0">
@@ -218,8 +216,8 @@ export function Analytics() {
                 disabled={loading}
                 className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
                   bucket === opt.value
-                    ? "bg-[var(--accent)] text-white"
-                    : "text-[var(--text-muted)] hover:text-[var(--text)]"
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text)]'
                 }`}
               >
                 {opt.label}
@@ -242,9 +240,7 @@ export function Analytics() {
       ) : loading ? (
         <div className="flex flex-col items-center justify-center h-40 gap-3">
           <div className="animate-spin w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
-          {progress && (
-            <p className="text-xs text-[var(--text-muted)]">{progress}</p>
-          )}
+          {progress && <p className="text-xs text-[var(--text-muted)]">{progress}</p>}
         </div>
       ) : stats.length === 0 ? (
         <div className="flex-1 flex items-center justify-center text-[var(--text-muted)] mt-20">
@@ -260,7 +256,9 @@ export function Analytics() {
                   className="flex items-center gap-3 cursor-pointer rounded-lg px-2 py-1.5 -mx-2 hover:bg-[var(--border)]/30 transition"
                   onClick={() => setExpanded(isExpanded ? null : sender.email)}
                 >
-                  <span className={`text-xs text-[var(--text-muted)] transition-transform ${isExpanded ? "rotate-90" : ""}`}>
+                  <span
+                    className={`text-xs text-[var(--text-muted)] transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                  >
                     ▶
                   </span>
                   <div className="min-w-0 flex-1">
@@ -268,7 +266,7 @@ export function Analytics() {
                       <span className="text-sm font-medium truncate">{sender.displayName}</span>
                       <div className="flex items-center gap-2 shrink-0 ml-2">
                         <span className="text-xs text-[var(--text-muted)]">
-                          {sender.count} email{sender.count !== 1 ? "s" : ""}
+                          {sender.count} email{sender.count !== 1 ? 's' : ''}
                         </span>
                         {sender.unsubscribeLink && (
                           <a
@@ -296,12 +294,12 @@ export function Analytics() {
                 {isExpanded && (
                   <div className="ml-7 mt-1 mb-2 border-l-2 border-[var(--border)] pl-3 space-y-1">
                     {getEmailsForSender(sender.email).map((email) => (
-                      <div
-                        key={email.id}
-                        className="flex items-baseline gap-2 py-1 text-sm"
-                      >
+                      <div key={email.id} className="flex items-baseline gap-2 py-1 text-sm">
                         <span className="text-xs text-[var(--text-muted)] shrink-0 w-16">
-                          {new Date(email.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          {new Date(email.date).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                          })}
                         </span>
                         <span className="truncate">{email.subject}</span>
                       </div>

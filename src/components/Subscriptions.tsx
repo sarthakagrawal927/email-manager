@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import type { Email } from "@/lib/gmail";
+import { useState, useEffect } from 'react';
+import type { Email } from '@/lib/gmail';
 
 export function Subscriptions() {
   const [emails, setEmails] = useState<Email[]>([]);
@@ -14,7 +14,7 @@ export function Subscriptions() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/emails?q=unsubscribe&label=INBOX");
+      const res = await fetch('/api/emails?q=unsubscribe&label=INBOX');
       if (!res.ok) {
         setError(`Couldn't load subscriptions (${res.status}).`);
         return;
@@ -23,14 +23,18 @@ export function Subscriptions() {
       const subs = (data.emails ?? []).filter((e: Email) => e.unsubscribeLink);
       const seen = new Set<string>();
       const unique = subs.filter((e: Email) => {
-        const sender = e.from.match(/<([^>]+)>/)?.[1]?.toLowerCase().trim() ?? e.from.toLowerCase().trim();
+        const sender =
+          e.from
+            .match(/<([^>]+)>/)?.[1]
+            ?.toLowerCase()
+            .trim() ?? e.from.toLowerCase().trim();
         if (!sender || seen.has(sender)) return false;
         seen.add(sender);
         return true;
       });
       setEmails(unique);
     } catch (err) {
-      console.error("Subscriptions fetch error:", err);
+      console.error('Subscriptions fetch error:', err);
       setError("Couldn't load subscriptions. Check your connection.");
     } finally {
       setLoading(false);
@@ -44,22 +48,22 @@ export function Subscriptions() {
   async function handleUnsubscribe(email: Email) {
     if (!email.unsubscribePost) {
       // Fallback: open link in new tab
-      window.open(email.unsubscribeLink!, "_blank", "noopener,noreferrer");
+      window.open(email.unsubscribeLink!, '_blank', 'noopener,noreferrer');
       return;
     }
 
     setUnsubbing((prev) => new Set(prev).add(email.id));
     try {
-      const res = await fetch(`/api/emails/${email.id}/unsubscribe`, { method: "POST" });
+      const res = await fetch(`/api/emails/${email.id}/unsubscribe`, { method: 'POST' });
       const data = await res.json();
 
       if (data.ok) {
         setUnsubbed((prev) => new Set(prev).add(email.id));
       } else if (data.fallbackUrl) {
-        window.open(data.fallbackUrl, "_blank", "noopener,noreferrer");
+        window.open(data.fallbackUrl, '_blank', 'noopener,noreferrer');
       }
     } catch {
-      window.open(email.unsubscribeLink!, "_blank", "noopener,noreferrer");
+      window.open(email.unsubscribeLink!, '_blank', 'noopener,noreferrer');
     } finally {
       setUnsubbing((prev) => {
         const next = new Set(prev);
@@ -106,7 +110,7 @@ export function Subscriptions() {
       <div className="p-4 border-b border-[var(--border)]">
         <h2 className="text-lg font-semibold">Subscriptions</h2>
         <p className="text-sm text-[var(--text-muted)] mt-1">
-          {emails.length} sender{emails.length !== 1 ? "s" : ""} with unsubscribe links
+          {emails.length} sender{emails.length !== 1 ? 's' : ''} with unsubscribe links
         </p>
       </div>
       {emails.map((email) => (
@@ -116,11 +120,9 @@ export function Subscriptions() {
         >
           <div className="min-w-0 flex-1">
             <div className="font-medium text-sm truncate">
-              {email.from.replace(/<[^>]+>/, "").trim()}
+              {email.from.replace(/<[^>]+>/, '').trim()}
             </div>
-            <div className="text-xs text-[var(--text-muted)] truncate">
-              {email.subject}
-            </div>
+            <div className="text-xs text-[var(--text-muted)] truncate">{email.subject}</div>
           </div>
           <div className="ml-3 shrink-0 flex items-center gap-2">
             {email.unsubscribePost && (
@@ -136,7 +138,7 @@ export function Subscriptions() {
                 disabled={unsubbing.has(email.id)}
                 className="px-3 py-1.5 rounded-lg bg-[var(--danger)]/10 text-[var(--danger)] text-sm hover:bg-[var(--danger)]/20 transition cursor-pointer disabled:opacity-50"
               >
-                {unsubbing.has(email.id) ? "..." : "Unsubscribe"}
+                {unsubbing.has(email.id) ? '...' : 'Unsubscribe'}
               </button>
             )}
           </div>

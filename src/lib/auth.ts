@@ -1,7 +1,7 @@
-import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { drizzle } from "drizzle-orm/d1";
-import { user, session, account, verification } from "../db/schema";
+import { betterAuth } from 'better-auth';
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { drizzle } from 'drizzle-orm/d1';
+import { user, session, account, verification } from '../db/schema';
 
 export type AuthEnv = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -15,35 +15,26 @@ export type AuthEnv = {
 
 function getEnvValue(env: AuthEnv, key: keyof AuthEnv): string | undefined {
   const value = env[key];
-  return typeof value === "string" && value.length > 0 ? value : undefined;
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
 export function createAuth(env: AuthEnv) {
-  const baseURL =
-    getEnvValue(env, "BETTER_AUTH_URL") ??
-    "https://email-manager-d0r.pages.dev";
+  const baseURL = getEnvValue(env, 'BETTER_AUTH_URL') ?? 'https://email-manager-d0r.pages.dev';
 
   return betterAuth({
     database: drizzleAdapter(drizzle(env.DB), {
-      provider: "sqlite",
+      provider: 'sqlite',
       schema: { user, session, account, verification },
     }),
     baseURL,
-    secret:
-      getEnvValue(env, "BETTER_AUTH_SECRET") ??
-      getEnvValue(env, "AUTH_SECRET"),
+    secret: getEnvValue(env, 'BETTER_AUTH_SECRET') ?? getEnvValue(env, 'AUTH_SECRET'),
     socialProviders: {
       google: {
-        clientId: getEnvValue(env, "GOOGLE_CLIENT_ID") ?? "",
-        clientSecret: getEnvValue(env, "GOOGLE_CLIENT_SECRET") ?? "",
-        scope: [
-          "openid",
-          "email",
-          "profile",
-          "https://www.googleapis.com/auth/gmail.readonly",
-        ],
-        accessType: "offline",
-        prompt: "consent",
+        clientId: getEnvValue(env, 'GOOGLE_CLIENT_ID') ?? '',
+        clientSecret: getEnvValue(env, 'GOOGLE_CLIENT_SECRET') ?? '',
+        scope: ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/gmail.readonly'],
+        accessType: 'offline',
+        prompt: 'consent',
       },
     },
     trustedOrigins: [baseURL],

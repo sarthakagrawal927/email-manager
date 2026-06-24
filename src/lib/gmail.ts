@@ -1,13 +1,13 @@
-const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
+const GMAIL_API = 'https://gmail.googleapis.com/gmail/v1/users/me';
 
 function headers(accessToken: string) {
-  return { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" };
+  return { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' };
 }
 
 async function gmailFetch<T = unknown>(
   accessToken: string,
   path: string,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<T> {
   for (let attempt = 0; attempt < 3; attempt++) {
     const res = await fetch(`${GMAIL_API}${path}`, {
@@ -22,12 +22,14 @@ async function gmailFetch<T = unknown>(
     if (!res.ok) {
       const err: any = new Error(`Gmail API ${res.status}: ${res.statusText}`);
       err.status = res.status;
-      try { err.details = await res.json(); } catch {}
+      try {
+        err.details = await res.json();
+      } catch {}
       throw err;
     }
     return res.json() as Promise<T>;
   }
-  const err: any = new Error("Gmail API 429: Too Many Requests (after retries)");
+  const err: any = new Error('Gmail API 429: Too Many Requests (after retries)');
   err.status = 429;
   throw err;
 }
@@ -47,8 +49,8 @@ export interface Email {
 }
 
 function decodeBase64Url(data: string): string {
-  const base64 = data.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+  const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
   const binary = atob(padded);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
@@ -63,12 +65,12 @@ function decodeBody(payload: any): string {
   }
   if (payload.parts) {
     for (const part of payload.parts) {
-      if (part.mimeType === "text/html" && part.body?.data) {
+      if (part.mimeType === 'text/html' && part.body?.data) {
         return decodeBase64Url(part.body.data);
       }
     }
     for (const part of payload.parts) {
-      if (part.mimeType === "text/plain" && part.body?.data) {
+      if (part.mimeType === 'text/plain' && part.body?.data) {
         return decodeBase64Url(part.body.data);
       }
       if (part.parts) {
@@ -77,17 +79,17 @@ function decodeBody(payload: any): string {
       }
     }
   }
-  return "";
+  return '';
 }
 
 function getHeader(headers: any[], name: string): string {
-  return headers?.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value ?? "";
+  return headers?.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value ?? '';
 }
 
 export function parseMessage(msg: any): Email {
   const hdrs = msg.payload?.headers ?? [];
-  const unsubHeader = getHeader(hdrs, "List-Unsubscribe");
-  const unsubPostHeader = getHeader(hdrs, "List-Unsubscribe-Post");
+  const unsubHeader = getHeader(hdrs, 'List-Unsubscribe');
+  const unsubPostHeader = getHeader(hdrs, 'List-Unsubscribe-Post');
   let unsubscribeLink: string | null = null;
 
   if (unsubHeader) {
@@ -105,15 +107,15 @@ export function parseMessage(msg: any): Email {
   return {
     id: msg.id,
     threadId: msg.threadId,
-    subject: getHeader(hdrs, "Subject") || "(no subject)",
-    from: getHeader(hdrs, "From"),
-    to: getHeader(hdrs, "To"),
-    date: getHeader(hdrs, "Date"),
-    snippet: msg.snippet ?? "",
+    subject: getHeader(hdrs, 'Subject') || '(no subject)',
+    from: getHeader(hdrs, 'From'),
+    to: getHeader(hdrs, 'To'),
+    date: getHeader(hdrs, 'Date'),
+    snippet: msg.snippet ?? '',
     body: decodeBody(msg.payload),
     labelIds: msg.labelIds ?? [],
     unsubscribeLink,
-    unsubscribePost: !!unsubPostHeader && !!unsubscribeLink?.startsWith("http"),
+    unsubscribePost: !!unsubPostHeader && !!unsubscribeLink?.startsWith('http'),
   };
 }
 
@@ -121,18 +123,31 @@ export function parseMessage(msg: any): Email {
 // headers parseMessage needs for subject/from/to/date + unsubscribe detection,
 // so a metadata fetch is equivalent to a full fetch for everything except the
 // decoded body.
-const METADATA_HEADERS = ["Subject", "From", "To", "Date", "List-Unsubscribe", "List-Unsubscribe-Post"];
+const METADATA_HEADERS = [
+  'Subject',
+  'From',
+  'To',
+  'Date',
+  'List-Unsubscribe',
+  'List-Unsubscribe-Post',
+];
 
 export async function listEmails(
   accessToken: string,
-  options: { q?: string; labelIds?: string[]; maxResults?: number; pageToken?: string; metadataOnly?: boolean }
+  options: {
+    q?: string;
+    labelIds?: string[];
+    maxResults?: number;
+    pageToken?: string;
+    metadataOnly?: boolean;
+  }
 ) {
   const params = new URLSearchParams();
-  params.set("maxResults", String(options.maxResults ?? 25));
-  if (options.q) params.set("q", options.q);
-  if (options.pageToken) params.set("pageToken", options.pageToken);
+  params.set('maxResults', String(options.maxResults ?? 25));
+  if (options.q) params.set('q', options.q);
+  if (options.pageToken) params.set('pageToken', options.pageToken);
   if (options.labelIds) {
-    for (const l of options.labelIds) params.append("labelIds", l);
+    for (const l of options.labelIds) params.append('labelIds', l);
   }
 
   const listData = await gmailFetch<{
@@ -145,11 +160,11 @@ export async function listEmails(
   }
 
   // metadata format is ~10x faster: only headers, no body parsing
-  const format = options.metadataOnly ? "metadata" : "full";
+  const format = options.metadataOnly ? 'metadata' : 'full';
   const msgParams = new URLSearchParams({ format });
   if (options.metadataOnly) {
     for (const h of METADATA_HEADERS) {
-      msgParams.append("metadataHeaders", h);
+      msgParams.append('metadataHeaders', h);
     }
   }
 
@@ -173,12 +188,12 @@ export async function listEmails(
 export async function getEmail(
   accessToken: string,
   id: string,
-  options?: { metadataOnly?: boolean },
+  options?: { metadataOnly?: boolean }
 ) {
   let path: string;
   if (options?.metadataOnly) {
-    const params = new URLSearchParams({ format: "metadata" });
-    for (const h of METADATA_HEADERS) params.append("metadataHeaders", h);
+    const params = new URLSearchParams({ format: 'metadata' });
+    for (const h of METADATA_HEADERS) params.append('metadataHeaders', h);
     path = `/messages/${id}?${params}`;
   } else {
     path = `/messages/${id}?format=full`;

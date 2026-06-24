@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { trackCoreAction } from "@/lib/analytics";
-import type { Email } from "@/lib/gmail";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { trackCoreAction } from '@/lib/analytics';
+import type { Email } from '@/lib/gmail';
 import {
   archiveImpactLabel,
   buildFilterRecipe,
@@ -12,26 +12,26 @@ import {
   buildSelectedRecipeSummary,
   suggestedActionLines,
   type GmailFilterSuggestion,
-} from "@/lib/filter-builder";
+} from '@/lib/filter-builder';
 
 const SAMPLE_OPTIONS = [
-  { label: "100", value: 100 },
-  { label: "500", value: 500 },
-  { label: "1k", value: 1000 },
+  { label: '100', value: 100 },
+  { label: '500', value: 500 },
+  { label: '1k', value: 1000 },
 ];
 
-const CATEGORY_LABELS: Record<GmailFilterSuggestion["category"], string> = {
-  newsletter: "Newsletters",
-  receipt: "Receipts",
-  notification: "Notifications",
-  followup: "Follow-up",
+const CATEGORY_LABELS: Record<GmailFilterSuggestion['category'], string> = {
+  newsletter: 'Newsletters',
+  receipt: 'Receipts',
+  notification: 'Notifications',
+  followup: 'Follow-up',
 };
 
 export function GmailFilterBuilder() {
   const [emails, setEmails] = useState<Email[]>([]);
   const [sampleSize, setSampleSize] = useState(500);
   const [loading, setLoading] = useState(true);
-  const [progress, setProgress] = useState("");
+  const [progress, setProgress] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState<string | null>(null);
@@ -48,7 +48,7 @@ export function GmailFilterBuilder() {
     if (cacheRef.current.length >= target) {
       setEmails(cacheRef.current.slice(0, target));
       setLoading(false);
-      setProgress("");
+      setProgress('');
       return;
     }
 
@@ -58,7 +58,7 @@ export function GmailFilterBuilder() {
 
     setLoading(true);
     setError(null);
-    setProgress("Sampling inbox...");
+    setProgress('Sampling inbox...');
 
     try {
       const allEmails: Email[] = [];
@@ -68,11 +68,11 @@ export function GmailFilterBuilder() {
         if (controller.signal.aborted) return;
 
         const params = new URLSearchParams({
-          label: "INBOX",
+          label: 'INBOX',
           maxResults: String(Math.min(500, target - allEmails.length)),
-          metadataOnly: "true",
+          metadataOnly: 'true',
         });
-        if (pageToken) params.set("pageToken", pageToken);
+        if (pageToken) params.set('pageToken', pageToken);
 
         setProgress(`Sampling inbox... ${allEmails.length}/${target}`);
         const res = await fetch(`/api/emails?${params}`, { signal: controller.signal });
@@ -98,13 +98,13 @@ export function GmailFilterBuilder() {
       }
       setEmails(allEmails.slice(0, target));
     } catch (err: unknown) {
-      if (err instanceof Error && err.name === "AbortError") return;
-      console.error("Filter builder fetch error:", err);
-      setError("Failed to sample inbox");
+      if (err instanceof Error && err.name === 'AbortError') return;
+      console.error('Filter builder fetch error:', err);
+      setError('Failed to sample inbox');
     } finally {
       if (!controller.signal.aborted) {
         setLoading(false);
-        setProgress("");
+        setProgress('');
       }
     }
   }, []);
@@ -175,8 +175,8 @@ export function GmailFilterBuilder() {
                   disabled={loading}
                   className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition cursor-pointer ${
                     sampleSize === opt.value
-                      ? "bg-[var(--accent)] text-white"
-                      : "text-[var(--text-muted)] hover:text-[var(--text)]"
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text)]'
                   } disabled:opacity-60`}
                 >
                   {opt.label}
@@ -189,18 +189,18 @@ export function GmailFilterBuilder() {
               disabled={loading}
               className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-medium transition hover:bg-[var(--border)]/40 disabled:opacity-60 cursor-pointer"
             >
-              {loading ? "Sampling..." : "Refresh sample"}
+              {loading ? 'Sampling...' : 'Refresh sample'}
             </button>
           </div>
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
-            { label: "sampled", value: emails.length },
-            { label: "recipes", value: suggestions.length },
-            { label: "selected", value: selectedSuggestions.length },
+            { label: 'sampled', value: emails.length },
+            { label: 'recipes', value: suggestions.length },
+            { label: 'selected', value: selectedSuggestions.length },
             {
-              label: "would skip inbox",
+              label: 'would skip inbox',
               value: selectedSuggestions.filter((item) => item.shouldArchive).length,
             },
           ].map((metric) => (
@@ -247,7 +247,7 @@ export function GmailFilterBuilder() {
                 onClick={toggleAll}
                 className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs transition hover:bg-[var(--border)]/40 cursor-pointer"
               >
-                {selectedIds.size === suggestions.length ? "Clear all" : "Select all"}
+                {selectedIds.size === suggestions.length ? 'Clear all' : 'Select all'}
               </button>
             </div>
 
@@ -256,8 +256,8 @@ export function GmailFilterBuilder() {
                 key={suggestion.id}
                 className={`rounded-xl border bg-[var(--bg-card)] p-4 transition ${
                   selectedIds.has(suggestion.id)
-                    ? "border-[var(--accent)]/40"
-                    : "border-[var(--border)]"
+                    ? 'border-[var(--accent)]/40'
+                    : 'border-[var(--border)]'
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -329,7 +329,7 @@ export function GmailFilterBuilder() {
                         onClick={() => copyText(suggestion.id, buildFilterRecipe(suggestion))}
                         className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-hover)] cursor-pointer"
                       >
-                        {copied === suggestion.id ? "Copied" : "Copy recipe"}
+                        {copied === suggestion.id ? 'Copied' : 'Copy recipe'}
                       </button>
                     </div>
                   </div>
@@ -368,28 +368,30 @@ export function GmailFilterBuilder() {
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => copyText("summary", recipeSummary)}
+                    onClick={() => copyText('summary', recipeSummary)}
                     disabled={selectedSuggestions.length === 0}
                     className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs transition hover:bg-[var(--border)]/40 disabled:opacity-50 cursor-pointer"
                   >
-                    {copied === "summary" ? "Copied" : "Copy summary"}
+                    {copied === 'summary' ? 'Copied' : 'Copy summary'}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      copyText("xml", xml);
-                      trackCoreAction("filter_installed");
+                      copyText('xml', xml);
+                      trackCoreAction('filter_installed');
                     }}
                     disabled={selectedSuggestions.length === 0}
                     className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-50 cursor-pointer"
                   >
-                    {copied === "xml" ? "Copied" : "Copy XML"}
+                    {copied === 'xml' ? 'Copied' : 'Copy XML'}
                   </button>
                 </div>
               </div>
               <p className="mt-3 text-sm text-[var(--text-muted)]">{explanation}</p>
               <pre className="mt-4 max-h-[360px] overflow-auto rounded-lg bg-[var(--bg)] p-3 text-xs leading-5 text-[var(--text-muted)]">
-                {selectedSuggestions.length === 0 ? "Select recipes to build Gmail filter XML." : xml}
+                {selectedSuggestions.length === 0
+                  ? 'Select recipes to build Gmail filter XML.'
+                  : xml}
               </pre>
             </div>
           </aside>

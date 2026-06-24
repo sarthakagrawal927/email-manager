@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
+import { useEffect } from 'react';
 
 const primaryNav = [
-  { id: "today", label: "Today", icon: "⚡" },
-  { id: "inbox", label: "Inbox", icon: "📥" },
-  { id: "search", label: "Semantic search", icon: "🔍" },
+  { id: 'today', label: 'Today', icon: '⚡' },
+  { id: 'inbox', label: 'Inbox', icon: '📥' },
+  { id: 'search', label: 'Semantic search', icon: '🔍' },
 ];
 
 const browseNav = [
-  { id: "starred", label: "Starred", icon: "⭐" },
-  { id: "sent", label: "Sent", icon: "📤" },
-  { id: "trash", label: "Trash", icon: "🗑" },
+  { id: 'starred', label: 'Starred', icon: '⭐' },
+  { id: 'sent', label: 'Sent', icon: '📤' },
+  { id: 'trash', label: 'Trash', icon: '🗑' },
 ];
 
 const toolsNav = [
-  { id: "subscriptions", label: "Subscriptions", icon: "📬" },
-  { id: "digest", label: "Digest", icon: "📓" },
-  { id: "filters", label: "Recipe studio", icon: "⚙️" },
-  { id: "analytics", label: "Analytics", icon: "📊" },
+  { id: 'subscriptions', label: 'Subscriptions', icon: '📬' },
+  { id: 'digest', label: 'Digest', icon: '📓' },
+  { id: 'filters', label: 'Recipe studio', icon: '⚙️' },
+  { id: 'analytics', label: 'Analytics', icon: '📊' },
 ];
 
 interface Props {
@@ -55,11 +55,11 @@ function NavGroup({
         <button
           key={item.id}
           onClick={() => onNavigate(item.id)}
-          aria-current={view === item.id ? "page" : undefined}
+          aria-current={view === item.id ? 'page' : undefined}
           className={`w-full text-left px-3 min-h-11 rounded-lg mb-0.5 flex items-center gap-2.5 transition cursor-pointer text-sm ${
             view === item.id
-              ? "bg-[var(--accent)]/10 text-[var(--accent)] font-medium"
-              : "hover:bg-[var(--border)]/50 text-[var(--text-muted)]"
+              ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
+              : 'hover:bg-[var(--border)]/50 text-[var(--text-muted)]'
           }`}
         >
           <span aria-hidden>{item.icon}</span>
@@ -87,9 +87,7 @@ function SidebarBody({ view, onNavigate, onSignOut, userImage, userName }: Props
       </nav>
 
       <div className="p-3 border-t border-[var(--border)] flex items-center gap-2">
-        {userImage && (
-          <img src={userImage} alt="" className="w-7 h-7 rounded-full" />
-        )}
+        {userImage && <img src={userImage} alt="" className="w-7 h-7 rounded-full" />}
         <span className="text-sm truncate flex-1" title={userName}>
           {userName}
         </span>
@@ -109,10 +107,10 @@ export function Sidebar(props: Props) {
 
   // Lock body scroll while the mobile drawer is open.
   useEffect(() => {
-    if (typeof document === "undefined") return;
-    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    if (typeof document === 'undefined') return;
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = '';
     };
   }, [mobileOpen]);
 

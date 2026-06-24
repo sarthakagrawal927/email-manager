@@ -1,9 +1,6 @@
-import { createAuth, type AuthEnv } from "./auth";
+import { createAuth, type AuthEnv } from './auth';
 
-export async function getGmailAccessToken(
-  env: AuthEnv,
-  headers: Headers,
-): Promise<string | null> {
+export async function getGmailAccessToken(env: AuthEnv, headers: Headers): Promise<string | null> {
   const auth = createAuth(env);
   const session = await auth.api.getSession({ headers });
   if (!session?.user?.id) return null;
@@ -16,14 +13,14 @@ export async function getGmailAccessToken(
   // force-signed the user out.
   try {
     const tokens = await auth.api.getAccessToken({
-      body: { providerId: "google", userId: session.user.id },
+      body: { providerId: 'google', userId: session.user.id },
       headers,
     });
     return tokens?.accessToken ?? null;
   } catch (err) {
     console.error(
-      "getGmailAccessToken: failed to get/refresh Google access token:",
-      err instanceof Error ? err.message : err,
+      'getGmailAccessToken: failed to get/refresh Google access token:',
+      err instanceof Error ? err.message : err
     );
     return null;
   }

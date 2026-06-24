@@ -1,7 +1,7 @@
-import { Outlet } from "react-router-dom";
+import { Outlet } from 'react-router-dom';
 
-import { Providers } from "@/components/Providers";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Providers } from '@/components/Providers';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export function RootLayout() {
   return (

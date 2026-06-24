@@ -14,11 +14,11 @@
  * `posthog-js` (`track`), which is initialized by
  * `installBrowserMonitoring()` in `foundry-monitoring.ts`.
  */
-"use client";
+'use client';
 
-import posthog from "posthog-js";
+import posthog from 'posthog-js';
 
-const PROJECT = "email-manager" as const;
+const PROJECT = 'email-manager' as const;
 
 /**
  * The product-specific action behind a `core_action` event.
@@ -26,11 +26,11 @@ const PROJECT = "email-manager" as const;
  * and unsubscribing from a sender.
  */
 export type CoreAction =
-  | "email_opened"
-  | "filter_installed"
-  | "unsubscribed"
-  | "digest_generated"
-  | "digest_exported";
+  | 'email_opened'
+  | 'filter_installed'
+  | 'unsubscribed'
+  | 'digest_generated'
+  | 'digest_exported';
 
 interface AnalyticsEventMap {
   /** First session after an account is created. */
@@ -53,27 +53,27 @@ export function trackEvent(event: string, properties: Record<string, unknown> = 
 
 function emit<K extends keyof AnalyticsEventMap>(
   event: K,
-  props: Omit<AnalyticsEventMap[K], "project_id">,
+  props: Omit<AnalyticsEventMap[K], 'project_id'>
 ): void {
   trackEvent(event, props);
 }
 
 /** Fire once, on the first session after an account is created. */
 export function trackSignup(): void {
-  emit("signup", {});
+  emit('signup', {});
 }
 
 /** Fire once, when the user first reaches real value (first email opened). */
 export function trackActivated(): void {
-  emit("activated", {});
+  emit('activated', {});
 }
 
 /** Fire on each completion of the core product action. */
 export function trackCoreAction(action: CoreAction): void {
-  emit("core_action", { action });
+  emit('core_action', { action });
 }
 
 /** Fire on session start for a user who has prior activity. */
 export function trackReturned(): void {
-  emit("returned", {});
+  emit('returned', {});
 }

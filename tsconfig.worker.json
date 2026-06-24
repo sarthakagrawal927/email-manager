@@ -15,5 +15,12 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/worker.ts", "src/lib/auth.ts", "src/lib/get-access-token.ts", "src/lib/gmail.ts", "src/lib/security-headers.ts", "src/db/schema.ts"]
+  "include": [
+    "src/worker.ts",
+    "src/lib/auth.ts",
+    "src/lib/get-access-token.ts",
+    "src/lib/gmail.ts",
+    "src/lib/security-headers.ts",
+    "src/db/schema.ts"
+  ]
 }
