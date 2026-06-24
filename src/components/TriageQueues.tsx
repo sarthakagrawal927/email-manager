@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import type { Email } from "@/lib/gmail";
-import { senderName, triageEmails, triageSummary, type TriageItem } from "@/lib/triage";
-import { useTriageActions } from "@/components/TriageActionsProvider";
-import { TriageActionBar, TriageStateBadge } from "@/components/TriageActionBar";
-import { TriageQueueLedger } from "@/components/TriageQueueLedger";
-import { actionLabel, stateClass, stateLabel } from "@/lib/triage-actions";
+import { useMemo } from 'react';
+import type { Email } from '@/lib/gmail';
+import { senderName, triageEmails, triageSummary, type TriageItem } from '@/lib/triage';
+import { useTriageActions } from '@/components/TriageActionsProvider';
+import { TriageActionBar, TriageStateBadge } from '@/components/TriageActionBar';
+import { TriageQueueLedger } from '@/components/TriageQueueLedger';
+import { actionLabel, stateClass, stateLabel } from '@/lib/triage-actions';
 
 interface Props {
   emails: Email[];
@@ -19,15 +19,15 @@ interface Props {
   onNavigateFilters?: () => void;
 }
 
-function priorityClass(priority: TriageItem["priority"]) {
-  if (priority === "high") return "text-red-500 bg-red-500/10";
-  if (priority === "medium") return "text-amber-500 bg-amber-500/10";
-  return "text-[var(--text-muted)] bg-[var(--border)]/40";
+function priorityClass(priority: TriageItem['priority']) {
+  if (priority === 'high') return 'text-red-500 bg-red-500/10';
+  if (priority === 'medium') return 'text-amber-500 bg-amber-500/10';
+  return 'text-[var(--text-muted)] bg-[var(--border)]/40';
 }
 
 function formatRelative(ms: number, now: number) {
   const delta = Math.max(0, ms - now);
-  if (delta < 60_000) return "<1m";
+  if (delta < 60_000) return '<1m';
   if (delta < 3_600_000) return `${Math.round(delta / 60_000)}m`;
   if (delta < 86_400_000) return `${Math.round(delta / 3_600_000)}h`;
   return `${Math.round(delta / 86_400_000)}d`;
@@ -56,13 +56,13 @@ export function TriageQueues({
 
   // Snoozed follow-up items — queued records with a future snoozeUntil.
   const followUps = records
-    .filter((r) => r.state === "queued" && r.snoozeUntil && r.snoozeUntil > now)
+    .filter((r) => r.state === 'queued' && r.snoozeUntil && r.snoozeUntil > now)
     .sort((a, b) => (a.snoozeUntil ?? 0) - (b.snoozeUntil ?? 0))
     .slice(0, 10);
 
   const flatItems = useMemo(
     () => queues.flatMap((queue) => queue.items.map((item) => ({ queue, item }))),
-    [queues],
+    [queues]
   );
 
   return (
@@ -91,7 +91,7 @@ export function TriageQueues({
               disabled={loading}
               className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-60 cursor-pointer"
             >
-              {loading ? "Refreshing…" : "Refresh"}
+              {loading ? 'Refreshing…' : 'Refresh'}
             </button>
           </div>
         </div>
@@ -131,8 +131,8 @@ export function TriageQueues({
             <p className="text-sm text-[var(--text-muted)]">
               Inbox zero for this batch.
               {counts.queued > 0
-                ? ` ${counts.queued} item${counts.queued === 1 ? "" : "s"} will reappear when snoozed time elapses.`
-                : " Refresh to pull the next batch."}
+                ? ` ${counts.queued} item${counts.queued === 1 ? '' : 's'} will reappear when snoozed time elapses.`
+                : ' Refresh to pull the next batch.'}
             </p>
             <button
               type="button"
@@ -152,9 +152,12 @@ export function TriageQueues({
                 </h2>
                 <ul className="mt-2 space-y-1.5">
                   {followUps.map((r, idx) => (
-                    <li key={`${r.emailId}-${r.at}-${idx}`} className="flex items-center gap-2 text-[11px]">
+                    <li
+                      key={`${r.emailId}-${r.at}-${idx}`}
+                      className="flex items-center gap-2 text-[11px]"
+                    >
                       <span className="shrink-0 rounded-full bg-sky-500/10 px-1.5 py-0.5 text-sky-500">
-                        {r.snoozeUntil ? formatRelative(r.snoozeUntil, now) : "due"}
+                        {r.snoozeUntil ? formatRelative(r.snoozeUntil, now) : 'due'}
                       </span>
                       <span className="truncate text-[var(--text)]">{r.emailSubject}</span>
                     </li>
@@ -179,12 +182,16 @@ export function TriageQueues({
                       key={`${r.emailId}-${r.at}-${idx}`}
                       className="flex items-center gap-2 text-[11px]"
                     >
-                      <span className={`shrink-0 rounded-full px-1.5 py-0.5 ${stateClass(r.state)}`}>
+                      <span
+                        className={`shrink-0 rounded-full px-1.5 py-0.5 ${stateClass(r.state)}`}
+                      >
                         {stateLabel(r.state)}
                       </span>
-                      <span className="shrink-0 text-[var(--text-muted)]">{actionLabel(r.kind)}</span>
+                      <span className="shrink-0 text-[var(--text-muted)]">
+                        {actionLabel(r.kind)}
+                      </span>
                       <span className="truncate">{r.emailSubject}</span>
-                      {r.state === "queued" && r.snoozeUntil && (
+                      {r.state === 'queued' && r.snoozeUntil && (
                         <span className="shrink-0 text-[var(--text-muted)]">
                           {formatRelative(r.snoozeUntil, now)}
                         </span>
@@ -199,12 +206,12 @@ export function TriageQueues({
               {flatItems.map(({ queue, item }) => {
                 const selected = item.email.id === selectedId;
                 const lastRecord = latestFor(item.email.id);
-                const lastFailed = lastRecord?.state === "failed";
+                const lastFailed = lastRecord?.state === 'failed';
                 return (
                   <article
                     key={item.id}
                     className={`px-4 py-3 transition ${
-                      selected ? "bg-[var(--accent)]/[0.08]" : "hover:bg-[var(--border)]/20"
+                      selected ? 'bg-[var(--accent)]/[0.08]' : 'hover:bg-[var(--border)]/20'
                     }`}
                   >
                     <button
@@ -215,29 +222,42 @@ export function TriageQueues({
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${priorityClass(item.priority)}`}>
+                            <span
+                              className={`rounded-full px-1.5 py-0.5 text-[10px] ${priorityClass(item.priority)}`}
+                            >
                               {item.priority}
                             </span>
-                            <span className="text-[10px] text-[var(--text-muted)]">{queue.title}</span>
+                            <span className="text-[10px] text-[var(--text-muted)]">
+                              {queue.title}
+                            </span>
                             <TriageStateBadge emailId={item.email.id} />
-                            {queue.id === "unsubscribe" && onNavigateFilters && (
+                            {queue.id === 'unsubscribe' && onNavigateFilters && (
                               <button
                                 type="button"
-                                onClick={(e) => { e.stopPropagation(); onNavigateFilters(); }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onNavigateFilters();
+                                }}
                                 className="text-[10px] text-[var(--accent)] hover:underline"
                               >
                                 → Filters
                               </button>
                             )}
                           </div>
-                          <h3 className="mt-1 truncate text-sm font-medium">{item.email.subject}</h3>
-                          <p className="truncate text-xs text-[var(--text-muted)]">{senderName(item.email)}</p>
+                          <h3 className="mt-1 truncate text-sm font-medium">
+                            {item.email.subject}
+                          </h3>
+                          <p className="truncate text-xs text-[var(--text-muted)]">
+                            {senderName(item.email)}
+                          </p>
                         </div>
                         <span className="shrink-0 text-[10px] text-[var(--text-muted)]">
                           {new Date(item.email.date).toLocaleDateString()}
                         </span>
                       </div>
-                      <p className="mt-1 line-clamp-1 text-xs text-[var(--text-muted)]">{item.email.snippet}</p>
+                      <p className="mt-1 line-clamp-1 text-xs text-[var(--text-muted)]">
+                        {item.email.snippet}
+                      </p>
                     </button>
 
                     {lastFailed && lastRecord.message && (

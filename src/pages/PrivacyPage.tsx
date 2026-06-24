@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 
 export function PrivacyPage() {
   return (
@@ -43,8 +43,8 @@ export function PrivacyPage() {
 
       <h2 className="mt-8 text-base font-semibold">Deletion</h2>
       <p className="mt-2">
-        Revoke the Google OAuth grant in your Google account to disconnect immediately. Any installed
-        Gmail filters remain in Gmail until you remove them there.
+        Revoke the Google OAuth grant in your Google account to disconnect immediately. Any
+        installed Gmail filters remain in Gmail until you remove them there.
       </p>
     </main>
   );

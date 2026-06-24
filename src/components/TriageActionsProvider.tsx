@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   createContext,
@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
   type ReactNode,
-} from "react";
+} from 'react';
 import {
   buildActiveMap,
   countByState,
@@ -19,7 +19,7 @@ import {
   type TriageActionInput,
   type TriageActionKind,
   type TriageActionRecord,
-} from "@/lib/triage-actions";
+} from '@/lib/triage-actions';
 
 interface TriageActionsContextValue {
   records: TriageActionRecord[];
@@ -27,7 +27,11 @@ interface TriageActionsContextValue {
   activeMap: Map<string, TriageActionRecord>;
   counts: ReturnType<typeof countByState>;
   latestFor: (emailId: string) => TriageActionRecord | undefined;
-  runAction: (input: TriageActionInput, kind: TriageActionKind, opts?: { snoozeMs?: number }) => Promise<TriageActionRecord>;
+  runAction: (
+    input: TriageActionInput,
+    kind: TriageActionKind,
+    opts?: { snoozeMs?: number }
+  ) => Promise<TriageActionRecord>;
   undoLatest: (emailId: string) => void;
 }
 
@@ -35,7 +39,7 @@ const TriageActionsContext = createContext<TriageActionsContextValue | null>(nul
 
 export function TriageActionsProvider({ children }: { children: ReactNode }) {
   const [records, setRecords] = useState<TriageActionRecord[]>(() =>
-    typeof window === "undefined" ? [] : loadRecords(),
+    typeof window === 'undefined' ? [] : loadRecords()
   );
   const [now, setNow] = useState(() => Date.now());
 
@@ -74,29 +78,24 @@ export function TriageActionsProvider({ children }: { children: ReactNode }) {
       pushRecord(record);
       return record;
     },
-    [pushRecord],
+    [pushRecord]
   );
 
   const activeMap = useMemo(() => buildActiveMap(records, now), [records, now]);
   const counts = useMemo(() => countByState(records, now), [records, now]);
 
-  const latestFor = useCallback(
-    (emailId: string) => latestRecord(records, emailId),
-    [records],
-  );
+  const latestFor = useCallback((emailId: string) => latestRecord(records, emailId), [records]);
 
   const value = useMemo(
     () => ({ records, now, activeMap, counts, latestFor, runAction, undoLatest }),
-    [records, now, activeMap, counts, latestFor, runAction, undoLatest],
+    [records, now, activeMap, counts, latestFor, runAction, undoLatest]
   );
 
-  return (
-    <TriageActionsContext.Provider value={value}>{children}</TriageActionsContext.Provider>
-  );
+  return <TriageActionsContext.Provider value={value}>{children}</TriageActionsContext.Provider>;
 }
 
 export function useTriageActions() {
   const ctx = useContext(TriageActionsContext);
-  if (!ctx) throw new Error("useTriageActions must be used within TriageActionsProvider");
+  if (!ctx) throw new Error('useTriageActions must be used within TriageActionsProvider');
   return ctx;
 }

@@ -1,77 +1,72 @@
-"use client";
+'use client';
 
-import { signIn, signOut } from "@/lib/auth-client";
-import { useSession } from "@/lib/use-session";
-import {
-  trackActivated,
-  trackCoreAction,
-  trackReturned,
-  trackSignup,
-} from "@/lib/analytics";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Sidebar } from "@/components/Sidebar";
-import { EmailList } from "@/components/EmailList";
-import { EmailDetail } from "@/components/EmailDetail";
-import { Subscriptions } from "@/components/Subscriptions";
-import { Analytics } from "@/components/Analytics";
-import { SemanticSearch } from "@/components/SemanticSearch";
-import { TriageQueues } from "@/components/TriageQueues";
-import { GmailFilterBuilder } from "@/components/GmailFilterBuilder";
-import { WeeklyDigestView } from "@/components/WeeklyDigestView";
-import { WorkSurface } from "@/components/WorkSurface";
-import { TriageActionsProvider } from "@/components/TriageActionsProvider";
-import type { Email } from "@/lib/gmail";
+import { signIn, signOut } from '@/lib/auth-client';
+import { useSession } from '@/lib/use-session';
+import { trackActivated, trackCoreAction, trackReturned, trackSignup } from '@/lib/analytics';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Sidebar } from '@/components/Sidebar';
+import { EmailList } from '@/components/EmailList';
+import { EmailDetail } from '@/components/EmailDetail';
+import { Subscriptions } from '@/components/Subscriptions';
+import { Analytics } from '@/components/Analytics';
+import { SemanticSearch } from '@/components/SemanticSearch';
+import { TriageQueues } from '@/components/TriageQueues';
+import { GmailFilterBuilder } from '@/components/GmailFilterBuilder';
+import { WeeklyDigestView } from '@/components/WeeklyDigestView';
+import { WorkSurface } from '@/components/WorkSurface';
+import { TriageActionsProvider } from '@/components/TriageActionsProvider';
+import type { Email } from '@/lib/gmail';
 
 type View =
-  | "today"
-  | "inbox"
-  | "starred"
-  | "sent"
-  | "trash"
-  | "subscriptions"
-  | "analytics"
-  | "search"
-  | "digest"
-  | "filters";
+  | 'today'
+  | 'inbox'
+  | 'starred'
+  | 'sent'
+  | 'trash'
+  | 'subscriptions'
+  | 'analytics'
+  | 'search'
+  | 'digest'
+  | 'filters';
 
 const VIEWS = new Set<string>([
-  "today",
-  "inbox",
-  "starred",
-  "sent",
-  "trash",
-  "subscriptions",
-  "analytics",
-  "search",
-  "digest",
-  "filters",
+  'today',
+  'inbox',
+  'starred',
+  'sent',
+  'trash',
+  'subscriptions',
+  'analytics',
+  'search',
+  'digest',
+  'filters',
 ]);
 
 const LABEL_MAP: Record<string, string> = {
-  today: "INBOX",
-  inbox: "INBOX",
-  starred: "STARRED",
-  sent: "SENT",
-  trash: "TRASH",
+  today: 'INBOX',
+  inbox: 'INBOX',
+  starred: 'STARRED',
+  sent: 'SENT',
+  trash: 'TRASH',
 };
 
 function getViewFromHash(): View {
-  if (typeof window === "undefined") return "today";
-  const hash = window.location.hash.replace("#", "");
-  return VIEWS.has(hash) ? (hash as View) : "today";
+  if (typeof window === 'undefined') return 'today';
+  const hash = window.location.hash.replace('#', '');
+  return VIEWS.has(hash) ? (hash as View) : 'today';
 }
 
 export default function HomeClient() {
   const { session: sessionData, loading: isPending } = useSession();
   const session = sessionData?.user ? sessionData : null;
-  const status = isPending ? "loading" : session ? "authenticated" : "unauthenticated";
-  const [view, setViewState] = useState<View>("today");
+  const status = isPending ? 'loading' : session ? 'authenticated' : 'unauthenticated';
+  const [view, setViewState] = useState<View>('today');
 
   useEffect(() => {
     setViewState(getViewFromHash());
     const onHashChange = () => setViewState(getViewFromHash());
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
   const setView = useCallback((v: View) => {
@@ -83,7 +78,7 @@ export default function HomeClient() {
   const [selected, setSelected] = useState<Email | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const fetchingRef = useRef(false);
@@ -116,7 +111,7 @@ export default function HomeClient() {
   const handleSelectEmail = useCallback((email: Email | null) => {
     setSelected(email);
     if (email) {
-      trackCoreAction("email_opened");
+      trackCoreAction('email_opened');
       if (!activatedRef.current) {
         activatedRef.current = true;
         trackActivated();
@@ -134,9 +129,9 @@ export default function HomeClient() {
 
       try {
         const params = new URLSearchParams();
-        if (LABEL_MAP[view]) params.set("label", LABEL_MAP[view]);
-        if (search) params.set("q", search);
-        if (pageToken) params.set("pageToken", pageToken);
+        if (LABEL_MAP[view]) params.set('label', LABEL_MAP[view]);
+        if (search) params.set('q', search);
+        if (pageToken) params.set('pageToken', pageToken);
 
         const res = await fetch(`/api/emails?${params}`);
 
@@ -147,7 +142,7 @@ export default function HomeClient() {
 
         if (!res.ok) {
           const text = await res.text();
-          console.error("Email fetch error:", res.status, text);
+          console.error('Email fetch error:', res.status, text);
           setError(`Failed to load emails (${res.status})`);
           return;
         }
@@ -155,7 +150,7 @@ export default function HomeClient() {
         const data = await res.json();
 
         if (data.error) {
-          console.error("Email fetch error:", data.error);
+          console.error('Email fetch error:', data.error);
           setError(data.error);
           return;
         }
@@ -172,8 +167,8 @@ export default function HomeClient() {
         setNextPageToken(data.nextPageToken);
       } catch (err) {
         if (requestSeq !== fetchSeqRef.current) return;
-        console.error("Email fetch exception:", err);
-        setError("Failed to load emails");
+        console.error('Email fetch exception:', err);
+        setError('Failed to load emails');
       } finally {
         if (requestSeq !== fetchSeqRef.current) return;
         setLoading(false);
@@ -190,7 +185,7 @@ export default function HomeClient() {
     }
   }, [session, view, fetchEmails, sessionData]);
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
@@ -211,8 +206,8 @@ export default function HomeClient() {
         </span>
         <h1 className="text-xl font-semibold">Sign in to Kinetic</h1>
         <p className="max-w-sm text-sm text-[var(--text-muted)]">
-          Connect Gmail with read-only access to start triaging. Your
-          messages and search embeddings stay in your browser.
+          Connect Gmail with read-only access to start triaging. Your messages and search embeddings
+          stay in your browser.
         </p>
         <button
           type="button"
@@ -233,19 +228,19 @@ export default function HomeClient() {
   }
 
   const openDigestContext = useCallback(
-    (kind: "sender" | "thread", value: string, subject?: string) => {
-      if (kind === "sender") {
+    (kind: 'sender' | 'thread', value: string, subject?: string) => {
+      if (kind === 'sender') {
         setSearch(`from:${value}`);
       } else {
-        setSearch(subject ? `subject:"${subject.replace(/"/g, "")}"` : "");
+        setSearch(subject ? `subject:"${subject.replace(/"/g, '')}"` : '');
       }
       setSelected(null);
-      setView("inbox");
+      setView('inbox');
     },
-    [setView],
+    [setView]
   );
 
-  const isPrimaryView = view === "today" || view === "inbox";
+  const isPrimaryView = view === 'today' || view === 'inbox';
   const viewLabel = view.charAt(0).toUpperCase() + view.slice(1);
 
   return (
@@ -255,7 +250,7 @@ export default function HomeClient() {
         onNavigate={(v) => setView(v as View)}
         onSignOut={() => signOut()}
         userImage={sessionData?.user?.image ?? undefined}
-        userName={sessionData?.user?.name ?? ""}
+        userName={sessionData?.user?.name ?? ''}
         mobileOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
       />
@@ -280,120 +275,109 @@ export default function HomeClient() {
         </header>
 
         <main className="flex flex-1 overflow-hidden">
-        <TriageActionsProvider>
-        {view === "subscriptions" ? (
-          <Subscriptions />
-        ) : view === "analytics" ? (
-          <Analytics />
-        ) : view === "digest" ? (
-          <WeeklyDigestView
-            onOpenSender={(email) => openDigestContext("sender", email)}
-            onOpenThread={(_threadId, subject) => openDigestContext("thread", "", subject)}
-            onNavigateSearch={() => setView("search")}
-          />
-        ) : view === "filters" ? (
-          <GmailFilterBuilder />
-        ) : view === "today" ? (
-          <WorkSurface
-            hasSelection={Boolean(selected)}
-            list={
-              <TriageQueues
+          <TriageActionsProvider>
+            {view === 'subscriptions' ? (
+              <Subscriptions />
+            ) : view === 'analytics' ? (
+              <Analytics />
+            ) : view === 'digest' ? (
+              <WeeklyDigestView
+                onOpenSender={(email) => openDigestContext('sender', email)}
+                onOpenThread={(_threadId, subject) => openDigestContext('thread', '', subject)}
+                onNavigateSearch={() => setView('search')}
+              />
+            ) : view === 'filters' ? (
+              <GmailFilterBuilder />
+            ) : view === 'today' ? (
+              <WorkSurface
+                hasSelection={Boolean(selected)}
+                list={
+                  <TriageQueues
+                    emails={emails}
+                    loading={loading}
+                    error={error}
+                    selectedId={selected?.id}
+                    onSelect={handleSelectEmail}
+                    onRefresh={() => fetchEmails()}
+                    onOpenInbox={() => setView('inbox')}
+                    onNavigateFilters={() => setView('filters')}
+                  />
+                }
+                detail={
+                  selected ? (
+                    <EmailDetail email={selected} onBack={() => setSelected(null)} showBack />
+                  ) : null
+                }
+              />
+            ) : view === 'inbox' ? (
+              error ? (
+                <div className="flex flex-1 items-center justify-center">
+                  <div className="max-w-sm space-y-4 px-6 text-center">
+                    <p className="text-sm text-[var(--text-muted)]">{error}</p>
+                    <button
+                      onClick={() => fetchEmails()}
+                      className="cursor-pointer rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)]"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <WorkSurface
+                  hasSelection={Boolean(selected)}
+                  list={
+                    <EmailList
+                      emails={emails}
+                      loading={loading}
+                      search={search}
+                      label={view}
+                      selectedId={selected?.id}
+                      onSearchChange={setSearch}
+                      onSelect={handleSelectEmail}
+                      onRefresh={() => fetchEmails()}
+                      onLoadMore={nextPageToken ? () => fetchEmails(nextPageToken) : undefined}
+                      primary={isPrimaryView}
+                      triageLedger
+                    />
+                  }
+                  detail={
+                    selected ? (
+                      <EmailDetail email={selected} onBack={() => setSelected(null)} showBack />
+                    ) : null
+                  }
+                />
+              )
+            ) : selected ? (
+              <EmailDetail email={selected} onBack={() => setSelected(null)} />
+            ) : view === 'search' ? (
+              <SemanticSearch onSelect={handleSelectEmail} />
+            ) : error ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center space-y-4 max-w-sm px-6">
+                  <p className="text-sm text-[var(--text-muted)]">{error}</p>
+                  <button
+                    onClick={() => fetchEmails()}
+                    className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition cursor-pointer text-sm font-medium"
+                  >
+                    Try again
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <EmailList
                 emails={emails}
                 loading={loading}
-                error={error}
-                selectedId={selected?.id}
+                search={search}
+                label={view}
+                selectedId={null}
+                onSearchChange={setSearch}
                 onSelect={handleSelectEmail}
                 onRefresh={() => fetchEmails()}
-                onOpenInbox={() => setView("inbox")}
-                onNavigateFilters={() => setView("filters")}
+                onLoadMore={nextPageToken ? () => fetchEmails(nextPageToken) : undefined}
+                primary={isPrimaryView}
               />
-            }
-            detail={
-              selected ? (
-                <EmailDetail
-                  email={selected}
-                  onBack={() => setSelected(null)}
-                  showBack
-                />
-              ) : null
-            }
-          />
-        ) : view === "inbox" ? (
-          error ? (
-            <div className="flex flex-1 items-center justify-center">
-              <div className="max-w-sm space-y-4 px-6 text-center">
-                <p className="text-sm text-[var(--text-muted)]">{error}</p>
-                <button
-                  onClick={() => fetchEmails()}
-                  className="cursor-pointer rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)]"
-                >
-                  Try again
-                </button>
-              </div>
-            </div>
-          ) : (
-            <WorkSurface
-              hasSelection={Boolean(selected)}
-              list={
-                <EmailList
-                  emails={emails}
-                  loading={loading}
-                  search={search}
-                  label={view}
-                  selectedId={selected?.id}
-                  onSearchChange={setSearch}
-                  onSelect={handleSelectEmail}
-                  onRefresh={() => fetchEmails()}
-                  onLoadMore={nextPageToken ? () => fetchEmails(nextPageToken) : undefined}
-                  primary={isPrimaryView}
-                  triageLedger
-                />
-              }
-              detail={
-                selected ? (
-                  <EmailDetail
-                    email={selected}
-                    onBack={() => setSelected(null)}
-                    showBack
-                  />
-                ) : null
-              }
-            />
-          )
-        ) : selected ? (
-          <EmailDetail
-            email={selected}
-            onBack={() => setSelected(null)}
-          />
-        ) : view === "search" ? (
-          <SemanticSearch onSelect={handleSelectEmail} />
-        ) : error ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center space-y-4 max-w-sm px-6">
-              <p className="text-sm text-[var(--text-muted)]">{error}</p>
-              <button
-                onClick={() => fetchEmails()}
-                className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition cursor-pointer text-sm font-medium"
-              >
-                Try again
-              </button>
-            </div>
-          </div>
-        ) : (
-          <EmailList
-            emails={emails}
-            loading={loading}
-            search={search}
-            label={view}
-            selectedId={null}
-            onSearchChange={setSearch}
-            onSelect={handleSelectEmail}
-            onRefresh={() => fetchEmails()}
-            onLoadMore={nextPageToken ? () => fetchEmails(nextPageToken) : undefined}
-            primary={isPrimaryView}
-          />
-        )}
-        </TriageActionsProvider>
+            )}
+          </TriageActionsProvider>
         </main>
       </div>
     </div>

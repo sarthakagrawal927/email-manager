@@ -1,6 +1,6 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
-import { captureError } from "@/lib/foundry-monitoring";
+import { captureError } from '@/lib/foundry-monitoring';
 
 type Props = {
   children: ReactNode;
@@ -19,7 +19,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error(error, info);
-    captureError(error, { scope: "root", source: info.componentStack ?? "error_boundary" });
+    captureError(error, { scope: 'root', source: info.componentStack ?? 'error_boundary' });
   }
 
   render() {
@@ -29,8 +29,8 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="max-w-md text-center">
             <h2 className="mb-3 text-2xl font-bold">Something went wrong</h2>
             <p className="mb-6 text-sm opacity-70">
-              An unexpected error occurred on our end. Your emails stay in your browser and are
-              safe — try again, and if it keeps happening, come back in a few minutes.
+              An unexpected error occurred on our end. Your emails stay in your browser and are safe
+              — try again, and if it keeps happening, come back in a few minutes.
             </p>
             <div className="flex justify-center gap-3">
               <button
@@ -42,7 +42,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </button>
               <button
                 type="button"
-                onClick={() => window.location.replace("/")}
+                onClick={() => window.location.replace('/')}
                 className="rounded border px-4 py-2 hover:opacity-80"
               >
                 Home

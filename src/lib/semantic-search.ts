@@ -1,6 +1,6 @@
-import type { StoredEmail } from "./db";
-import { getAllEmails } from "./db";
-import { embed } from "./embeddings";
+import type { StoredEmail } from './db';
+import { getAllEmails } from './db';
+import { embed } from './embeddings';
 
 export interface SearchResult {
   email: StoredEmail;
@@ -18,10 +18,7 @@ function dotProduct(a: number[], b: number[]): number {
 }
 
 export async function semanticSearch(query: string): Promise<SearchResult[]> {
-  const [queryEmbedding, emails] = await Promise.all([
-    embed(query),
-    getAllEmails(),
-  ]);
+  const [queryEmbedding, emails] = await Promise.all([embed(query), getAllEmails()]);
 
   const queryLower = query.toLowerCase();
 

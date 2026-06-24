@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-export type TriageActionKind = "summarize" | "defer" | "reply" | "followup" | "skip";
-export type TriageActionState = "queued" | "applied" | "skipped" | "failed";
+export type TriageActionKind = 'summarize' | 'defer' | 'reply' | 'followup' | 'skip';
+export type TriageActionState = 'queued' | 'applied' | 'skipped' | 'failed';
 
 export interface TriageActionRecord {
   emailId: string;
@@ -13,11 +13,11 @@ export interface TriageActionRecord {
   snoozeUntil?: number;
 }
 
-const STORAGE_KEY = "email-manager:triage-actions:v1";
+const STORAGE_KEY = 'email-manager:triage-actions:v1';
 const MAX_RECORDS = 200;
 
 export function loadRecords(): TriageActionRecord[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === 'undefined') return [];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
@@ -29,7 +29,7 @@ export function loadRecords(): TriageActionRecord[] {
 }
 
 export function saveRecords(records: TriageActionRecord[]) {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     const trimmed = records.slice(-MAX_RECORDS);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
@@ -40,11 +40,16 @@ export function saveRecords(records: TriageActionRecord[]) {
 
 export function actionLabel(kind: TriageActionKind): string {
   switch (kind) {
-    case "summarize": return "Summarize";
-    case "defer": return "Defer";
-    case "reply": return "Reply";
-    case "followup": return "Follow up";
-    case "skip": return "Ignore";
+    case 'summarize':
+      return 'Summarize';
+    case 'defer':
+      return 'Defer';
+    case 'reply':
+      return 'Reply';
+    case 'followup':
+      return 'Follow up';
+    case 'skip':
+      return 'Ignore';
   }
 }
 
@@ -52,19 +57,27 @@ export function actionLabel(kind: TriageActionKind): string {
 // queued / applied / failed / ignored vocabulary used across the product.
 export function stateLabel(state: TriageActionState): string {
   switch (state) {
-    case "queued": return "Queued";
-    case "applied": return "Applied";
-    case "skipped": return "Ignored";
-    case "failed": return "Failed";
+    case 'queued':
+      return 'Queued';
+    case 'applied':
+      return 'Applied';
+    case 'skipped':
+      return 'Ignored';
+    case 'failed':
+      return 'Failed';
   }
 }
 
 export function stateClass(state: TriageActionState): string {
   switch (state) {
-    case "applied": return "text-emerald-500 bg-emerald-500/10";
-    case "queued": return "text-sky-500 bg-sky-500/10";
-    case "skipped": return "text-[var(--text-muted)] bg-[var(--border)]/40";
-    case "failed": return "text-red-500 bg-red-500/10";
+    case 'applied':
+      return 'text-emerald-500 bg-emerald-500/10';
+    case 'queued':
+      return 'text-sky-500 bg-sky-500/10';
+    case 'skipped':
+      return 'text-[var(--text-muted)] bg-[var(--border)]/40';
+    case 'failed':
+      return 'text-red-500 bg-red-500/10';
   }
 }
 
@@ -81,7 +94,7 @@ function snoozeLabel(ms: number): string {
 }
 
 export function isActiveQueue(record: TriageActionRecord, now = Date.now()): boolean {
-  if (record.state !== "queued") return false;
+  if (record.state !== 'queued') return false;
   if (!record.snoozeUntil) return true;
   return record.snoozeUntil > now;
 }
@@ -91,10 +104,13 @@ export function isActiveQueue(record: TriageActionRecord, now = Date.now()): boo
  * "applied", "skipped", or "queued (not yet due)" hides the item from the
  * working queue; expired snoozes drop back to pending.
  */
-export function buildActiveMap(records: TriageActionRecord[], now = Date.now()): Map<string, TriageActionRecord> {
+export function buildActiveMap(
+  records: TriageActionRecord[],
+  now = Date.now()
+): Map<string, TriageActionRecord> {
   const map = new Map<string, TriageActionRecord>();
   for (const r of records) {
-    if (r.state === "queued" && !isActiveQueue(r, now)) continue;
+    if (r.state === 'queued' && !isActiveQueue(r, now)) continue;
     const existing = map.get(r.emailId);
     if (!existing || r.at >= existing.at) map.set(r.emailId, r);
   }
@@ -103,7 +119,10 @@ export function buildActiveMap(records: TriageActionRecord[], now = Date.now()):
 
 /** Latest record for an email regardless of expiry — used to show the
  *  most recently observed state on inbox rows and thread headers. */
-export function latestRecord(records: TriageActionRecord[], emailId: string): TriageActionRecord | undefined {
+export function latestRecord(
+  records: TriageActionRecord[],
+  emailId: string
+): TriageActionRecord | undefined {
   let latest: TriageActionRecord | undefined;
   for (const r of records) {
     if (r.emailId !== emailId) continue;
@@ -115,10 +134,10 @@ export function latestRecord(records: TriageActionRecord[], emailId: string): Tr
 export function countByState(records: TriageActionRecord[], now = Date.now()) {
   const active = Array.from(buildActiveMap(records, now).values());
   return {
-    queued: active.filter((r) => r.state === "queued").length,
-    applied: active.filter((r) => r.state === "applied").length,
-    skipped: active.filter((r) => r.state === "skipped").length,
-    failed: active.filter((r) => r.state === "failed").length,
+    queued: active.filter((r) => r.state === 'queued').length,
+    applied: active.filter((r) => r.state === 'applied').length,
+    skipped: active.filter((r) => r.state === 'skipped').length,
+    failed: active.filter((r) => r.state === 'failed').length,
   };
 }
 
@@ -144,47 +163,61 @@ function extractEmailAddress(from: string): string | null {
 export async function runTriageAction(
   input: TriageActionInput,
   kind: TriageActionKind,
-  opts?: { snoozeMs?: number },
+  opts?: { snoozeMs?: number }
 ): Promise<TriageActionRecord> {
   const base: TriageActionRecord = {
     emailId: input.emailId,
     emailSubject: input.emailSubject,
     kind,
-    state: "applied",
+    state: 'applied',
     at: Date.now(),
   };
 
   try {
-    if (kind === "summarize") {
-      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+    if (kind === 'summarize') {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
       await navigator.clipboard.writeText(input.brief);
-      return { ...base, state: "applied", message: "Brief copied to clipboard" };
+      return { ...base, state: 'applied', message: 'Brief copied to clipboard' };
     }
-    if (kind === "reply") {
+    if (kind === 'reply') {
       const addr = extractEmailAddress(input.from);
-      if (!addr) return { ...base, state: "failed", message: "No reply address found" };
-      const subject = input.emailSubject.startsWith("Re:")
+      if (!addr) return { ...base, state: 'failed', message: 'No reply address found' };
+      const subject = input.emailSubject.startsWith('Re:')
         ? input.emailSubject
         : `Re: ${input.emailSubject}`;
       const url = `mailto:${addr}?subject=${encodeURIComponent(subject)}`;
       // window.open returns null for mailto: in most browsers; only treat
       // null as failure for non-mailto URLs.
-      const win = window.open(url, "_blank");
+      const win = window.open(url, '_blank');
       if (win === null && !/^mailto:/.test(url)) {
-        return { ...base, state: "failed", message: "Mail client did not open" };
+        return { ...base, state: 'failed', message: 'Mail client did not open' };
       }
-      return { ...base, state: "applied", message: `Replying to ${addr}` };
+      return { ...base, state: 'applied', message: `Replying to ${addr}` };
     }
-    if (kind === "defer") {
+    if (kind === 'defer') {
       const ms = opts?.snoozeMs ?? DEFER_MS;
-      return { ...base, state: "queued", snoozeUntil: Date.now() + ms, message: `Snoozed ${snoozeLabel(ms)}` };
+      return {
+        ...base,
+        state: 'queued',
+        snoozeUntil: Date.now() + ms,
+        message: `Snoozed ${snoozeLabel(ms)}`,
+      };
     }
-    if (kind === "followup") {
+    if (kind === 'followup') {
       const ms = opts?.snoozeMs ?? FOLLOWUP_MS;
-      return { ...base, state: "queued", snoozeUntil: Date.now() + ms, message: `Follow-up in ${snoozeLabel(ms)}` };
+      return {
+        ...base,
+        state: 'queued',
+        snoozeUntil: Date.now() + ms,
+        message: `Follow-up in ${snoozeLabel(ms)}`,
+      };
     }
-    return { ...base, state: "skipped", message: "Ignored from triage" };
+    return { ...base, state: 'skipped', message: 'Ignored from triage' };
   } catch (err) {
-    return { ...base, state: "failed", message: err instanceof Error ? err.message : "Action failed" };
+    return {
+      ...base,
+      state: 'failed',
+      message: err instanceof Error ? err.message : 'Action failed',
+    };
   }
 }

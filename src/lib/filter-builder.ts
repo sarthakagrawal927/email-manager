@@ -1,6 +1,6 @@
-import type { Email } from "./gmail";
+import type { Email } from './gmail';
 
-export type FilterCategory = "newsletter" | "receipt" | "notification" | "followup";
+export type FilterCategory = 'newsletter' | 'receipt' | 'notification' | 'followup';
 
 export interface GmailFilterSuggestion {
   id: string;
@@ -29,40 +29,43 @@ interface SenderGroup {
   categoryCounts: Record<FilterCategory, number>;
 }
 
-const CATEGORY_META: Record<FilterCategory, {
-  label: string;
-  title: string;
-  shouldArchive: boolean;
-  shouldMarkAsRead: boolean;
-  keywords: string;
-}> = {
+const CATEGORY_META: Record<
+  FilterCategory,
+  {
+    label: string;
+    title: string;
+    shouldArchive: boolean;
+    shouldMarkAsRead: boolean;
+    keywords: string;
+  }
+> = {
   newsletter: {
-    label: "Kinetic/Newsletters",
-    title: "Newsletter filter",
+    label: 'Kinetic/Newsletters',
+    title: 'Newsletter filter',
     shouldArchive: true,
     shouldMarkAsRead: true,
-    keywords: "(newsletter OR digest OR roundup OR webinar OR unsubscribe)",
+    keywords: '(newsletter OR digest OR roundup OR webinar OR unsubscribe)',
   },
   receipt: {
-    label: "Kinetic/Receipts",
-    title: "Receipt filter",
+    label: 'Kinetic/Receipts',
+    title: 'Receipt filter',
     shouldArchive: false,
     shouldMarkAsRead: false,
-    keywords: "(receipt OR invoice OR order OR shipment OR statement OR payment)",
+    keywords: '(receipt OR invoice OR order OR shipment OR statement OR payment)',
   },
   notification: {
-    label: "Kinetic/Notifications",
-    title: "Notification filter",
+    label: 'Kinetic/Notifications',
+    title: 'Notification filter',
     shouldArchive: true,
     shouldMarkAsRead: true,
-    keywords: "(notification OR alert OR update OR verify OR security)",
+    keywords: '(notification OR alert OR update OR verify OR security)',
   },
   followup: {
-    label: "Kinetic/Follow-up",
-    title: "Follow-up filter",
+    label: 'Kinetic/Follow-up',
+    title: 'Follow-up filter',
     shouldArchive: false,
     shouldMarkAsRead: false,
-    keywords: "(reply OR respond OR confirm OR approval OR question OR feedback)",
+    keywords: '(reply OR respond OR confirm OR approval OR question OR feedback)',
   },
 };
 
@@ -93,8 +96,12 @@ function matchesAny(text: string, patterns: RegExp[]) {
 export function parseSenderAddress(from: string) {
   const emailMatch = from.match(/<([^>]+)>/);
   const senderEmail = (emailMatch?.[1] ?? from).toLowerCase().trim();
-  const domain = senderEmail.match(/@(.+)/)?.[1] ?? "unknown";
-  const displayName = from.replace(/<[^>]+>/g, "").replaceAll('"', "").trim() || senderEmail;
+  const domain = senderEmail.match(/@(.+)/)?.[1] ?? 'unknown';
+  const displayName =
+    from
+      .replace(/<[^>]+>/g, '')
+      .replaceAll('"', '')
+      .trim() || senderEmail;
   return { senderEmail, domain, displayName };
 }
 
@@ -102,12 +109,16 @@ function categoryForEmail(email: Email): FilterCategory | null {
   const text = textFor(email);
   const sender = parseSenderAddress(email.from).senderEmail;
 
-  if (email.unsubscribeLink || matchesAny(text, NEWSLETTER_PATTERNS)) return "newsletter";
-  if (matchesAny(text, RECEIPT_PATTERNS)) return "receipt";
-  if (sender.includes("no-reply") || sender.includes("noreply") || matchesAny(text, NOTIFICATION_PATTERNS)) {
-    return "notification";
+  if (email.unsubscribeLink || matchesAny(text, NEWSLETTER_PATTERNS)) return 'newsletter';
+  if (matchesAny(text, RECEIPT_PATTERNS)) return 'receipt';
+  if (
+    sender.includes('no-reply') ||
+    sender.includes('noreply') ||
+    matchesAny(text, NOTIFICATION_PATTERNS)
+  ) {
+    return 'notification';
   }
-  if (matchesAny(text, FOLLOWUP_PATTERNS)) return "followup";
+  if (matchesAny(text, FOLLOWUP_PATTERNS)) return 'followup';
 
   return null;
 }
@@ -118,15 +129,16 @@ function escapeQueryTerm(value: string) {
 
 function escapeXml(value: string) {
   return value
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function bestCategory(group: SenderGroup) {
-  return (Object.entries(group.categoryCounts) as Array<[FilterCategory, number]>)
-    .sort((a, b) => b[1] - a[1])[0];
+  return (Object.entries(group.categoryCounts) as Array<[FilterCategory, number]>).sort(
+    (a, b) => b[1] - a[1]
+  )[0];
 }
 
 export function buildGmailFilterSuggestions(emails: Email[]): GmailFilterSuggestion[] {
@@ -157,7 +169,7 @@ export function buildGmailFilterSuggestions(emails: Email[]): GmailFilterSuggest
   return Array.from(groups.values())
     .map((group): GmailFilterSuggestion | null => {
       const [category, categoryCount] = bestCategory(group);
-      if (group.emails.length < 2 && category !== "newsletter") return null;
+      if (group.emails.length < 2 && category !== 'newsletter') return null;
 
       const meta = CATEGORY_META[category];
       const confidence = Math.round((categoryCount / group.emails.length) * 100);
@@ -189,29 +201,33 @@ export function buildGmailFilterSuggestions(emails: Email[]): GmailFilterSuggest
       };
     })
     .filter((suggestion): suggestion is GmailFilterSuggestion => Boolean(suggestion))
-    .sort((a, b) => b.matchCount - a.matchCount || b.confidence - a.confidence || a.title.localeCompare(b.title))
+    .sort(
+      (a, b) =>
+        b.matchCount - a.matchCount || b.confidence - a.confidence || a.title.localeCompare(b.title)
+    )
     .slice(0, 25);
 }
 
 function filterEntryXml(suggestion: GmailFilterSuggestion) {
   const props = [
-    ["from", suggestion.fromCriteria],
-    ["hasTheWord", suggestion.hasWords],
-    ["label", suggestion.label],
-    ["shouldArchive", String(suggestion.shouldArchive)],
-    ["shouldMarkAsRead", String(suggestion.shouldMarkAsRead)],
+    ['from', suggestion.fromCriteria],
+    ['hasTheWord', suggestion.hasWords],
+    ['label', suggestion.label],
+    ['shouldArchive', String(suggestion.shouldArchive)],
+    ['shouldMarkAsRead', String(suggestion.shouldMarkAsRead)],
   ];
 
   return [
-    "  <entry>",
-    "    <category term=\"filter\"></category>",
+    '  <entry>',
+    '    <category term="filter"></category>',
     `    <title>${escapeXml(suggestion.title)}</title>`,
-    "    <content></content>",
-    ...props.map(([name, value]) => (
-      `    <apps:property name="${name}" value="${escapeXml(value)}"></apps:property>`
-    )),
-    "  </entry>",
-  ].join("\n");
+    '    <content></content>',
+    ...props.map(
+      ([name, value]) =>
+        `    <apps:property name="${name}" value="${escapeXml(value)}"></apps:property>`
+    ),
+    '  </entry>',
+  ].join('\n');
 }
 
 export function buildGmailFilterXml(suggestions: GmailFilterSuggestion[]) {
@@ -220,8 +236,8 @@ export function buildGmailFilterXml(suggestions: GmailFilterSuggestion[]) {
     '<feed xmlns="http://www.w3.org/2005/Atom" xmlns:apps="http://schemas.google.com/apps/2006">',
     '  <title>Mail Filters</title>',
     ...suggestions.map(filterEntryXml),
-    "</feed>",
-  ].join("\n");
+    '</feed>',
+  ].join('\n');
 }
 
 export function buildFilterRecipe(suggestion: GmailFilterSuggestion) {
@@ -232,52 +248,52 @@ export function buildFilterRecipe(suggestion: GmailFilterSuggestion) {
     ...suggestedActionLines(suggestion),
     `Archive impact: ${archiveImpactLabel(suggestion)}`,
     `Rationale: ${suggestion.reason}`,
-  ].join("\n");
+  ].join('\n');
 }
 
 /** Plain-language action lines for a single recipe. */
 export function suggestedActionLines(suggestion: GmailFilterSuggestion): string[] {
   const lines = [`Apply label: ${suggestion.label}`];
-  if (suggestion.shouldArchive) lines.push("Skip inbox (archive incoming)");
-  else lines.push("Keep in inbox");
-  if (suggestion.shouldMarkAsRead) lines.push("Mark as read");
+  if (suggestion.shouldArchive) lines.push('Skip inbox (archive incoming)');
+  else lines.push('Keep in inbox');
+  if (suggestion.shouldMarkAsRead) lines.push('Mark as read');
   return lines;
 }
 
 /** Likely inbox impact from the sampled matches. */
 export function archiveImpactLabel(suggestion: GmailFilterSuggestion): string {
   if (!suggestion.shouldArchive) {
-    return `${suggestion.matchCount} sampled message${suggestion.matchCount === 1 ? "" : "s"} stay in inbox`;
+    return `${suggestion.matchCount} sampled message${suggestion.matchCount === 1 ? '' : 's'} stay in inbox`;
   }
-  return `~${suggestion.matchCount} sampled message${suggestion.matchCount === 1 ? "" : "s"} would skip inbox`;
+  return `~${suggestion.matchCount} sampled message${suggestion.matchCount === 1 ? '' : 's'} would skip inbox`;
 }
 
 /** Human-readable summary for the selected recipe set. */
 export function buildSelectedRecipeSummary(suggestions: GmailFilterSuggestion[]): string {
-  if (suggestions.length === 0) return "No recipes selected.";
+  if (suggestions.length === 0) return 'No recipes selected.';
   const byCategory = new Map<FilterCategory, number>();
   for (const s of suggestions) {
     byCategory.set(s.category, (byCategory.get(s.category) ?? 0) + 1);
   }
   const categoryBits = [...byCategory.entries()]
-    .map(([cat, n]) => `${n} ${CATEGORY_META[cat].label.replace("Kinetic/", "")}`)
-    .join(", ");
+    .map(([cat, n]) => `${n} ${CATEGORY_META[cat].label.replace('Kinetic/', '')}`)
+    .join(', ');
   const archiveCount = suggestions.filter((s) => s.shouldArchive).length;
   return [
-    `${suggestions.length} filter${suggestions.length === 1 ? "" : "s"} selected (${categoryBits}).`,
+    `${suggestions.length} filter${suggestions.length === 1 ? '' : 's'} selected (${categoryBits}).`,
     archiveCount > 0
       ? `${archiveCount} would skip inbox based on sampled matches.`
-      : "All selected filters keep mail in the inbox.",
-    "Paste the XML into Gmail Settings → Filters and Blocked Addresses → Import filters.",
-  ].join(" ");
+      : 'All selected filters keep mail in the inbox.',
+    'Paste the XML into Gmail Settings → Filters and Blocked Addresses → Import filters.',
+  ].join(' ');
 }
 
 /** Short explanation string for the export preview panel. */
 export function buildRecipeExplanation(suggestions: GmailFilterSuggestion[]): string {
   if (suggestions.length === 0) {
-    return "Select one or more suggestions to preview the Gmail filter recipe.";
+    return 'Select one or more suggestions to preview the Gmail filter recipe.';
   }
   const senders = suggestions.slice(0, 3).map((s) => s.displayName);
-  const more = suggestions.length > 3 ? ` and ${suggestions.length - 3} more` : "";
-  return `When mail arrives from ${senders.join(", ")}${more}, matching messages get labeled and routed per each recipe's action. ${buildSelectedRecipeSummary(suggestions)}`;
+  const more = suggestions.length > 3 ? ` and ${suggestions.length - 3} more` : '';
+  return `When mail arrives from ${senders.join(', ')}${more}, matching messages get labeled and routed per each recipe's action. ${buildSelectedRecipeSummary(suggestions)}`;
 }

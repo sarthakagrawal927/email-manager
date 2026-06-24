@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from '@playwright/test';
 
 /**
  * Mobile-viewport smoke test for the public landing page.
@@ -10,40 +10,39 @@ import { expect, test } from "@playwright/test";
  * The signed-in cockpit requires Google OAuth, so the primary signed-in
  * flow is verified manually against the mobile conventions doc.
  */
-test.describe("landing page", () => {
-  test("renders the hero, features, and a single CTA with no horizontal scroll", async ({
+test.describe('landing page', () => {
+  test('renders the hero, features, and a single CTA with no horizontal scroll', async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto('/');
 
     await expect(page).toHaveTitle(/Kinetic/i);
 
     await expect(
-      page.getByRole("heading", {
+      page.getByRole('heading', {
         name: /search your gmail by meaning/i,
         level: 1,
-      }),
+      })
     ).toBeVisible();
 
     await expect(page.getByText(/local-first gmail search/i)).toBeVisible();
     await expect(page.getByText(/100% in your browser/i)).toBeVisible();
 
     await expect(
-      page.getByRole("link", { name: /connect gmail and search/i }).first(),
+      page.getByRole('link', { name: /connect gmail and search/i }).first()
     ).toBeVisible();
 
     const overflow = await page.evaluate(
-      () =>
-        document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth
     );
     expect(overflow).toBe(false);
   });
 
-  test("the primary CTA is a large enough touch target", async ({ page }) => {
-    await page.goto("/");
-    const cta = page.getByRole("link", { name: /connect gmail and search/i }).first();
+  test('the primary CTA is a large enough touch target', async ({ page }) => {
+    await page.goto('/');
+    const cta = page.getByRole('link', { name: /connect gmail and search/i }).first();
     const box = await cta.boundingBox();
     expect(box).not.toBeNull();
-    expect(box!.height).toBeGreaterThanOrEqual(44);
+    expect(box?.height).toBeGreaterThanOrEqual(44);
   });
 });

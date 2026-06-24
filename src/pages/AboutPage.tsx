@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 
 export function AboutPage() {
   return (
@@ -40,7 +40,7 @@ export function AboutPage() {
           content.
         </li>
         <li>
-          A subscription service that scrapes your data. See{" "}
+          A subscription service that scrapes your data. See{' '}
           <Link to="/privacy" className="underline">
             /privacy
           </Link>

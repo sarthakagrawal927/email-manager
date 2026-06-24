@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { trackCoreAction } from "@/lib/analytics";
-import type { Email } from "@/lib/gmail";
-import { triageItemForEmail } from "@/lib/triage";
-import { TriageActionBar, TriageStateBadge } from "@/components/TriageActionBar";
+import { useEffect, useMemo, useState } from 'react';
+import { trackCoreAction } from '@/lib/analytics';
+import type { Email } from '@/lib/gmail';
+import { triageItemForEmail } from '@/lib/triage';
+import { TriageActionBar, TriageStateBadge } from '@/components/TriageActionBar';
 
 interface Props {
   email: Email;
@@ -23,7 +23,9 @@ export function EmailDetail({ email, onBack, showBack = true }: Props) {
       from: email.from,
       brief:
         item?.brief ??
-        [`Subject: ${email.subject}`, `From: ${email.from}`, `Context: ${email.snippet}`].join("\n"),
+        [`Subject: ${email.subject}`, `From: ${email.from}`, `Context: ${email.snippet}`].join(
+          '\n'
+        ),
     };
   }, [email]);
 
@@ -33,10 +35,10 @@ export function EmailDetail({ email, onBack, showBack = true }: Props) {
         document.activeElement instanceof HTMLInputElement ||
         document.activeElement instanceof HTMLTextAreaElement;
       if (isTyping) return;
-      if (e.key === "Escape" && showBack) onBack();
+      if (e.key === 'Escape' && showBack) onBack();
     }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [onBack, showBack]);
 
   async function handleCopySubject() {
@@ -50,12 +52,12 @@ export function EmailDetail({ email, onBack, showBack = true }: Props) {
   async function handleOneClickUnsubscribe() {
     setActing(true);
     try {
-      const res = await fetch(`/api/emails/${email.id}/unsubscribe`, { method: "POST" });
+      const res = await fetch(`/api/emails/${email.id}/unsubscribe`, { method: 'POST' });
       const data = await res.json();
       if (data.ok) {
-        trackCoreAction("unsubscribed");
+        trackCoreAction('unsubscribed');
       } else if (data.fallbackUrl) {
-        window.open(data.fallbackUrl, "_blank", "noopener,noreferrer");
+        window.open(data.fallbackUrl, '_blank', 'noopener,noreferrer');
       }
     } finally {
       setActing(false);
@@ -122,27 +124,35 @@ export function EmailDetail({ email, onBack, showBack = true }: Props) {
           return (
             <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-xs">
               <div className="flex flex-wrap items-center gap-2">
-                <span className={`rounded-full px-1.5 py-0.5 ${
-                  item.priority === "high"
-                    ? "text-red-500 bg-red-500/10"
-                    : item.priority === "medium"
-                    ? "text-amber-500 bg-amber-500/10"
-                    : "text-[var(--text-muted)] bg-[var(--border)]/40"
-                }`}>
+                <span
+                  className={`rounded-full px-1.5 py-0.5 ${
+                    item.priority === 'high'
+                      ? 'text-red-500 bg-red-500/10'
+                      : item.priority === 'medium'
+                        ? 'text-amber-500 bg-amber-500/10'
+                        : 'text-[var(--text-muted)] bg-[var(--border)]/40'
+                  }`}
+                >
                   {item.priority}
                 </span>
-                <span className="text-[var(--text-muted)]">{item.email.labelIds.includes("UNREAD") ? "Unread · " : ""}{
-                  item.queue === "respond" ? "Needs response"
-                  : item.queue === "unsubscribe" ? "Unsubscribe candidate"
-                  : item.queue === "reference" ? "Reference"
-                  : "Quick review"
-                }</span>
+                <span className="text-[var(--text-muted)]">
+                  {item.email.labelIds.includes('UNREAD') ? 'Unread · ' : ''}
+                  {item.queue === 'respond'
+                    ? 'Needs response'
+                    : item.queue === 'unsubscribe'
+                      ? 'Unsubscribe candidate'
+                      : item.queue === 'reference'
+                        ? 'Reference'
+                        : 'Quick review'}
+                </span>
               </div>
               <p className="mt-1 text-[var(--text-muted)]">
-                <span className="font-medium text-[var(--text)]">Why: </span>{item.reason}
+                <span className="font-medium text-[var(--text)]">Why: </span>
+                {item.reason}
               </p>
               <p className="mt-0.5 text-[var(--text-muted)]">
-                <span className="font-medium text-[var(--text)]">Action: </span>{item.action}
+                <span className="font-medium text-[var(--text)]">Action: </span>
+                {item.action}
               </p>
             </div>
           );

@@ -1,13 +1,9 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import { trackCoreAction } from "@/lib/analytics";
-import { getAllEmails, getEmailCount } from "@/lib/db";
-import {
-  buildWeeklyDigest,
-  digestToTodayLittleLogExport,
-  type WeeklyDigest,
-} from "@/lib/digest";
+import { useCallback, useEffect, useState } from 'react';
+import { trackCoreAction } from '@/lib/analytics';
+import { getAllEmails, getEmailCount } from '@/lib/db';
+import { buildWeeklyDigest, digestToTodayLittleLogExport, type WeeklyDigest } from '@/lib/digest';
 
 interface Props {
   onOpenSender?: (senderEmail: string) => void;
@@ -21,15 +17,11 @@ function formatQuietDays(days: number): string {
   return `${months}mo quiet`;
 }
 
-function revisitReasonLabel(reason: "starred_stale" | "long_thread_stale"): string {
-  return reason === "starred_stale" ? "Starred · stale" : "Long thread · stale";
+function revisitReasonLabel(reason: 'starred_stale' | 'long_thread_stale'): string {
+  return reason === 'starred_stale' ? 'Starred · stale' : 'Long thread · stale';
 }
 
-export function WeeklyDigestView({
-  onOpenSender,
-  onOpenThread,
-  onNavigateSearch,
-}: Props) {
+export function WeeklyDigestView({ onOpenSender, onOpenThread, onNavigateSearch }: Props) {
   const [digest, setDigest] = useState<WeeklyDigest | null>(null);
   const [loading, setLoading] = useState(false);
   const [cachedCount, setCachedCount] = useState<number | null>(null);
@@ -52,13 +44,13 @@ export function WeeklyDigestView({
       await refreshCount();
       if (emails.length === 0) {
         setDigest(null);
-        setError("No locally cached emails yet. Sync via Semantic Search first.");
+        setError('No locally cached emails yet. Sync via Semantic Search first.');
         return;
       }
       setDigest(buildWeeklyDigest(emails));
-      trackCoreAction("digest_generated");
+      trackCoreAction('digest_generated');
     } catch {
-      setError("Could not read local email cache.");
+      setError('Could not read local email cache.');
     } finally {
       setLoading(false);
     }
@@ -70,10 +62,10 @@ export function WeeklyDigestView({
     try {
       await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
       setCopied(true);
-      trackCoreAction("digest_exported");
+      trackCoreAction('digest_exported');
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
-      setError("Clipboard unavailable.");
+      setError('Clipboard unavailable.');
     }
   }
 
@@ -84,14 +76,14 @@ export function WeeklyDigestView({
           <div>
             <h1 className="text-2xl font-semibold">Weekly digest</h1>
             <p className="mt-1 text-sm text-[var(--text-muted)]">
-              Quiet relationships, threads to revisit, and weekly themes — built locally from
-              your cached inbox. No message bodies leave this device.
+              Quiet relationships, threads to revisit, and weekly themes — built locally from your
+              cached inbox. No message bodies leave this device.
             </p>
             {cachedCount !== null && (
               <p className="mt-1 text-xs text-[var(--text-muted)]">
                 {cachedCount === 0
-                  ? "IndexedDB cache is empty."
-                  : `${cachedCount.toLocaleString()} email${cachedCount === 1 ? "" : "s"} in local cache.`}
+                  ? 'IndexedDB cache is empty.'
+                  : `${cachedCount.toLocaleString()} email${cachedCount === 1 ? '' : 's'} in local cache.`}
               </p>
             )}
           </div>
@@ -103,7 +95,7 @@ export function WeeklyDigestView({
               disabled={loading}
               className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-60 cursor-pointer"
             >
-              {loading ? "Generating…" : "Generate this week"}
+              {loading ? 'Generating…' : 'Generate this week'}
             </button>
             <button
               type="button"
@@ -111,7 +103,7 @@ export function WeeklyDigestView({
               disabled={!digest}
               className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium transition hover:bg-[var(--border)]/40 disabled:opacity-50 cursor-pointer"
             >
-              {copied ? "Copied" : "Copy for Today Little Log"}
+              {copied ? 'Copied' : 'Copy for Today Little Log'}
             </button>
           </div>
         </div>
@@ -152,7 +144,7 @@ export function WeeklyDigestView({
         {digest && (
           <div className="mx-auto max-w-3xl space-y-8">
             <p className="text-xs text-[var(--text-muted)]">
-              Week {digest.periodStart} – {digest.periodEnd} · generated{" "}
+              Week {digest.periodStart} – {digest.periodEnd} · generated{' '}
               {new Date(digest.generatedAt).toLocaleString()}
             </p>
 
@@ -175,10 +167,12 @@ export function WeeklyDigestView({
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="font-medium truncate">{item.displayName}</p>
-                          <p className="text-xs text-[var(--text-muted)] truncate">{item.senderEmail}</p>
+                          <p className="text-xs text-[var(--text-muted)] truncate">
+                            {item.senderEmail}
+                          </p>
                           <p className="mt-2 text-xs text-[var(--text-muted)]">
-                            {item.priorMessageCount} prior messages · last{" "}
-                            {new Date(item.lastMessageAt).toLocaleDateString()} ·{" "}
+                            {item.priorMessageCount} prior messages · last{' '}
+                            {new Date(item.lastMessageAt).toLocaleDateString()} ·{' '}
                             {formatQuietDays(item.quietDays)}
                           </p>
                         </div>
@@ -216,10 +210,10 @@ export function WeeklyDigestView({
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="font-medium truncate">{item.subject || "(no subject)"}</p>
+                          <p className="font-medium truncate">{item.subject || '(no subject)'}</p>
                           <p className="mt-2 text-xs text-[var(--text-muted)]">
-                            {item.messageCount} messages · last{" "}
-                            {new Date(item.lastMessageAt).toLocaleDateString()} ·{" "}
+                            {item.messageCount} messages · last{' '}
+                            {new Date(item.lastMessageAt).toLocaleDateString()} ·{' '}
                             {revisitReasonLabel(item.reason)}
                           </p>
                         </div>
@@ -258,12 +252,12 @@ export function WeeklyDigestView({
                       <div className="flex items-center justify-between gap-3">
                         <p className="font-medium">{theme.label}</p>
                         <span className="text-sm text-[var(--text-muted)]">
-                          {theme.messageCount} message{theme.messageCount === 1 ? "" : "s"}
+                          {theme.messageCount} message{theme.messageCount === 1 ? '' : 's'}
                         </span>
                       </div>
                       {theme.topDomains.length > 0 && (
                         <p className="mt-2 text-xs text-[var(--text-muted)]">
-                          Top domains: {theme.topDomains.join(", ")}
+                          Top domains: {theme.topDomains.join(', ')}
                         </p>
                       )}
                     </li>

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
 interface Props {
   list: ReactNode;
@@ -20,7 +20,9 @@ export function WorkSurface({ list, detail, hasSelection, emptyDetail }: Props) 
     <div className="flex flex-1 overflow-hidden">
       <div
         className={`flex min-h-0 flex-col overflow-hidden border-[var(--border)] ${
-          hasSelection ? "hidden w-full md:flex md:w-[min(420px,38%)] md:border-r" : "w-full md:w-[min(420px,38%)] md:border-r"
+          hasSelection
+            ? 'hidden w-full md:flex md:w-[min(420px,38%)] md:border-r'
+            : 'w-full md:w-[min(420px,38%)] md:border-r'
         }`}
       >
         {list}
@@ -28,7 +30,7 @@ export function WorkSurface({ list, detail, hasSelection, emptyDetail }: Props) 
 
       <div
         className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${
-          hasSelection ? "flex" : "hidden md:flex"
+          hasSelection ? 'flex' : 'hidden md:flex'
         }`}
       >
         {detail ?? placeholder}

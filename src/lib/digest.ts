@@ -5,15 +5,13 @@
  * server persistence. See docs/plans/2026-06-04-email-memories-digest.md.
  */
 
-import type { Email } from "./gmail";
+import type { Email } from './gmail';
 
-export const DIGEST_FORMAT = "email-manager-weekly-digest" as const;
+export const DIGEST_FORMAT = 'email-manager-weekly-digest' as const;
 export const DIGEST_FORMAT_VERSION = 1;
 
-export interface DigestEmailInput extends Pick<
-  Email,
-  "id" | "threadId" | "subject" | "from" | "date" | "snippet" | "labelIds"
-> {}
+export interface DigestEmailInput
+  extends Pick<Email, 'id' | 'threadId' | 'subject' | 'from' | 'date' | 'snippet' | 'labelIds'> {}
 
 export interface RelationshipQuiet {
   senderEmail: string;
@@ -21,14 +19,14 @@ export interface RelationshipQuiet {
   lastMessageAt: string;
   priorMessageCount: number;
   quietDays: number;
-  reason: "no_messages_in_quiet_window";
+  reason: 'no_messages_in_quiet_window';
 }
 
 export interface ThreadRevisit {
   threadId: string;
   subject: string;
   lastMessageAt: string;
-  reason: "starred_stale" | "long_thread_stale";
+  reason: 'starred_stale' | 'long_thread_stale';
   messageCount: number;
 }
 
@@ -67,19 +65,17 @@ const NEWSLETTER_RE =
 function parseSender(from: string): { email: string; displayName: string } {
   const emailMatch = from.match(/<([^>]+)>/);
   const email = (emailMatch?.[1] ?? from).toLowerCase().trim();
-  const displayName = from.replace(/<[^>]+>/, "").trim() || email;
+  const displayName = from.replace(/<[^>]+>/, '').trim() || email;
   return { email, displayName };
 }
 
 function domainFromEmail(email: string): string {
   const m = email.match(/@(.+)/);
-  return m?.[1] ?? "unknown";
+  return m?.[1] ?? 'unknown';
 }
 
 function startOfUtcWeek(d: Date): Date {
-  const copy = new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
-  );
+  const copy = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   const day = copy.getUTCDay();
   const diff = day === 0 ? -6 : 1 - day;
   copy.setUTCDate(copy.getUTCDate() + diff);
@@ -95,7 +91,7 @@ function isNewsletterSender(email: string, displayName: string): boolean {
  */
 export function buildWeeklyDigest(
   emails: DigestEmailInput[],
-  options: BuildWeeklyDigestOptions = {},
+  options: BuildWeeklyDigestOptions = {}
 ): WeeklyDigest {
   const now = options.now ?? new Date();
   const quietWindowDays = options.quietWindowDays ?? 60;
@@ -115,10 +111,7 @@ export function buildWeeklyDigest(
   const weekStartMs = periodStart.getTime();
   const weekEndMs = periodEnd.getTime() + 7 * 24 * 60 * 60 * 1000;
 
-  const senderMap = new Map<
-    string,
-    { displayName: string; dates: number[]; count: number }
-  >();
+  const senderMap = new Map<string, { displayName: string; dates: number[]; count: number }>();
 
   const threadMap = new Map<
     string,
@@ -153,7 +146,7 @@ export function buildWeeklyDigest(
       starred: false,
     };
     thread.dates.push(t);
-    if (email.labelIds?.includes("STARRED")) thread.starred = true;
+    if (email.labelIds?.includes('STARRED')) thread.starred = true;
     threadMap.set(email.threadId, thread);
 
     if (t >= weekStartMs && t < weekEndMs) {
@@ -171,16 +164,14 @@ export function buildWeeklyDigest(
     const sorted = [...data.dates].sort((a, b) => b - a);
     const lastAt = sorted[0];
     if (lastAt >= quietCutoff.getTime()) continue;
-    const quietDays = Math.floor(
-      (now.getTime() - lastAt) / (24 * 60 * 60 * 1000),
-    );
+    const quietDays = Math.floor((now.getTime() - lastAt) / (24 * 60 * 60 * 1000));
     relationshipsQuiet.push({
       senderEmail,
       displayName: data.displayName,
       lastMessageAt: new Date(lastAt).toISOString(),
       priorMessageCount: data.count,
       quietDays,
-      reason: "no_messages_in_quiet_window",
+      reason: 'no_messages_in_quiet_window',
     });
   }
   relationshipsQuiet.sort((a, b) => b.priorMessageCount - a.priorMessageCount);
@@ -197,7 +188,7 @@ export function buildWeeklyDigest(
         threadId,
         subject: data.subject,
         lastMessageAt: new Date(lastAt).toISOString(),
-        reason: "starred_stale",
+        reason: 'starred_stale',
         messageCount,
       });
       continue;
@@ -208,14 +199,13 @@ export function buildWeeklyDigest(
         threadId,
         subject: data.subject,
         lastMessageAt: new Date(lastAt).toISOString(),
-        reason: "long_thread_stale",
+        reason: 'long_thread_stale',
         messageCount,
       });
     }
   }
   threadsToRevisit.sort(
-    (a, b) =>
-      new Date(a.lastMessageAt).getTime() - new Date(b.lastMessageAt).getTime(),
+    (a, b) => new Date(a.lastMessageAt).getTime() - new Date(b.lastMessageAt).getTime()
   );
 
   const weeklyThemes: WeeklyTheme[] = [...themeDomainCounts.entries()]
@@ -247,32 +237,32 @@ export function buildWeeklyDigest(
 /** Deterministic theme bucket from subject (no ML). */
 export function themeKeyFromSubject(subject: string): string {
   const s = subject.toLowerCase();
-  if (/\b(invoice|receipt|payment|billing)\b/.test(s)) return "money";
-  if (/\b(meeting|calendar|invite|scheduled)\b/.test(s)) return "scheduling";
-  if (/\b(job|interview|recruiter|offer)\b/.test(s)) return "work";
-  if (/\b(family|mom|dad|birthday)\b/.test(s)) return "personal";
-  if (/\b(ship|deliver|order|tracking)\b/.test(s)) return "orders";
-  return "general";
+  if (/\b(invoice|receipt|payment|billing)\b/.test(s)) return 'money';
+  if (/\b(meeting|calendar|invite|scheduled)\b/.test(s)) return 'scheduling';
+  if (/\b(job|interview|recruiter|offer)\b/.test(s)) return 'work';
+  if (/\b(family|mom|dad|birthday)\b/.test(s)) return 'personal';
+  if (/\b(ship|deliver|order|tracking)\b/.test(s)) return 'orders';
+  return 'general';
 }
 
 function themeLabelFromId(id: string): string {
   const labels: Record<string, string> = {
-    money: "Money & billing",
-    scheduling: "Meetings & scheduling",
-    work: "Work & hiring",
-    personal: "Personal",
-    orders: "Orders & shipping",
-    general: "General",
+    money: 'Money & billing',
+    scheduling: 'Meetings & scheduling',
+    work: 'Work & hiring',
+    personal: 'Personal',
+    orders: 'Orders & shipping',
+    general: 'General',
   };
   return labels[id] ?? id;
 }
 
 /** Opt-in export payload for manual paste into Today Little Log. */
 export function digestToTodayLittleLogExport(digest: WeeklyDigest): {
-  format: "email-manager-tll-digest-export";
+  format: 'email-manager-tll-digest-export';
   formatVersion: 1;
   date: string;
-  source: "email-manager";
+  source: 'email-manager';
   summary: string;
   axes: { id: string; label: string; value: number }[];
 } {
@@ -280,15 +270,15 @@ export function digestToTodayLittleLogExport(digest: WeeklyDigest): {
   const revisit = digest.threadsToRevisit.length;
   const themes = digest.weeklyThemes.length;
   return {
-    format: "email-manager-tll-digest-export",
+    format: 'email-manager-tll-digest-export',
     formatVersion: 1,
     date: digest.periodEnd,
-    source: "email-manager",
+    source: 'email-manager',
     summary: `Week ${digest.periodStart}–${digest.periodEnd}: ${quiet} quiet relationship(s), ${revisit} thread(s) to revisit, ${themes} theme(s). Generated in Kinetic; no message bodies included.`,
     axes: [
-      { id: "quiet-relationships", label: "Reconnect", value: quiet },
-      { id: "threads-revisit", label: "Revisit threads", value: revisit },
-      { id: "weekly-themes", label: "Themes", value: themes },
+      { id: 'quiet-relationships', label: 'Reconnect', value: quiet },
+      { id: 'threads-revisit', label: 'Revisit threads', value: revisit },
+      { id: 'weekly-themes', label: 'Themes', value: themes },
     ],
   };
 }

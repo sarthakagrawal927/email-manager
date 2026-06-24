@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import type { Email } from "@/lib/gmail";
+import { useState, useEffect, useRef } from 'react';
+import type { Email } from '@/lib/gmail';
 import {
   storeEmails,
   storeEmail,
   getEmailCount,
   getIndexedCount,
   getEmailsWithoutEmbedding,
-} from "@/lib/db";
-import type { StoredEmail } from "@/lib/db";
-import { embed, prepareEmailText } from "@/lib/embeddings";
-import { semanticSearch, type SearchResult } from "@/lib/semantic-search";
+} from '@/lib/db';
+import type { StoredEmail } from '@/lib/db';
+import { embed, prepareEmailText } from '@/lib/embeddings';
+import { semanticSearch, type SearchResult } from '@/lib/semantic-search';
 
 interface Props {
   onSelect: (email: Email) => void;
@@ -21,8 +21,8 @@ export function SemanticSearch({ onSelect }: Props) {
   const [total, setTotal] = useState(0);
   const [indexed, setIndexed] = useState(0);
   const [syncing, setSyncing] = useState(false);
-  const [progress, setProgress] = useState("");
-  const [query, setQuery] = useState("");
+  const [progress, setProgress] = useState('');
+  const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -54,15 +54,15 @@ export function SemanticSearch({ onSelect }: Props) {
 
   async function handleSync() {
     setSyncing(true);
-    setProgress("Fetching emails...");
+    setProgress('Fetching emails...');
     try {
       let pageToken: string | undefined;
       let fetched = 0;
       const maxEmails = 500;
 
       do {
-        const params = new URLSearchParams({ label: "INBOX" });
-        if (pageToken) params.set("pageToken", pageToken);
+        const params = new URLSearchParams({ label: 'INBOX' });
+        if (pageToken) params.set('pageToken', pageToken);
         const res = await fetch(`/api/emails?${params}`);
         if (!res.ok) throw new Error(`API error: ${res.status}`);
         const data = await res.json();
@@ -81,8 +81,8 @@ export function SemanticSearch({ onSelect }: Props) {
 
       const unembedded = await getEmailsWithoutEmbedding();
       if (unembedded.length > 0) {
-        if (mountedRef.current) setProgress("Loading AI model...");
-        await embed("warmup");
+        if (mountedRef.current) setProgress('Loading AI model...');
+        await embed('warmup');
 
         for (let i = 0; i < unembedded.length; i++) {
           if (!mountedRef.current) break;
@@ -94,7 +94,7 @@ export function SemanticSearch({ onSelect }: Props) {
       }
 
       if (mountedRef.current) {
-        setProgress("");
+        setProgress('');
         await refreshStatus();
       }
     } catch (err: any) {
@@ -111,11 +111,11 @@ export function SemanticSearch({ onSelect }: Props) {
       const res = await semanticSearch(q);
       if (mountedRef.current) setResults(res);
     } catch (err) {
-      console.error("Semantic search error:", err);
+      console.error('Semantic search error:', err);
       if (mountedRef.current) {
         setResults([]);
         setSearchError(
-          "Search failed. The local AI model may not have loaded — try syncing again.",
+          'Search failed. The local AI model may not have loaded — try syncing again.'
         );
       }
     } finally {
@@ -128,11 +128,7 @@ export function SemanticSearch({ onSelect }: Props) {
       <div className="p-3 border-b border-[var(--border)] flex items-center gap-3">
         <input
           type="text"
-          placeholder={
-            indexed > 0
-              ? "Search by meaning..."
-              : "Sync emails first..."
-          }
+          placeholder={indexed > 0 ? 'Search by meaning...' : 'Sync emails first...'}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           disabled={indexed === 0}
@@ -143,7 +139,7 @@ export function SemanticSearch({ onSelect }: Props) {
           disabled={syncing}
           className="px-3 py-2 rounded-lg bg-[var(--accent)] text-white text-sm hover:bg-[var(--accent-hover)] transition cursor-pointer disabled:opacity-50 shrink-0"
         >
-          {syncing ? "Syncing..." : "Sync & Index"}
+          {syncing ? 'Syncing...' : 'Sync & Index'}
         </button>
       </div>
 
@@ -167,9 +163,7 @@ export function SemanticSearch({ onSelect }: Props) {
             </button>
           </div>
         ) : results.length === 0 && query && !searching ? (
-          <div className="text-center text-[var(--text-muted)] mt-20">
-            No results found
-          </div>
+          <div className="text-center text-[var(--text-muted)] mt-20">No results found</div>
         ) : results.length === 0 ? (
           <div className="text-center text-[var(--text-muted)] mt-20 px-6">
             {indexed === 0
@@ -185,7 +179,7 @@ export function SemanticSearch({ onSelect }: Props) {
             >
               <div className="flex justify-between items-baseline mb-1">
                 <span className="text-sm font-medium truncate max-w-[70%]">
-                  {email.from.replace(/<[^>]+>/, "").trim()}
+                  {email.from.replace(/<[^>]+>/, '').trim()}
                 </span>
                 <div className="flex items-baseline gap-2 shrink-0 ml-2">
                   <span className="text-[10px] text-[var(--text-muted)] opacity-60">

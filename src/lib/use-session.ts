@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { getSession, type Session } from "./auth-client";
+import { useState, useEffect } from 'react';
+import { getSession, type Session } from './auth-client';
 
 export function useSession() {
   const [session, setSession] = useState<Session>(null);

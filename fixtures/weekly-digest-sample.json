@@ -43,9 +43,7 @@
       "id": "scheduling",
       "label": "Meetings & scheduling",
       "messageCount": 2,
-      "topDomains": [
-        "company.com"
-      ]
+      "topDomains": ["company.com"]
     }
   ]
 }
