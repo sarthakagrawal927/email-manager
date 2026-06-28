@@ -8,25 +8,23 @@ Also read and follow the shared fleet-level agent standard at `../AGENTS.md`. Tr
 Email management app with semantic search — fully client-side ML via HuggingFace ONNX, emails stored in IndexedDB, no server DB. Status: done/stable.
 
 ## Stack
-- Framework: Next.js 16 (App Router)
+- Framework: Vite + React 19 SPA (client-side routing via `react-router-dom`) + Hono Worker (`src/worker.ts`)
 - Language: TypeScript
 - Styling: Tailwind CSS v4 (CSS custom properties for light/dark theming)
 - DB: Cloudflare D1 `email-manager-auth` (auth tables, Drizzle) + IndexedDB (client-side via `idb`) — emails and embeddings stored locally
 - Auth: better-auth (Google OAuth, `gmail.readonly` scope, offline access + manual token refresh)
-- Testing: Playwright (e2e)
-- Deploy: Cloudflare Workers (`email-manager`) via `@opennextjs/cloudflare`
+- Testing: Vitest (unit), Playwright (e2e)
+- Deploy: Cloudflare Workers (`email-manager`) — `pnpm build` (Vite + Astro landing overlay) + `wrangler deploy`
 - Package manager: pnpm
 
 ## Repo structure
 ```
 src/
-  app/
-    page.tsx              # Main SPA (inbox/starred/sent/trash/subscriptions/analytics views)
-    layout.tsx            # Root layout
-    globals.css           # CSS vars for light/dark theming
-    api/
-      auth/[...all]/      # better-auth handler
-      emails/             # GET list/search, GET :id, POST :id/unsubscribe
+  worker.ts               # Hono Worker entry — /api/* routing, asset serving
+  main.tsx                # SPA entry point
+  router.tsx              # React Router routes
+  RootLayout.tsx          # Root layout
+  pages/                  # Route page components
   components/
     Providers.tsx         # SessionProvider wrapper
     Sidebar.tsx           # Nav
@@ -35,36 +33,41 @@ src/
     Subscriptions.tsx     # Deduplicated unsubscribeable senders
     Analytics.tsx         # Sender frequency analysis (bar charts)
     SemanticSearch.tsx    # In-browser vector search UI (confirmed working)
+    WorkSurface.tsx       # Triage work surface
+    WeeklyDigestView.tsx  # Weekly digest view
   lib/
     auth.ts               # better-auth config + Google token refresh
     gmail.ts              # Gmail REST API client (exponential backoff on 429)
     db.ts                 # IndexedDB schema + helpers
     embeddings.ts         # HuggingFace Transformers ONNX (in-browser)
     semantic-search.ts    # Cosine similarity search over stored embeddings
-tests/
-  example.spec.ts         # Playwright e2e
+    digest.ts             # Weekly digest builder (pure)
+  db/
+    schema.ts             # Drizzle schema (D1 auth tables)
+landing-astro/            # Astro landing page (overlaid into deploy via cf:build)
+vite.config.ts            # Vite SPA build config
+wrangler.toml             # Worker config: main=src/worker.ts
 ```
 
 ## Key commands
 ```bash
-pnpm dev      # next dev (localhost:3000)
-pnpm build    # next build
-pnpm start    # next start
-pnpm lint     # next lint
+pnpm dev        # Vite SPA (:5173) + wrangler dev (:8787) concurrently
+pnpm dev:api    # wrangler dev only (Worker, port 8787)
+pnpm dev:spa    # Vite only (port 5173, proxies /api → 8787)
+pnpm build      # Vite build + Astro landing overlay → dist/
+pnpm lint       # biome check .
+pnpm test       # vitest run
 ```
 
 ## Architecture notes
 - **No server-side email storage.** All email data and embeddings live in IndexedDB; API routes only proxy Gmail API calls. Cloudflare D1 (`email-manager-auth`) holds only better-auth tables.
-- **Client-side ML**: HuggingFace Transformers (ONNX runtime) generates embeddings in-browser. `next.config.ts` aliases out `sharp` and `onnxruntime-node`, marks `@huggingface/transformers` as `serverExternalPackage`.
+- **Client-side ML**: HuggingFace Transformers (ONNX runtime) generates embeddings in-browser.
 - **Semantic search confirmed working** — `SemanticSearch.tsx` and `lib/semantic-search.ts` are functional.
-- **Single-page app pattern**: all views in `page.tsx` controlled by `view` state synced to URL hash.
 - **Token refresh**: `lib/get-access-token.ts` refreshes expired Google OAuth tokens via better-auth's `auth.api.getAccessToken` (refresh token stored thanks to `accessType: "offline"`).
 - **Rate limiting**: Gmail API retried on 429 with exponential backoff (1s/2s/4s); fetches batched in groups of 25.
 - **Read-only**: `gmail.readonly` scope only. No compose/reply/archive/delete.
 - **Unsubscribe**: RFC 8058 one-click POST + fallback browser-open for mailto/HTTP links.
 - Env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`.
-- Husky pre-push hook configured.
-- **CF Workers auth**: Auth runs on better-auth (Google OAuth) with auth tables in Cloudflare D1 (`email-manager-auth`) via Drizzle. `next build` build script may use `--webpack` (Turbopack doesn't resolve `@/` path aliases correctly with the inherited `@saas-maker/tsconfig`).
 - **OAuth redirect URI**: `https://email-manager.sarthakagrawal927.workers.dev/api/auth/callback/google` registered in Google Cloud Console (2026-06-28).
 
 <!-- FLEET-GUIDANCE:START -->
