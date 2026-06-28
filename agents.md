@@ -65,7 +65,7 @@ pnpm lint     # next lint
 - Env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`.
 - Husky pre-push hook configured.
 - **CF Workers auth**: Auth runs on better-auth (Google OAuth) with auth tables in Cloudflare D1 (`email-manager-auth`) via Drizzle. `next build` build script may use `--webpack` (Turbopack doesn't resolve `@/` path aliases correctly with the inherited `@saas-maker/tsconfig`).
-- **Remaining action needed**: Add `https://email-manager.sarthakagrawal927.workers.dev/api/auth/callback/google` as an authorized redirect URI in the Google Cloud Console OAuth app to complete the auth flow (currently hits `redirect_uri_mismatch`).
+- **OAuth redirect URI**: `https://email-manager.sarthakagrawal927.workers.dev/api/auth/callback/google` registered in Google Cloud Console (2026-06-28).
 
 <!-- FLEET-GUIDANCE:START -->
 
