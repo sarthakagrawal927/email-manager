@@ -1,5 +1,5 @@
 # email-manager — PROJECT STATUS
-Last updated: 2026-06-20
+Last updated: 2026-06-28
 
 ## Why / What
 
@@ -170,9 +170,8 @@ Last updated: 2026-06-20
 ### Planned
 
 1. IndexedDB `digests` store with 90-day retention (`src/lib/db.ts`; see `docs/plans/2026-06-04-email-memories-digest.md`).
-2. Confirm Google OAuth redirect URI for production Workers URL in Google Cloud Console.
-3. Triage keyboard shortcuts and compact recent-actions panel (`src/components/TriageActionBar.tsx`).
-4. Add e2e to `ci.yml` for signed-in flows (currently manual OAuth only).
+2. Triage keyboard shortcuts and compact recent-actions panel (`src/components/TriageActionBar.tsx`).
+3. Add e2e to `ci.yml` for signed-in flows (currently manual OAuth only).
 
 ### Deferred
 
@@ -185,7 +184,6 @@ Last updated: 2026-06-20
 
 ### Blocked
 
-- Production sign-in fails with `redirect_uri_mismatch` unless production callback URL registered in Google OAuth app.
 - D1 bindings resolve only under `wrangler dev` / deployed worker — use `pnpm dev` or `pnpm dev:api` for `/api/*`.
 - No unit/Vitest tests; signed-in flows require manual OAuth.
 - `ci.yml` does not run e2e (weekly workflow does).
