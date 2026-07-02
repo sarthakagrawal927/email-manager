@@ -1,23 +1,6 @@
 name: Deploy to Cloudflare Workers
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/deploy.yml'
-      - 'index.html'
-      - 'landing-astro/**'
-      - 'migrations/**'
-      - 'public/**'
-      - 'scripts/**'
-      - 'src/**'
-      - 'biome.json'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'postcss.config.mjs'
-      - 'tsconfig*.json'
-      - 'vite.config.ts'
-      - 'wrangler.toml'
-
+  workflow_dispatch:
 jobs:
   deploy-production:
     if: github.event_name == 'push'
