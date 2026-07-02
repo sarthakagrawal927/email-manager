@@ -1,5 +1,5 @@
 # email-manager — PROJECT STATUS
-Last updated: 2026-06-28
+Last updated: 2026-07-02
 
 ## Why / What
 
@@ -52,6 +52,7 @@ Last updated: 2026-06-28
 
 ## Timeline
 
+- **2026-07-02** — Added `app.onError()` global error handler to Hono worker (catches unhandled errors → 500 JSON + console.error logging).
 - **2026-06-20** — De-OpenNext migration: Next.js+OpenNext → Vite SPA + Hono worker on Cloudflare Workers; Astro landing overlaid to `dist/index.html`; D1 only server DB (Turso residue removed).
 - **2026-06-20** — Shipped PRD batch (2026-06-12): weekly digest, triage action queue, Gmail filter recipe studio.
 - **2026-06-12** — PRD batch defined: weekly digest, triage queues, filter recipe studio.
