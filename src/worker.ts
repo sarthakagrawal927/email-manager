@@ -208,6 +208,11 @@ async function serveLanding(request: Request, env: Env): Promise<Response> {
   });
 }
 
+app.onError((err, c) => {
+  console.error(`[error] ${c.req.method} ${c.req.path}:`, err.message, err.stack);
+  return c.json({ error: 'Internal Server Error' }, 500);
+});
+
 export default {
   fetch: withTiming(
     async (request: Request, env: Env, ctx: ExecutionContext): Promise<Response> => {
