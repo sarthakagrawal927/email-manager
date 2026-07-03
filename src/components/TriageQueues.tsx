@@ -1,11 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Email } from '@/lib/gmail';
 import { senderName, triageEmails, triageSummary, type TriageItem } from '@/lib/triage';
 import { useTriageActions } from '@/components/TriageActionsProvider';
 import { TriageActionBar, TriageStateBadge } from '@/components/TriageActionBar';
 import { TriageQueueLedger } from '@/components/TriageQueueLedger';
+import { ShortcutHelpOverlay } from '@/components/ShortcutHelpOverlay';
+import { isTypingTarget, sessionKeyAction } from '@/lib/triage-session';
 import { actionLabel, stateClass, stateLabel } from '@/lib/triage-actions';
 
 interface Props {
@@ -34,6 +36,12 @@ function formatRelative(ms: number, now: number) {
   return `${Math.round(delta / 86_400_000)}d`;
 }
 
+const ROW_HINTS = [
+  { key: 'd', label: 'defer' },
+  { key: 'f', label: 'follow' },
+  { key: 's', label: 'summarize' },
+];
+
 export function TriageQueues({
   emails,
   loading,
@@ -45,7 +53,7 @@ export function TriageQueues({
   onNavigateFilters,
   onStartSession,
 }: Props) {
-  const { records, activeMap, counts, now, latestFor } = useTriageActions();
+  const { records, activeMap, counts, now, latestFor, runAction } = useTriageActions();
 
   const allQueues = triageEmails(emails);
   const queues = allQueues.map((queue) => ({
@@ -67,25 +75,201 @@ export function TriageQueues({
     [queues]
   );
 
+  // --- Keyboard-driven batch triage state -------------------------------
+  const [focusIdx, setFocusIdx] = useState(-1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [helpOpen, setHelpOpen] = useState(false);
+  const rowRefs = useRef<HTMLButtonElement[]>([]);
+  const busyRef = useRef(false);
+
+  const safeFocusIdx = flatItems.length === 0 ? -1 : Math.min(focusIdx, flatItems.length - 1);
+
+  // Reset focus/selection when the queue rebuilds and the indices are stale.
+  useEffect(() => {
+    if (flatItems.length === 0) {
+      setFocusIdx(-1);
+      setSelectedIds(new Set());
+      return;
+    }
+    setFocusIdx((current) => Math.min(current, flatItems.length - 1));
+  }, [flatItems.length]);
+
+  // Keep the focused row scrolled into view.
+  useEffect(() => {
+    if (safeFocusIdx >= 0 && rowRefs.current[safeFocusIdx]) {
+      rowRefs.current[safeFocusIdx].scrollIntoView({ block: 'nearest' });
+    }
+  }, [safeFocusIdx]);
+
+  const moveFocus = useCallback(
+    (delta: number, extend: boolean) => {
+      if (flatItems.length === 0) return;
+      setFocusIdx((prev) => {
+        const next = Math.max(0, Math.min(prev + delta, flatItems.length - 1));
+        if (extend) {
+          const from = prev < 0 ? next : prev;
+          const lo = Math.min(from, next);
+          const hi = Math.max(from, next);
+          setSelectedIds((sel) => {
+            const nextSet = new Set(sel);
+            for (let i = lo; i <= hi; i++) nextSet.add(flatItems[i].item.id);
+            return nextSet;
+          });
+        }
+        return next;
+      });
+    },
+    [flatItems]
+  );
+
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+
+  const actOnSelection = useCallback(
+    async (kind: 'defer' | 'followup' | 'summarize') => {
+      if (busyRef.current) return;
+      const targets =
+        selectedIds.size > 0
+          ? flatItems.filter(({ item }) => selectedIds.has(item.id))
+          : safeFocusIdx >= 0
+            ? [flatItems[safeFocusIdx]]
+            : [];
+      if (targets.length === 0) return;
+      busyRef.current = true;
+      try {
+        await Promise.all(
+          targets.map(({ item }) =>
+            runAction(
+              {
+                emailId: item.email.id,
+                emailSubject: item.email.subject,
+                from: item.email.from,
+                brief: item.brief,
+              },
+              kind
+            )
+          )
+        );
+        // Advance focus past the last acted-on item and clear selection.
+        const lastIdx = flatItems.findIndex(
+          ({ item }) => item.id === targets[targets.length - 1].item.id
+        );
+        if (lastIdx >= 0 && lastIdx < flatItems.length - 1) {
+          setFocusIdx(lastIdx + 1);
+        }
+        setSelectedIds(new Set());
+      } finally {
+        busyRef.current = false;
+      }
+    },
+    [flatItems, selectedIds, safeFocusIdx, runAction]
+  );
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
+
+      // `?` toggles help from anywhere (even with no queue).
+      if (e.key === '?') {
+        e.preventDefault();
+        setHelpOpen((o) => !o);
+        return;
+      }
+
+      // Navigation keys — shift extends selection.
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        moveFocus(1, e.shiftKey);
+        return;
+      }
+      if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        moveFocus(-1, e.shiftKey);
+        return;
+      }
+
+      // Esc clears selection or closes help (help overlay handles its own Esc
+      // via its own listener, but we also clear selection here).
+      if (e.key === 'Escape') {
+        if (selectedIds.size > 0) {
+          e.preventDefault();
+          clearSelection();
+        }
+        return;
+      }
+
+      if (flatItems.length === 0) return;
+
+      // Enter opens the focused message.
+      if (e.key === 'Enter' && safeFocusIdx >= 0) {
+        e.preventDefault();
+        onSelect(flatItems[safeFocusIdx].item.email);
+        return;
+      }
+
+      // Action keys — act on selection or focused item.
+      const action = sessionKeyAction(e.key);
+      if (action === 'defer' || action === 'followup' || action === 'summarize') {
+        e.preventDefault();
+        actOnSelection(action);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [
+    flatItems,
+    safeFocusIdx,
+    selectedIds.size,
+    moveFocus,
+    clearSelection,
+    actOnSelection,
+    onSelect,
+  ]);
+
+  const selectedCount = selectedIds.size;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <ShortcutHelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
+
       <div className="shrink-0 border-b border-[var(--border)] p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <h1 className="text-lg font-semibold">Today</h1>
             <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-              Queued, applied, failed, and ignored actions stay visible as you work.
+              Keyboard triage:{' '}
+              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
+                d
+              </kbd>{' '}
+              defer ·{' '}
+              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
+                f
+              </kbd>{' '}
+              follow ·{' '}
+              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
+                s
+              </kbd>{' '}
+              summarize ·{' '}
+              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
+                ?
+              </kbd>{' '}
+              help
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {selectedCount > 0 && (
+              <span className="rounded-lg bg-[var(--accent)]/10 px-3 py-1.5 text-xs font-medium text-[var(--accent)]">
+                {selectedCount} selected
+              </span>
+            )}
             {onStartSession && (
               <button
                 type="button"
                 onClick={onStartSession}
-                title="Keyboard triage: d defer · f follow-up · s summarize · j/k move · Esc exit"
-                className="rounded-lg border border-[var(--accent)]/50 px-3 py-1.5 text-xs font-medium text-[var(--accent)] transition hover:bg-[var(--accent)]/10 cursor-pointer"
+                title="Focused triage session: review one message at a time"
+                className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] transition hover:bg-[var(--border)]/40 cursor-pointer"
               >
-                ⌨ Triage session
+                ⌨ Focused session
               </button>
             )}
             {onOpenInbox && (
@@ -111,7 +295,7 @@ export function TriageQueues({
         <TriageQueueLedger remaining={summary.total} className="mt-3" />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto" tabIndex={-1}>
         {error ? (
           <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
             <p className="text-sm text-red-500">{error}</p>
@@ -215,20 +399,32 @@ export function TriageQueues({
             )}
 
             <div className="divide-y divide-[var(--border)]">
-              {flatItems.map(({ queue, item }) => {
+              {flatItems.map(({ queue, item }, idx) => {
                 const selected = item.email.id === selectedId;
+                const focused = idx === safeFocusIdx;
+                const batchSelected = selectedIds.has(item.id);
                 const lastRecord = latestFor(item.email.id);
                 const lastFailed = lastRecord?.state === 'failed';
                 return (
                   <article
                     key={item.id}
                     className={`px-4 py-3 transition ${
-                      selected ? 'bg-[var(--accent)]/[0.08]' : 'hover:bg-[var(--border)]/20'
+                      batchSelected
+                        ? 'bg-[var(--accent)]/[0.12]'
+                        : focused
+                          ? 'bg-[var(--accent)]/[0.08]'
+                          : selected
+                            ? 'bg-[var(--accent)]/[0.08]'
+                            : 'hover:bg-[var(--border)]/20'
                     }`}
                   >
                     <button
+                      ref={(el) => {
+                        if (el) rowRefs.current[idx] = el;
+                      }}
                       type="button"
                       onClick={() => onSelect(item.email)}
+                      onMouseEnter={() => setFocusIdx(idx)}
                       className="w-full text-left cursor-pointer"
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -276,6 +472,28 @@ export function TriageQueues({
                       <p className="mt-1 text-[11px] text-red-500">{lastRecord.message}</p>
                     )}
 
+                    {/* Keyboard shortcut hints — visible on the focused row */}
+                    {focused && (
+                      <div className="mt-2 flex items-center gap-3">
+                        {ROW_HINTS.map((hint) => (
+                          <span
+                            key={hint.key}
+                            className="flex items-center gap-1 text-[10px] text-[var(--text-muted)]"
+                          >
+                            <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1.5 py-0.5 font-mono text-[10px]">
+                              {hint.key}
+                            </kbd>
+                            {hint.label}
+                          </span>
+                        ))}
+                        {selectedCount > 1 && (
+                          <span className="ml-auto text-[10px] text-[var(--accent)]">
+                            acting on {selectedCount}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     {selected && (
                       <div className="mt-2">
                         <TriageActionBar
@@ -292,6 +510,37 @@ export function TriageQueues({
                   </article>
                 );
               })}
+            </div>
+
+            <div className="px-4 py-3 text-center text-[10px] text-[var(--text-muted)]">
+              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
+                j
+              </kbd>{' '}
+              /{' '}
+              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
+                k
+              </kbd>{' '}
+              move ·{' '}
+              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
+                Shift+arrows
+              </kbd>{' '}
+              select ·{' '}
+              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
+                d
+              </kbd>{' '}
+              /{' '}
+              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
+                f
+              </kbd>{' '}
+              /{' '}
+              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
+                s
+              </kbd>{' '}
+              triage ·{' '}
+              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
+                ?
+              </kbd>{' '}
+              help
             </div>
           </>
         )}

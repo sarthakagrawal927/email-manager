@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EmailDetail } from '@/components/EmailDetail';
 import { TriageStateBadge } from '@/components/TriageActionBar';
+import { ShortcutHelpOverlay } from '@/components/ShortcutHelpOverlay';
 import { useTriageActions } from '@/components/TriageActionsProvider';
 import type { Email } from '@/lib/gmail';
-import { buildSessionQueue, sessionKeyAction } from '@/lib/triage-session';
+import { buildSessionQueue, isTypingTarget, sessionKeyAction } from '@/lib/triage-session';
 
 interface Props {
   emails: Email[];
@@ -18,13 +19,9 @@ const LEGEND: { keys: string; label: string }[] = [
   { keys: 'f', label: 'Follow-up 3d' },
   { keys: 's', label: 'Summarize' },
   { keys: 'j / k', label: 'Next / prev' },
+  { keys: '?', label: 'Shortcuts' },
   { keys: 'Esc', label: 'Exit' },
 ];
-
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
-}
 
 /**
  * Keyboard-driven triage session: works through the next batch of
@@ -43,6 +40,7 @@ export function TriageSession({ emails, loading, onExit }: Props) {
 
   const [index, setIndex] = useState(0);
   const [handled, setHandled] = useState(0);
+  const [helpOpen, setHelpOpen] = useState(false);
   const busyRef = useRef(false);
 
   // `index === queue.length` is the "session complete" position.
@@ -81,6 +79,7 @@ export function TriageSession({ emails, loading, onExit }: Props) {
       if (!action) return;
       e.preventDefault();
       if (action === 'exit') onExit();
+      else if (action === 'help') setHelpOpen((o) => !o);
       else if (action === 'next') setIndex((i) => Math.min(i + 1, queue.length));
       else if (action === 'prev') setIndex((i) => Math.max(i - 1, 0));
       else act(action);
@@ -91,6 +90,8 @@ export function TriageSession({ emails, loading, onExit }: Props) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <ShortcutHelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
+
       <div className="flex shrink-0 items-center gap-3 border-b border-[var(--border)] px-4 py-2.5">
         <h1 className="text-sm font-semibold">Triage session</h1>
         {queue.length > 0 && (

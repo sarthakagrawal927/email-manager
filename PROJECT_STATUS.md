@@ -1,5 +1,5 @@
 # email-manager — PROJECT STATUS
-Last updated: 2026-07-03
+Last updated: 2026-07-04
 
 ## Why / What
 
@@ -52,6 +52,7 @@ Last updated: 2026-07-03
 
 ## Timeline
 
+- **2026-07-04** — Keyboard-driven batch triage promoted to the primary `#today` interface: `j`/`k` + arrows navigate, `Shift+arrows` extend multi-select, `d`/`f`/`s` act on all selected (or focused) messages, `?` toggles a shortcut help overlay, `Esc` clears selection. Per-row kbd hints on the focused message; `ShortcutHelpOverlay` component shared by both the queue and the focused session. `isTypingTarget` extracted to `triage-session.ts` (duck-typed, Node-safe) so shortcuts never fire inside text inputs.
 - **2026-07-03** — Keyboard triage session mode on `#today`: works through next 25 unread-but-unsorted messages one at a time with single-key actions (`d`/`f`/`s`, `j`/`k`, `Esc`); closes planned "triage keyboard shortcuts" item.
 - **2026-07-02** — Added `app.onError()` global error handler to Hono worker (catches unhandled errors → 500 JSON + console.error logging).
 - **2026-06-20** — De-OpenNext migration: Next.js+OpenNext → Vite SPA + Hono worker on Cloudflare Workers; Astro landing overlaid to `dist/index.html`; D1 only server DB (Turso residue removed).
@@ -128,7 +129,7 @@ Last updated: 2026-07-03
 
 - `Sidebar` — nav for all views; mobile drawer.
 - `WorkSurface` — split list/detail layout.
-- `TriageQueues` + `TriageActionBar` + `TriageStateBadge` + `TriageQueueLedger` + `TriageActionsProvider` + `TriageSession`.
+- `TriageQueues` + `TriageActionBar` + `TriageStateBadge` + `TriageQueueLedger` + `TriageActionsProvider` + `TriageSession` + `ShortcutHelpOverlay`.
 - `EmailList`, `EmailDetail` — list rows with triage badges, thread reader, unsubscribe.
 - `SemanticSearch` — model load, index sync, semantic query.
 - `Subscriptions`, `Analytics`, `WeeklyDigestView`, `GmailFilterBuilder`.
@@ -149,7 +150,8 @@ Last updated: 2026-07-03
 - Deferred snooze visible on rows and detail via `buildActiveMap`.
 - State in `localStorage` `email-manager:triage-actions:v1` (max 200 records).
 - `TriageQueues` heuristic queues (newsletters, follow-ups, etc.) on `#today`.
-- Keyboard triage session (`TriageSession`, entered via "⌨ Triage session" button on `#today`): next 25 unread-but-unsorted messages one at a time; `d` defer 1d, `f` follow-up 3d, `s` summarize, `j`/`k`/arrows next/prev, `Esc` exit; on-screen key legend; queue built by `src/lib/triage-session.ts` (snapshotted at entry); PostHog `core_action: triage_session_started`.
+- **Keyboard-driven batch triage is the primary `#today` motion** (2026-07-04): `j`/`k` + arrows navigate the flat queue, `Shift+arrows` extend a multi-selection, `d`/`f`/`s` act on all selected (or the focused row if none selected), `Enter` opens the focused message, `?` toggles `ShortcutHelpOverlay`, `Esc` clears selection. Per-row kbd hints appear on the focused message; a selection-count badge shows batch size. Shortcuts are disabled while typing in text inputs (`isTypingTarget`).
+- **Focused triage session** (`TriageSession`, entered via "⌨ Focused session" button on `#today`): next 25 unread-but-unsorted messages one at a time; `d` defer 1d, `f` follow-up 3d, `s` summarize, `j`/`k`/arrows next/prev, `?` help overlay, `Esc` exit; on-screen key legend; queue built by `src/lib/triage-session.ts` (snapshotted at entry); PostHog `core_action: triage_session_started`.
 
 **Gmail filter recipe studio (`#filters`):**
 - Categories: newsletter, receipt, notification, follow-up.
@@ -164,7 +166,7 @@ Last updated: 2026-07-03
 
 ### Tests
 
-- Vitest unit (`pnpm test`): digest builder, filter builder, triage session queue/keymap (`src/lib/__tests__/`).
+- Vitest unit (`pnpm test`): digest builder, filter builder, triage session queue/keymap/`isTypingTarget` (`src/lib/__tests__/`).
 - Playwright: landing hero/features/CTA, no horizontal scroll, CTA touch target ≥44px (desktop + mobile).
 - `pnpm digest:verify` golden-file check for digest builder.
 - CI (`ci.yml`): lint + build only; weekly workflow adds typecheck + e2e.

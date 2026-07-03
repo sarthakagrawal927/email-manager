@@ -5,12 +5,20 @@ import { buildActiveMap, type TriageActionRecord } from './triage-actions';
 /** Max messages loaded into one keyboard triage session. */
 export const SESSION_SIZE = 25;
 
-export type SessionKeyAction = 'defer' | 'followup' | 'summarize' | 'next' | 'prev' | 'exit';
+export type SessionKeyAction =
+  | 'defer'
+  | 'followup'
+  | 'summarize'
+  | 'next'
+  | 'prev'
+  | 'exit'
+  | 'help';
 
 /**
  * Map a keydown `event.key` to a triage-session action.
  * `d` defer · `f` follow-up · `s` summarize · `j`/`k` + arrows next/prev ·
- * `Esc` exit. Returns null for unmapped keys so callers can let them through.
+ * `Esc` exit · `?` help. Returns null for unmapped keys so callers can let
+ * them through.
  */
 export function sessionKeyAction(key: string): SessionKeyAction | null {
   switch (key) {
@@ -30,9 +38,26 @@ export function sessionKeyAction(key: string): SessionKeyAction | null {
       return 'prev';
     case 'Escape':
       return 'exit';
+    case '?':
+      return 'help';
     default:
       return null;
   }
+}
+
+/**
+ * Returns true when the keydown target is a text-input element that should
+ * swallow printable keys. Shared by TriageQueues and TriageSession so
+ * keyboard shortcuts never interfere with typing. Uses duck typing (not
+ * `instanceof HTMLElement`) so it is safe to call from non-DOM environments
+ * (unit tests run under Node).
+ */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  if (!target || typeof target !== 'object') return false;
+  const el = target as { tagName?: unknown; isContentEditable?: boolean };
+  if (typeof el.tagName !== 'string') return false;
+  const tag = el.tagName.toUpperCase();
+  return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable === true;
 }
 
 /**

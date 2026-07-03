@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { buildSessionQueue, sessionKeyAction, SESSION_SIZE } from '../triage-session';
+import {
+  buildSessionQueue,
+  isTypingTarget,
+  sessionKeyAction,
+  SESSION_SIZE,
+} from '../triage-session';
 import type { Email } from '../gmail';
 import type { TriageActionRecord } from '../triage-actions';
 
@@ -54,6 +59,35 @@ describe('sessionKeyAction', () => {
     expect(sessionKeyAction('x')).toBeNull();
     expect(sessionKeyAction('D')).toBeNull();
     expect(sessionKeyAction('Enter')).toBeNull();
+  });
+
+  it('maps ? to help', () => {
+    expect(sessionKeyAction('?')).toBe('help');
+  });
+});
+
+describe('isTypingTarget', () => {
+  it('returns false for non-element targets', () => {
+    expect(isTypingTarget(null)).toBe(false);
+    expect(isTypingTarget({} as EventTarget)).toBe(false);
+    expect(isTypingTarget({ tagName: 123 } as unknown as EventTarget)).toBe(false);
+  });
+
+  it('returns true for input and textarea elements', () => {
+    const input = { tagName: 'INPUT' } as unknown as EventTarget;
+    const textarea = { tagName: 'TEXTAREA' } as unknown as EventTarget;
+    expect(isTypingTarget(input)).toBe(true);
+    expect(isTypingTarget(textarea)).toBe(true);
+  });
+
+  it('returns true for contentEditable elements', () => {
+    const div = { tagName: 'DIV', isContentEditable: true } as unknown as EventTarget;
+    expect(isTypingTarget(div)).toBe(true);
+  });
+
+  it('returns false for regular elements', () => {
+    const div = { tagName: 'DIV', isContentEditable: false } as unknown as EventTarget;
+    expect(isTypingTarget(div)).toBe(false);
   });
 });
 
