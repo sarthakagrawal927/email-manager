@@ -11,6 +11,7 @@ import { Subscriptions } from '@/components/Subscriptions';
 import { Analytics } from '@/components/Analytics';
 import { SemanticSearch } from '@/components/SemanticSearch';
 import { TriageQueues } from '@/components/TriageQueues';
+import { TriageSession } from '@/components/TriageSession';
 import { GmailFilterBuilder } from '@/components/GmailFilterBuilder';
 import { WeeklyDigestView } from '@/components/WeeklyDigestView';
 import { WorkSurface } from '@/components/WorkSurface';
@@ -81,6 +82,7 @@ export default function HomeClient() {
   const [search, setSearch] = useState('');
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [triageSession, setTriageSession] = useState(false);
   const fetchingRef = useRef(false);
   const fetchSeqRef = useRef(0);
   const trackedSessionRef = useRef<string | null>(null);
@@ -185,6 +187,19 @@ export default function HomeClient() {
     }
   }, [session, view, fetchEmails, sessionData]);
 
+  // Keyboard triage session lives on the Today queue only — navigating to
+  // another view ends it.
+  useEffect(() => {
+    if (view !== 'today') setTriageSession(false);
+  }, [view]);
+
+  const startTriageSession = useCallback(() => {
+    setSelected(null);
+    setView('today');
+    setTriageSession(true);
+    trackCoreAction('triage_session_started');
+  }, [setView]);
+
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -288,6 +303,12 @@ export default function HomeClient() {
               />
             ) : view === 'filters' ? (
               <GmailFilterBuilder />
+            ) : view === 'today' && triageSession ? (
+              <TriageSession
+                emails={emails}
+                loading={loading}
+                onExit={() => setTriageSession(false)}
+              />
             ) : view === 'today' ? (
               <WorkSurface
                 hasSelection={Boolean(selected)}
@@ -301,6 +322,7 @@ export default function HomeClient() {
                     onRefresh={() => fetchEmails()}
                     onOpenInbox={() => setView('inbox')}
                     onNavigateFilters={() => setView('filters')}
+                    onStartSession={startTriageSession}
                   />
                 }
                 detail={

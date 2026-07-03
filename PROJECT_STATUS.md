@@ -1,5 +1,5 @@
 # email-manager — PROJECT STATUS
-Last updated: 2026-07-02
+Last updated: 2026-07-03
 
 ## Why / What
 
@@ -52,6 +52,7 @@ Last updated: 2026-07-02
 
 ## Timeline
 
+- **2026-07-03** — Keyboard triage session mode on `#today`: works through next 25 unread-but-unsorted messages one at a time with single-key actions (`d`/`f`/`s`, `j`/`k`, `Esc`); closes planned "triage keyboard shortcuts" item.
 - **2026-07-02** — Added `app.onError()` global error handler to Hono worker (catches unhandled errors → 500 JSON + console.error logging).
 - **2026-06-20** — De-OpenNext migration: Next.js+OpenNext → Vite SPA + Hono worker on Cloudflare Workers; Astro landing overlaid to `dist/index.html`; D1 only server DB (Turso residue removed).
 - **2026-06-20** — Shipped PRD batch (2026-06-12): weekly digest, triage action queue, Gmail filter recipe studio.
@@ -127,7 +128,7 @@ Last updated: 2026-07-02
 
 - `Sidebar` — nav for all views; mobile drawer.
 - `WorkSurface` — split list/detail layout.
-- `TriageQueues` + `TriageActionBar` + `TriageStateBadge` + `TriageQueueLedger` + `TriageActionsProvider`.
+- `TriageQueues` + `TriageActionBar` + `TriageStateBadge` + `TriageQueueLedger` + `TriageActionsProvider` + `TriageSession`.
 - `EmailList`, `EmailDetail` — list rows with triage badges, thread reader, unsubscribe.
 - `SemanticSearch` — model load, index sync, semantic query.
 - `Subscriptions`, `Analytics`, `WeeklyDigestView`, `GmailFilterBuilder`.
@@ -148,6 +149,7 @@ Last updated: 2026-07-02
 - Deferred snooze visible on rows and detail via `buildActiveMap`.
 - State in `localStorage` `email-manager:triage-actions:v1` (max 200 records).
 - `TriageQueues` heuristic queues (newsletters, follow-ups, etc.) on `#today`.
+- Keyboard triage session (`TriageSession`, entered via "⌨ Triage session" button on `#today`): next 25 unread-but-unsorted messages one at a time; `d` defer 1d, `f` follow-up 3d, `s` summarize, `j`/`k`/arrows next/prev, `Esc` exit; on-screen key legend; queue built by `src/lib/triage-session.ts` (snapshotted at entry); PostHog `core_action: triage_session_started`.
 
 **Gmail filter recipe studio (`#filters`):**
 - Categories: newsletter, receipt, notification, follow-up.
@@ -162,6 +164,7 @@ Last updated: 2026-07-02
 
 ### Tests
 
+- Vitest unit (`pnpm test`): digest builder, filter builder, triage session queue/keymap (`src/lib/__tests__/`).
 - Playwright: landing hero/features/CTA, no horizontal scroll, CTA touch target ≥44px (desktop + mobile).
 - `pnpm digest:verify` golden-file check for digest builder.
 - CI (`ci.yml`): lint + build only; weekly workflow adds typecheck + e2e.
@@ -171,8 +174,7 @@ Last updated: 2026-07-02
 ### Planned
 
 1. IndexedDB `digests` store with 90-day retention (`src/lib/db.ts`; see `docs/plans/2026-06-04-email-memories-digest.md`).
-2. Triage keyboard shortcuts and compact recent-actions panel (`src/components/TriageActionBar.tsx`).
-3. Add e2e to `ci.yml` for signed-in flows (currently manual OAuth only).
+2. Add e2e to `ci.yml` for signed-in flows (currently manual OAuth only).
 
 ### Deferred
 
@@ -186,5 +188,5 @@ Last updated: 2026-07-02
 ### Blocked
 
 - D1 bindings resolve only under `wrangler dev` / deployed worker — use `pnpm dev` or `pnpm dev:api` for `/api/*`.
-- No unit/Vitest tests; signed-in flows require manual OAuth.
+- Signed-in e2e flows require manual OAuth (unit tests cover lib logic only).
 - `ci.yml` does not run e2e (weekly workflow does).

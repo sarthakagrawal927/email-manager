@@ -19,6 +19,7 @@ function makeEmail(overrides: Partial<Email> = {}): Email {
     body: '',
     labelIds: [],
     unsubscribeLink: null,
+    unsubscribePost: false,
     ...overrides,
   };
 }

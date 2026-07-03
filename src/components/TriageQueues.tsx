@@ -17,6 +17,7 @@ interface Props {
   onRefresh: () => void;
   onOpenInbox?: () => void;
   onNavigateFilters?: () => void;
+  onStartSession?: () => void;
 }
 
 function priorityClass(priority: TriageItem['priority']) {
@@ -42,6 +43,7 @@ export function TriageQueues({
   onRefresh,
   onOpenInbox,
   onNavigateFilters,
+  onStartSession,
 }: Props) {
   const { records, activeMap, counts, now, latestFor } = useTriageActions();
 
@@ -76,6 +78,16 @@ export function TriageQueues({
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {onStartSession && (
+              <button
+                type="button"
+                onClick={onStartSession}
+                title="Keyboard triage: d defer · f follow-up · s summarize · j/k move · Esc exit"
+                className="rounded-lg border border-[var(--accent)]/50 px-3 py-1.5 text-xs font-medium text-[var(--accent)] transition hover:bg-[var(--accent)]/10 cursor-pointer"
+              >
+                ⌨ Triage session
+              </button>
+            )}
             {onOpenInbox && (
               <button
                 type="button"

@@ -30,7 +30,8 @@ export type CoreAction =
   | 'filter_installed'
   | 'unsubscribed'
   | 'digest_generated'
-  | 'digest_exported';
+  | 'digest_exported'
+  | 'triage_session_started';
 
 interface AnalyticsEventMap {
   /** First session after an account is created. */
