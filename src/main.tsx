@@ -5,6 +5,7 @@ import { RouterProvider } from 'react-router-dom';
 import { router } from '@/router';
 import '@/styles/globals.css';
 import { initVitals } from './lib/vitals';
+import { initApiTiming } from './lib/api-timing';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -13,3 +14,4 @@ createRoot(document.getElementById('root')!).render(
 );
 
 initVitals();
+initApiTiming();
