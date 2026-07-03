@@ -57,7 +57,7 @@ Last updated: 2026-07-03
 - **2026-06-20** — De-OpenNext migration: Next.js+OpenNext → Vite SPA + Hono worker on Cloudflare Workers; Astro landing overlaid to `dist/index.html`; D1 only server DB (Turso residue removed).
 - **2026-06-20** — Shipped PRD batch (2026-06-12): weekly digest, triage action queue, Gmail filter recipe studio.
 - **2026-06-12** — PRD batch defined: weekly digest, triage queues, filter recipe studio.
-- **Ongoing** — CI push to `main` auto-deploys; weekly workflow full checks Mondays 09:00 UTC.
+- **Ongoing** — CI (lint + build) runs on push to `main`; deploys are manual (`pnpm deploy`, or `deploy.yml` via workflow_dispatch); weekly workflow full checks Mondays 09:00 UTC.
 
 ## Products
 
