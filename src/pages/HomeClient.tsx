@@ -17,6 +17,7 @@ import { GmailFilterBuilder } from '@/components/GmailFilterBuilder';
 import { WeeklyDigestView } from '@/components/WeeklyDigestView';
 import { WorkSurface } from '@/components/WorkSurface';
 import { TriageActionsProvider } from '@/components/TriageActionsProvider';
+import { MailboxStoreProvider, useMailboxStore } from '@/components/MailboxStoreProvider';
 import type { Email } from '@/lib/gmail';
 
 type View =
@@ -62,6 +63,32 @@ export default function HomeClient() {
   const { session: sessionData, loading: isPending } = useSession();
   const session = sessionData?.user ? sessionData : null;
   const status = isPending ? 'loading' : session ? 'authenticated' : 'unauthenticated';
+
+  if (status === 'loading') {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[var(--bg)]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <SignInScreen />;
+  }
+
+  return (
+    <MailboxStoreProvider>
+      <AuthenticatedHome sessionData={sessionData!} />
+    </MailboxStoreProvider>
+  );
+}
+
+function AuthenticatedHome({
+  sessionData,
+}: {
+  sessionData: { user?: { id: string; name?: string; image?: string } };
+}) {
+  const mailbox = useMailboxStore();
   const [view, setViewState] = useState<View>('today');
 
   useEffect(() => {
@@ -182,12 +209,21 @@ export default function HomeClient() {
     [view, search]
   );
 
+  const usesCachedInbox = (view === 'today' || view === 'inbox') && !search;
+
   useEffect(() => {
-    if (sessionData?.user) {
-      setSelected(null);
-      if (LABEL_MAP[view]) fetchEmails();
+    setSelected(null);
+
+    if (usesCachedInbox) {
+      setEmails(mailbox.emails);
+      setLoading(!mailbox.ready || (mailbox.syncing && mailbox.emails.length === 0));
+      setError(null);
+      setNextPageToken(null);
+      return;
     }
-  }, [session, view, fetchEmails, sessionData]);
+
+    if (LABEL_MAP[view]) fetchEmails();
+  }, [view, search, usesCachedInbox, mailbox.emails, mailbox.ready, mailbox.syncing, fetchEmails]);
 
   // Keyboard triage session lives on the Today queue only — navigating to
   // another view ends it.
@@ -215,17 +251,21 @@ export default function HomeClient() {
     [setView]
   );
 
-  if (status === 'loading') {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[var(--bg)]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
-      </div>
-    );
-  }
+  const refreshMailboxView = useCallback(() => {
+    if (usesCachedInbox) {
+      void mailbox.syncInbox();
+    } else {
+      fetchEmails();
+    }
+  }, [usesCachedInbox, mailbox, fetchEmails]);
 
-  if (!session) {
-    return <SignInScreen />;
-  }
+  const loadMoreInbox = useCallback(() => {
+    if (usesCachedInbox && !mailbox.inboxExhausted) {
+      void mailbox.ensureInboxCount(mailbox.total + 100);
+      return;
+    }
+    if (nextPageToken) fetchEmails(nextPageToken);
+  }, [usesCachedInbox, mailbox, nextPageToken, fetchEmails]);
 
   const isPrimaryView = view === 'today' || view === 'inbox';
   const viewLabel = view.charAt(0).toUpperCase() + view.slice(1);
@@ -259,11 +299,10 @@ export default function HomeClient() {
             ) : view === 'analytics' ? (
               <Analytics />
             ) : view === 'digest' ? (
-              <WeeklyDigestView
-                onOpenSender={(email) => openDigestContext('sender', email)}
-                onOpenThread={(_threadId, subject) => openDigestContext('thread', '', subject)}
-                onNavigateSearch={() => setView('search')}
-              />
+                <WeeklyDigestView
+                  onOpenSender={(email) => openDigestContext('sender', email)}
+                  onOpenThread={(_threadId, subject) => openDigestContext('thread', '', subject)}
+                />
             ) : view === 'filters' ? (
               <GmailFilterBuilder />
             ) : view === 'today' && triageSession ? (
@@ -282,7 +321,7 @@ export default function HomeClient() {
                     error={error}
                     selectedId={selected?.id}
                     onSelect={handleSelectEmail}
-                    onRefresh={() => fetchEmails()}
+                    onRefresh={refreshMailboxView}
                     onOpenInbox={() => setView('inbox')}
                     onNavigateFilters={() => setView('filters')}
                     onStartSession={startTriageSession}
@@ -300,7 +339,7 @@ export default function HomeClient() {
                   <div className="max-w-sm space-y-4 px-6 text-center">
                     <p className="text-sm text-[var(--text-muted)]">{error}</p>
                     <button
-                      onClick={() => fetchEmails()}
+                      onClick={refreshMailboxView}
                       className="cursor-pointer rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)]"
                     >
                       Try again
@@ -319,8 +358,16 @@ export default function HomeClient() {
                       selectedId={selected?.id}
                       onSearchChange={setSearch}
                       onSelect={handleSelectEmail}
-                      onRefresh={() => fetchEmails()}
-                      onLoadMore={nextPageToken ? () => fetchEmails(nextPageToken) : undefined}
+                      onRefresh={refreshMailboxView}
+                      onLoadMore={
+                        usesCachedInbox
+                          ? mailbox.inboxExhausted
+                            ? undefined
+                            : loadMoreInbox
+                          : nextPageToken
+                            ? loadMoreInbox
+                            : undefined
+                      }
                       primary={isPrimaryView}
                       triageLedger
                     />
@@ -341,7 +388,7 @@ export default function HomeClient() {
                 <div className="text-center space-y-4 max-w-sm px-6">
                   <p className="text-sm text-[var(--text-muted)]">{error}</p>
                   <button
-                    onClick={() => fetchEmails()}
+                    onClick={refreshMailboxView}
                     className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition cursor-pointer text-sm font-medium"
                   >
                     Try again
@@ -357,8 +404,8 @@ export default function HomeClient() {
                 selectedId={null}
                 onSearchChange={setSearch}
                 onSelect={handleSelectEmail}
-                onRefresh={() => fetchEmails()}
-                onLoadMore={nextPageToken ? () => fetchEmails(nextPageToken) : undefined}
+                onRefresh={refreshMailboxView}
+                onLoadMore={nextPageToken ? loadMoreInbox : undefined}
                 primary={isPrimaryView}
               />
             )}

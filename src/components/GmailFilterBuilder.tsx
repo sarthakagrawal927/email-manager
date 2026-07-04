@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMailboxStore } from '@/components/MailboxStoreProvider';
 import { trackCoreAction } from '@/lib/analytics';
 import type { Email } from '@/lib/gmail';
 import {
@@ -28,6 +29,7 @@ const CATEGORY_LABELS: Record<GmailFilterSuggestion['category'], string> = {
 };
 
 export function GmailFilterBuilder() {
+  const { ensureInboxCount, getInboxSlice } = useMailboxStore();
   const [emails, setEmails] = useState<Email[]>([]);
   const [sampleSize, setSampleSize] = useState(500);
   const [loading, setLoading] = useState(true);
@@ -35,8 +37,6 @@ export function GmailFilterBuilder() {
   const [error, setError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState<string | null>(null);
-  const cacheRef = useRef<Email[]>([]);
-  const abortRef = useRef<AbortController | null>(null);
 
   const suggestions = useMemo(() => buildGmailFilterSuggestions(emails), [emails]);
   const selectedSuggestions = suggestions.filter((suggestion) => selectedIds.has(suggestion.id));
@@ -44,74 +44,37 @@ export function GmailFilterBuilder() {
   const explanation = buildRecipeExplanation(selectedSuggestions);
   const recipeSummary = buildSelectedRecipeSummary(selectedSuggestions);
 
-  const fetchPatterns = useCallback(async (target: number) => {
-    if (cacheRef.current.length >= target) {
-      setEmails(cacheRef.current.slice(0, target));
-      setLoading(false);
-      setProgress('');
-      return;
-    }
+  const fetchPatterns = useCallback(
+    async (target: number) => {
+      setLoading(true);
+      setError(null);
+      setProgress('Loading from local inbox index…');
 
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    setLoading(true);
-    setError(null);
-    setProgress('Sampling inbox...');
-
-    try {
-      const allEmails: Email[] = [];
-      let pageToken: string | undefined;
-
-      while (allEmails.length < target) {
-        if (controller.signal.aborted) return;
-
-        const params = new URLSearchParams({
-          label: 'INBOX',
-          maxResults: String(Math.min(500, target - allEmails.length)),
-          metadataOnly: 'true',
-        });
-        if (pageToken) params.set('pageToken', pageToken);
-
-        setProgress(`Sampling inbox... ${allEmails.length}/${target}`);
-        const res = await fetch(`/api/emails?${params}`, { signal: controller.signal });
-
-        if (!res.ok) {
-          setError(`Failed to sample inbox (${res.status})`);
-          break;
+      try {
+        const cached = getInboxSlice(target);
+        if (cached.length >= target) {
+          setEmails(cached.slice(0, target));
+          setLoading(false);
+          setProgress('');
+          return;
         }
 
-        const data = await res.json();
-        const batch: Email[] = data.emails ?? [];
-        if (batch.length === 0) break;
-
-        allEmails.push(...batch);
-        pageToken = data.nextPageToken;
-        if (!pageToken) break;
-      }
-
-      if (controller.signal.aborted) return;
-
-      if (allEmails.length > cacheRef.current.length) {
-        cacheRef.current = allEmails;
-      }
-      setEmails(allEmails.slice(0, target));
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') return;
-      console.error('Filter builder fetch error:', err);
-      setError('Failed to sample inbox');
-    } finally {
-      if (!controller.signal.aborted) {
+        setProgress(`Syncing inbox… ${cached.length}/${target}`);
+        const synced = await ensureInboxCount(target, { metadataOnly: true });
+        setEmails(synced.slice(0, target));
+      } catch (err: unknown) {
+        console.error('Filter builder load error:', err);
+        setError('Failed to sample inbox');
+      } finally {
         setLoading(false);
         setProgress('');
       }
-    }
-  }, []);
+    },
+    [ensureInboxCount, getInboxSlice]
+  );
 
   useEffect(() => {
-    fetchPatterns(sampleSize);
-    return () => abortRef.current?.abort();
+    void fetchPatterns(sampleSize);
   }, [fetchPatterns, sampleSize]);
 
   useEffect(() => {

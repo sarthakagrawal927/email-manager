@@ -1,53 +1,41 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { Email } from '@/lib/gmail';
+import { useMailboxStore } from '@/components/MailboxStoreProvider';
 
 export function Subscriptions() {
-  const [emails, setEmails] = useState<Email[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { total, subscriptionSenders, ready, syncing, refresh, syncInbox } = useMailboxStore();
   const [error, setError] = useState<string | null>(null);
   const [unsubbing, setUnsubbing] = useState<Set<string>>(new Set());
   const [unsubbed, setUnsubbed] = useState<Set<string>>(new Set());
 
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
   async function loadSubscriptions() {
-    setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/emails?q=unsubscribe&label=INBOX');
-      if (!res.ok) {
-        setError(`Couldn't load subscriptions (${res.status}).`);
-        return;
-      }
-      const data = await res.json();
-      const subs = (data.emails ?? []).filter((e: Email) => e.unsubscribeLink);
-      const seen = new Set<string>();
-      const unique = subs.filter((e: Email) => {
-        const sender =
-          e.from
-            .match(/<([^>]+)>/)?.[1]
-            ?.toLowerCase()
-            .trim() ?? e.from.toLowerCase().trim();
-        if (!sender || seen.has(sender)) return false;
-        seen.add(sender);
-        return true;
-      });
-      setEmails(unique);
+      await refresh();
     } catch (err) {
-      console.error('Subscriptions fetch error:', err);
+      console.error('Subscriptions load error:', err);
       setError("Couldn't load subscriptions. Check your connection.");
-    } finally {
-      setLoading(false);
     }
   }
 
-  useEffect(() => {
-    loadSubscriptions();
-  }, []);
+  async function handleSync() {
+    setError(null);
+    try {
+      await syncInbox();
+    } catch (err) {
+      console.error('Subscriptions sync error:', err);
+      setError("Couldn't sync inbox. Check your connection.");
+    }
+  }
 
   async function handleUnsubscribe(email: Email) {
     if (!email.unsubscribePost) {
-      // Fallback: open link in new tab
       window.open(email.unsubscribeLink!, '_blank', 'noopener,noreferrer');
       return;
     }
@@ -73,7 +61,7 @@ export function Subscriptions() {
     }
   }
 
-  if (loading) {
+  if (!ready || syncing) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="animate-spin w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
@@ -97,10 +85,33 @@ export function Subscriptions() {
     );
   }
 
-  if (emails.length === 0) {
+  if (total === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-sm px-6">
+          <p className="text-sm text-[var(--text-muted)]">
+            Sync your inbox from the sidebar — all tools share the same local index.
+          </p>
+          <button
+            onClick={handleSync}
+            className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition cursor-pointer text-sm font-medium"
+          >
+            Sync inbox
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (subscriptionSenders.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center text-[var(--text-muted)]">
-        No subscriptions found with unsubscribe links
+        <div className="text-center space-y-2 max-w-sm px-6">
+          <p>No subscriptions found in your synced emails.</p>
+          <p className="text-xs">
+            {total} inbox message{total !== 1 ? 's' : ''} indexed locally — sync again for more.
+          </p>
+        </div>
       </div>
     );
   }
@@ -110,10 +121,11 @@ export function Subscriptions() {
       <div className="p-4 border-b border-[var(--border)]">
         <h2 className="text-lg font-semibold">Subscriptions</h2>
         <p className="text-sm text-[var(--text-muted)] mt-1">
-          {emails.length} sender{emails.length !== 1 ? 's' : ''} with unsubscribe links
+          {subscriptionSenders.length} sender{subscriptionSenders.length !== 1 ? 's' : ''} with
+          unsubscribe links — from your local inbox index ({total} emails)
         </p>
       </div>
-      {emails.map((email) => (
+      {subscriptionSenders.map((email) => (
         <div
           key={email.id}
           className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]"

@@ -3,15 +3,9 @@
 import { Brain, RefreshCw, Search, Sparkles } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import type { Email } from '@/lib/gmail';
-import {
-  storeEmails,
-  storeEmail,
-  getEmailCount,
-  getIndexedCount,
-  getEmailsWithoutEmbedding,
-} from '@/lib/db';
-import type { StoredEmail } from '@/lib/db';
+import { storeEmail, getEmailsWithoutEmbedding } from '@/lib/db';
 import { embed, prepareEmailText } from '@/lib/embeddings';
+import { useMailboxStore } from '@/components/MailboxStoreProvider';
 import { semanticSearch, type SearchResult } from '@/lib/semantic-search';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,18 +20,16 @@ interface Props {
 }
 
 export function SemanticSearch({ onSelect }: Props) {
-  const [total, setTotal] = useState(0);
-  const [indexed, setIndexed] = useState(0);
-  const [syncing, setSyncing] = useState(false);
-  const [progress, setProgress] = useState('');
+  const { total, indexed, syncing, progress, syncInbox, refresh } = useMailboxStore();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [indexing, setIndexing] = useState(false);
+  const [indexProgress, setIndexProgress] = useState('');
   const mountedRef = useRef(true);
 
   useEffect(() => {
-    refreshStatus();
     return () => {
       mountedRef.current = false;
     };
@@ -52,49 +44,20 @@ export function SemanticSearch({ onSelect }: Props) {
     return () => clearTimeout(timer);
   }, [query, indexed]);
 
-  async function refreshStatus() {
-    const [t, i] = await Promise.all([getEmailCount(), getIndexedCount()]);
-    if (mountedRef.current) {
-      setTotal(t);
-      setIndexed(i);
-    }
-  }
-
   async function handleSync() {
-    setSyncing(true);
-    setProgress('Fetching emails...');
+    setIndexing(true);
+    setIndexProgress('');
     try {
-      let pageToken: string | undefined;
-      let fetched = 0;
-      const maxEmails = 500;
-
-      do {
-        const params = new URLSearchParams({ label: 'INBOX' });
-        if (pageToken) params.set('pageToken', pageToken);
-        const res = await fetch(`/api/emails?${params}`);
-        if (!res.ok) throw new Error(`API error: ${res.status}`);
-        const data = await res.json();
-
-        if (data.emails?.length) {
-          const toStore: StoredEmail[] = data.emails.map((e: Email) => ({
-            ...e,
-            embedding: null,
-          }));
-          await storeEmails(toStore);
-          fetched += data.emails.length;
-          if (mountedRef.current) setProgress(`Fetched ${fetched} emails...`);
-        }
-        pageToken = data.nextPageToken;
-      } while (pageToken && fetched < maxEmails);
+      await syncInbox();
 
       const unembedded = await getEmailsWithoutEmbedding();
       if (unembedded.length > 0) {
-        if (mountedRef.current) setProgress('Loading AI model...');
+        if (mountedRef.current) setIndexProgress('Loading AI model...');
         await embed('warmup');
 
         for (let i = 0; i < unembedded.length; i++) {
           if (!mountedRef.current) break;
-          setProgress(`Indexing ${i + 1} of ${unembedded.length}...`);
+          setIndexProgress(`Indexing ${i + 1} of ${unembedded.length}...`);
           const text = prepareEmailText(unembedded[i]);
           const embedding = await embed(text);
           await storeEmail({ ...unembedded[i], embedding });
@@ -102,16 +65,19 @@ export function SemanticSearch({ onSelect }: Props) {
       }
 
       if (mountedRef.current) {
-        setProgress('');
-        await refreshStatus();
+        setIndexProgress('');
+        await refresh();
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Sync failed';
-      if (mountedRef.current) setProgress(`Error: ${message}`);
+      if (mountedRef.current) setIndexProgress(`Error: ${message}`);
     } finally {
-      if (mountedRef.current) setSyncing(false);
+      if (mountedRef.current) setIndexing(false);
     }
   }
+
+  const busy = syncing || indexing;
+  const statusMessage = indexProgress || progress;
 
   async function performSearch(q: string) {
     setSearching(true);
@@ -140,9 +106,9 @@ export function SemanticSearch({ onSelect }: Props) {
         title="Semantic search"
         description="Query by meaning — embeddings run entirely in your browser."
         actions={
-          <Button type="button" onClick={handleSync} disabled={syncing}>
-            <RefreshCw className={cn('h-4 w-4', syncing && 'animate-spin')} aria-hidden />
-            {syncing ? 'Syncing…' : 'Sync & Index'}
+          <Button type="button" onClick={handleSync} disabled={busy}>
+            <RefreshCw className={cn('h-4 w-4', busy && 'animate-spin')} aria-hidden />
+            {busy ? 'Syncing…' : 'Sync & Index'}
           </Button>
         }
         meta={
@@ -152,8 +118,8 @@ export function SemanticSearch({ onSelect }: Props) {
               {indexed} / {total} indexed
             </Badge>
             {total > 0 ? <Badge variant="outline">{indexPct}% ready</Badge> : null}
-            {progress ? <span>{progress}</span> : null}
-            {searching && !progress ? <Spinner className="h-4 w-4" /> : null}
+            {statusMessage ? <span>{statusMessage}</span> : null}
+            {searching && !statusMessage ? <Spinner className="h-4 w-4" /> : null}
           </div>
         }
       />

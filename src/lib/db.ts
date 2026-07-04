@@ -5,26 +5,40 @@ export interface StoredEmail extends Email {
   embedding: number[] | null;
 }
 
+export interface InboxSyncMeta {
+  nextPageToken?: string;
+  exhausted: boolean;
+  lastSyncedAt: string | null;
+}
+
 interface EmailDB extends DBSchema {
   emails: {
     key: string;
     value: StoredEmail;
     indexes: { 'by-date': string };
   };
+  meta: {
+    key: string;
+    value: InboxSyncMeta;
+  };
 }
 
 const DB_NAME = 'email-search';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
+const INBOX_SYNC_META_KEY = 'inbox-sync';
 
 let dbPromise: Promise<IDBPDatabase<EmailDB>> | null = null;
 
 function getDB() {
   if (!dbPromise) {
     dbPromise = openDB<EmailDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
+      upgrade(db, oldVersion) {
         if (!db.objectStoreNames.contains('emails')) {
           const store = db.createObjectStore('emails', { keyPath: 'id' });
           store.createIndex('by-date', 'date');
+        }
+        if (oldVersion < 2 && !db.objectStoreNames.contains('meta')) {
+          db.createObjectStore('meta');
         }
       },
     });
@@ -48,6 +62,11 @@ export async function getAllEmails(): Promise<StoredEmail[]> {
   return db.getAll('emails');
 }
 
+export async function getInboxEmailsSorted(): Promise<StoredEmail[]> {
+  const all = await getAllEmails();
+  return all.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
 export async function getEmailsWithoutEmbedding(): Promise<StoredEmail[]> {
   const db = await getDB();
   const all = await db.getAll('emails');
@@ -63,6 +82,23 @@ export async function getIndexedCount(): Promise<number> {
   const db = await getDB();
   const all = await db.getAll('emails');
   return all.filter((e) => e.embedding).length;
+}
+
+export async function getInboxSyncMeta(): Promise<InboxSyncMeta> {
+  const db = await getDB();
+  const stored = await db.get('meta', INBOX_SYNC_META_KEY);
+  return (
+    stored ?? {
+      nextPageToken: undefined,
+      exhausted: false,
+      lastSyncedAt: null,
+    }
+  );
+}
+
+export async function setInboxSyncMeta(meta: InboxSyncMeta): Promise<void> {
+  const db = await getDB();
+  await db.put('meta', meta, INBOX_SYNC_META_KEY);
 }
 
 /**

@@ -1,16 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Email } from '@/lib/gmail';
 import { EmailHoverPreview } from '@/components/EmailHoverPreview';
+import { useMailboxStore } from '@/components/MailboxStoreProvider';
 import { formatEmailDateShort } from '@/lib/format-date';
-import {
-  appendSamplePage,
-  emptyInboxSample,
-  hasEnoughSample,
-  sliceSample,
-  type InboxSampleState,
-} from '@/lib/inbox-sample';
 
 interface SenderStat {
   email: string;
@@ -48,21 +42,20 @@ function formatDateRange(oldest: string, newest: string): string {
 }
 
 export function Analytics() {
+  const { ensureInboxCount, getInboxSlice, syncing, progress: storeProgress } = useMailboxStore();
   const [stats, setStats] = useState<SenderStat[]>([]);
+  const [sampleEmails, setSampleEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState('');
   const [totalEmails, setTotalEmails] = useState(0);
   const [dateRange, setDateRange] = useState('');
   const [bucket, setBucket] = useState(100);
-  const abortRef = useRef<AbortController | null>(null);
-  const sampleRef = useRef<InboxSampleState>(emptyInboxSample());
-  const fetchGenRef = useRef(0);
 
-  function computeStats(emails: Email[]) {
+  const computeStats = useCallback((emails: Email[]) => {
+    setSampleEmails(emails);
     setTotalEmails(emails.length);
 
-    // Compute date range
     if (emails.length > 0) {
       const dates = emails
         .map((e) => new Date(e.date).getTime())
@@ -80,7 +73,6 @@ export function Analytics() {
       setDateRange('');
     }
 
-    // Aggregate by sender email address
     const senderMap = new Map<string, SenderStat>();
     for (const email of emails) {
       const emailMatch = email.from.match(/<([^>]+)>/);
@@ -111,98 +103,42 @@ export function Analytics() {
     setStats(Array.from(senderMap.values()).sort((a, b) => b.count - a.count));
     setLoading(false);
     setProgress('');
-  }
-
-  const fetchAnalytics = useCallback(async (target: number) => {
-    const generation = ++fetchGenRef.current;
-    const stale = () => fetchGenRef.current !== generation;
-
-    // Reuse cached pages when lowering or re-selecting a smaller bucket.
-    if (hasEnoughSample(sampleRef.current, target)) {
-      abortRef.current?.abort();
-      abortRef.current = null;
-      computeStats(sliceSample(sampleRef.current, target));
-      return;
-    }
-
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    const startingCount = sampleRef.current.emails.length;
-    const hadPartialCache = startingCount > 0;
-
-    setLoading(true);
-    setError(null);
-    setProgress(`Fetching... ${startingCount}/${target}`);
-
-    if (!hadPartialCache) {
-      setStats([]);
-      setDateRange('');
-    } else {
-      computeStats(sliceSample(sampleRef.current, Math.min(startingCount, target)));
-    }
-
-    try {
-      let state = sampleRef.current;
-      let pageToken = state.exhausted ? undefined : state.nextPageToken;
-
-      while (state.emails.length < target && !state.exhausted) {
-        if (controller.signal.aborted || stale()) return;
-
-        const params = new URLSearchParams({
-          label: 'INBOX',
-          maxResults: String(Math.min(500, target - state.emails.length)),
-          metadataOnly: 'true',
-        });
-        if (pageToken) params.set('pageToken', pageToken);
-
-        if (!stale()) {
-          setProgress(`Fetching... ${state.emails.length}/${target}`);
-        }
-
-        const res = await fetch(`/api/emails?${params}`, { signal: controller.signal });
-        if (!res.ok) {
-          if (state.emails.length === 0) {
-            if (stale()) return;
-            setError(`Couldn't load email data (${res.status}).`);
-            setLoading(false);
-            setProgress('');
-            return;
-          }
-          break;
-        }
-
-        const data = await res.json();
-        const batch: Email[] = data.emails ?? [];
-        state = appendSamplePage(state, batch, data.nextPageToken);
-        sampleRef.current = state;
-        pageToken = state.nextPageToken;
-      }
-
-      if (controller.signal.aborted || stale()) return;
-
-      computeStats(sliceSample(sampleRef.current, target));
-    } catch (err: unknown) {
-      if (stale()) return;
-      if (err instanceof Error && err.name === 'AbortError') return;
-      console.error('Analytics fetch error:', err);
-      setError("Couldn't load email data. Check your connection.");
-      setLoading(false);
-      setProgress('');
-    }
   }, []);
 
+  const loadAnalytics = useCallback(
+    async (target: number) => {
+      setLoading(true);
+      setError(null);
+      setProgress(`Loading ${target} emails from local index…`);
+
+      try {
+        const cached = getInboxSlice(target);
+        if (cached.length >= target) {
+          computeStats(cached.slice(0, target));
+          return;
+        }
+
+        setProgress(`Syncing inbox… ${cached.length}/${target}`);
+        const emails = await ensureInboxCount(target, { metadataOnly: true });
+        computeStats(emails.slice(0, target));
+      } catch (err) {
+        console.error('Analytics load error:', err);
+        setError("Couldn't load email data. Check your connection.");
+        setLoading(false);
+        setProgress('');
+      }
+    },
+    [computeStats, ensureInboxCount, getInboxSlice]
+  );
+
   useEffect(() => {
-    fetchAnalytics(bucket);
-    return () => abortRef.current?.abort();
-  }, [bucket, fetchAnalytics]);
+    void loadAnalytics(bucket);
+  }, [bucket, loadAnalytics]);
 
   const [expanded, setExpanded] = useState<string | null>(null);
 
   function getEmailsForSender(senderEmail: string): Email[] {
-    const sliced = sliceSample(sampleRef.current, bucket);
-    return sliced
+    return sampleEmails
       .filter((e) => {
         const m = e.from.match(/<([^>]+)>/);
         const addr = (m?.[1] ?? e.from).toLowerCase().trim();
@@ -212,29 +148,29 @@ export function Analytics() {
   }
 
   const maxCount = stats[0]?.count ?? 1;
+  const statusLine = progress || (syncing ? storeProgress : '');
 
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="p-4 border-b border-[var(--border)]">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold">Sender Analytics</h2>
+            <h2 className="text-lg font-semibold">Analytics</h2>
             <p className="text-sm text-[var(--text-muted)] mt-1">
-              {loading ? progress : `${stats.length} unique senders across ${totalEmails} emails`}
+              Sender frequency from your shared local inbox index
+              {totalEmails > 0 && dateRange ? ` · ${dateRange}` : ''}
             </p>
-            {dateRange && !loading && (
-              <p className="text-xs text-[var(--text-muted)] mt-0.5">Spanning {dateRange}</p>
-            )}
           </div>
-          <div className="flex gap-1 bg-[var(--border)]/50 rounded-lg p-0.5 shrink-0">
+          <div className="flex shrink-0 gap-1">
             {BUCKET_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
+                type="button"
                 onClick={() => setBucket(opt.value)}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
                   bucket === opt.value
                     ? 'bg-[var(--accent)] text-white'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+                    : 'bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:text-[var(--text)]'
                 }`}
               >
                 {opt.label}
@@ -242,98 +178,83 @@ export function Analytics() {
             ))}
           </div>
         </div>
+        {statusLine ? <p className="mt-2 text-xs text-[var(--text-muted)]">{statusLine}</p> : null}
       </div>
 
-      {error ? (
-        <div className="flex flex-col items-center justify-center h-40 gap-3 px-6 text-center">
-          <p className="text-sm text-[var(--text-muted)]">{error}</p>
-          <button
-            onClick={() => fetchAnalytics(bucket)}
-            className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition cursor-pointer text-sm font-medium"
-          >
-            Try again
-          </button>
-        </div>
-      ) : loading ? (
-        <div className="flex flex-col items-center justify-center h-40 gap-3">
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
           <div className="animate-spin w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
-          {progress && <p className="text-xs text-[var(--text-muted)]">{progress}</p>}
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center space-y-4 max-w-sm px-6">
+            <p className="text-sm text-[var(--text-muted)]">{error}</p>
+            <button
+              onClick={() => loadAnalytics(bucket)}
+              className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition cursor-pointer text-sm font-medium"
+            >
+              Try again
+            </button>
+          </div>
         </div>
       ) : stats.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center text-[var(--text-muted)] mt-20">
-          No email data to analyze
+        <div className="flex items-center justify-center py-16 text-[var(--text-muted)]">
+          No email data yet — sync your inbox from the sidebar
         </div>
       ) : (
-        <div className="p-4 space-y-2">
-          {stats.map((sender) => {
-            const isExpanded = expanded === sender.email;
-            return (
-              <div key={sender.email}>
-                <div
-                  className="flex items-center gap-3 cursor-pointer rounded-lg px-2 py-1.5 -mx-2 hover:bg-[var(--border)]/30 transition"
-                  onClick={() => setExpanded(isExpanded ? null : sender.email)}
-                >
-                  <span
-                    className={`text-xs text-[var(--text-muted)] transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                  >
-                    ▶
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium truncate">{sender.displayName}</span>
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <span className="text-xs text-[var(--text-muted)]">
-                          {sender.count} email{sender.count !== 1 ? 's' : ''}
-                        </span>
-                        {sender.unsubscribeLink && (
-                          <a
-                            href={sender.unsubscribeLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-[var(--danger)] hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            unsub
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                    <div className="h-2 rounded-full bg-[var(--border)] overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-[var(--accent)] transition-all"
-                        style={{ width: `${(sender.count / maxCount) * 100}%` }}
-                      />
-                    </div>
-                    <div className="text-xs text-[var(--text-muted)] mt-0.5">{sender.email}</div>
-                  </div>
+        <div className="divide-y divide-[var(--border)]">
+          {stats.map((sender) => (
+            <div key={sender.email}>
+              <button
+                type="button"
+                onClick={() => setExpanded(expanded === sender.email ? null : sender.email)}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-elevated)] transition cursor-pointer text-left"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm truncate">{sender.displayName}</div>
+                  <div className="text-xs text-[var(--text-muted)] truncate">{sender.email}</div>
                 </div>
-
-                {isExpanded && (
-                  <div className="ml-7 mt-1 mb-2 border-l-2 border-[var(--border)] pl-3 space-y-0.5">
-                    {getEmailsForSender(sender.email).map((email) => (
-                      <EmailHoverPreview
-                        key={email.id}
-                        email={email}
-                        className="rounded-md px-1.5 py-1 transition-colors hover:bg-[var(--bg-elevated)]/80"
-                      >
-                        <div className="flex items-baseline gap-2 text-sm">
-                          <time
-                            dateTime={email.date}
-                            className="w-16 shrink-0 text-xs text-[var(--text-muted)] tabular-nums"
-                          >
-                            {formatEmailDateShort(email.date)}
-                          </time>
-                          <span className="min-w-0 truncate text-[var(--text)]">
-                            {email.subject}
-                          </span>
-                        </div>
-                      </EmailHoverPreview>
-                    ))}
+                <div className="shrink-0 flex items-center gap-3">
+                  <div className="w-24 h-2 bg-[var(--bg-elevated)] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[var(--accent)] rounded-full"
+                      style={{ width: `${(sender.count / maxCount) * 100}%` }}
+                    />
                   </div>
-                )}
-              </div>
-            );
-          })}
+                  <span className="text-sm font-medium tabular-nums w-8 text-right">
+                    {sender.count}
+                  </span>
+                </div>
+              </button>
+              {expanded === sender.email ? (
+                <div className="px-4 pb-3 space-y-1 bg-[var(--bg-elevated)]/50">
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-xs text-[var(--text-muted)]">Recent messages</span>
+                    {sender.unsubscribeLink && (
+                      <a
+                        href={sender.unsubscribeLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-[var(--danger)] hover:underline"
+                      >
+                        Unsubscribe
+                      </a>
+                    )}
+                  </div>
+                  {getEmailsForSender(sender.email).map((email) => (
+                    <EmailHoverPreview key={email.id} email={email}>
+                      <div className="text-xs py-1 truncate">
+                        <span className="text-[var(--text-muted)]">
+                          {formatEmailDateShort(email.date)}
+                        </span>{' '}
+                        {email.subject}
+                      </div>
+                    </EmailHoverPreview>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ))}
         </div>
       )}
     </div>

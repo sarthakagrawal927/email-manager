@@ -8,6 +8,7 @@ import {
   Mail,
   Menu,
   Newspaper,
+  RefreshCw,
   Search,
   Send,
   Sparkles,
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useEffect } from 'react';
 
+import { useMailboxStore } from '@/components/MailboxStoreProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -107,6 +109,46 @@ function NavGroup({
   );
 }
 
+function MailboxSyncPanel() {
+  const { total, indexed, syncing, progress, lastSyncedAt, syncInbox } = useMailboxStore();
+
+  const lastSyncLabel = lastSyncedAt
+    ? new Date(lastSyncedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : 'never';
+
+  return (
+    <div className="rounded-xl border border-[var(--border)]/80 bg-[var(--bg-card)]/60 p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+            Local inbox
+          </p>
+          <p className="mt-1 text-sm font-medium tabular-nums">
+            {total.toLocaleString()} cached
+            {indexed > 0 ? (
+              <span className="text-[var(--text-muted)] font-normal"> · {indexed} indexed</span>
+            ) : null}
+          </p>
+          <p className="mt-0.5 truncate text-[10px] text-[var(--text-muted)]">
+            {syncing ? progress || 'Syncing…' : `Last sync ${lastSyncLabel}`}
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => void syncInbox()}
+          disabled={syncing}
+          aria-label="Sync inbox"
+          className="shrink-0 text-[var(--text-muted)] hover:text-[var(--accent)]"
+        >
+          <RefreshCw className={cn('h-4 w-4', syncing && 'animate-spin')} aria-hidden />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function SidebarBody({ view, onNavigate, onSignOut, userImage, userName }: Props) {
   const initials = userName
     .split(' ')
@@ -137,6 +179,10 @@ function SidebarBody({ view, onNavigate, onSignOut, userImage, userName }: Props
         <NavGroup label="Mail" items={browseNav} view={view} onNavigate={onNavigate} />
         <NavGroup label="Tools" items={toolsNav} view={view} onNavigate={onNavigate} />
       </nav>
+
+      <div className="mt-auto shrink-0 border-t border-[var(--border)]/80 px-2.5 py-3">
+        <MailboxSyncPanel />
+      </div>
 
       <Separator className="bg-[var(--border)]/80" />
 
@@ -179,7 +225,7 @@ export function Sidebar(props: Props) {
 
   return (
     <>
-      <aside className="hidden h-screen w-[var(--sidebar-width)] shrink-0 flex-col border-r border-[var(--border)]/80 bg-[var(--bg-sidebar)]/95 backdrop-blur-xl md:flex">
+      <aside className="hidden h-screen w-[var(--sidebar-width)] shrink-0 flex-col border-r border-[var(--border)]/80 bg-[var(--bg-sidebar)]/95 backdrop-blur-xl md:flex md:min-h-0">
         <SidebarBody {...props} />
       </aside>
 
@@ -191,7 +237,7 @@ export function Sidebar(props: Props) {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
           />
-          <aside className="relative flex h-full w-[min(88vw,18rem)] flex-col border-r border-[var(--border)] bg-[var(--bg-sidebar)] shadow-2xl">
+          <aside className="relative flex h-full min-h-0 w-[min(88vw,18rem)] flex-col border-r border-[var(--border)] bg-[var(--bg-sidebar)] shadow-2xl">
             <SidebarBody
               {...props}
               onNavigate={(id) => {

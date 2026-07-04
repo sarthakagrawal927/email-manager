@@ -1,14 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { trackCoreAction } from '@/lib/analytics';
-import { getAllEmails, getEmailCount } from '@/lib/db';
-import { buildWeeklyDigest, digestToTodayLittleLogExport, type WeeklyDigest } from '@/lib/digest';
+import { useMailboxStore } from '@/components/MailboxStoreProvider';
+import { buildWeeklyDigest, type WeeklyDigest } from '@/lib/digest';
 
 interface Props {
   onOpenSender?: (senderEmail: string) => void;
   onOpenThread?: (threadId: string, subject: string) => void;
-  onNavigateSearch?: () => void;
 }
 
 function formatQuietDays(days: number): string {
@@ -21,30 +20,19 @@ function revisitReasonLabel(reason: 'starred_stale' | 'long_thread_stale'): stri
   return reason === 'starred_stale' ? 'Starred · stale' : 'Long thread · stale';
 }
 
-export function WeeklyDigestView({ onOpenSender, onOpenThread, onNavigateSearch }: Props) {
+export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
+  const { emails, total, syncInbox } = useMailboxStore();
   const [digest, setDigest] = useState<WeeklyDigest | null>(null);
   const [loading, setLoading] = useState(false);
-  const [cachedCount, setCachedCount] = useState<number | null>(null);
-  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const refreshCount = useCallback(async () => {
-    setCachedCount(await getEmailCount());
-  }, []);
-
-  useEffect(() => {
-    refreshCount();
-  }, [refreshCount]);
 
   async function generate() {
     setLoading(true);
     setError(null);
     try {
-      const emails = await getAllEmails();
-      await refreshCount();
       if (emails.length === 0) {
         setDigest(null);
-        setError('No locally cached emails yet. Sync via Semantic Search first.');
+        setError('No locally cached emails yet. Sync your inbox from the sidebar.');
         return;
       }
       setDigest(buildWeeklyDigest(emails));
@@ -53,19 +41,6 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread, onNavigateSearch 
       setError('Could not read local email cache.');
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function copyForTll() {
-    if (!digest) return;
-    const payload = digestToTodayLittleLogExport(digest);
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-      setCopied(true);
-      trackCoreAction('digest_exported');
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      setError('Clipboard unavailable.');
     }
   }
 
@@ -79,33 +54,21 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread, onNavigateSearch 
               Quiet relationships, threads to revisit, and weekly themes — built locally from your
               cached inbox. No message bodies leave this device.
             </p>
-            {cachedCount !== null && (
-              <p className="mt-1 text-xs text-[var(--text-muted)]">
-                {cachedCount === 0
-                  ? 'IndexedDB cache is empty.'
-                  : `${cachedCount.toLocaleString()} email${cachedCount === 1 ? '' : 's'} in local cache.`}
-              </p>
-            )}
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
+              {total === 0
+                ? 'Local inbox index is empty.'
+                : `${total.toLocaleString()} email${total === 1 ? '' : 's'} in shared local index.`}
+            </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={generate}
-              disabled={loading}
-              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-60 cursor-pointer"
-            >
-              {loading ? 'Generating…' : 'Generate this week'}
-            </button>
-            <button
-              type="button"
-              onClick={copyForTll}
-              disabled={!digest}
-              className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium transition hover:bg-[var(--border)]/40 disabled:opacity-50 cursor-pointer"
-            >
-              {copied ? 'Copied' : 'Copy for Today Little Log'}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={generate}
+            disabled={loading}
+            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-60 cursor-pointer"
+          >
+            {loading ? 'Generating…' : 'Generate this week'}
+          </button>
         </div>
       </div>
 
@@ -113,13 +76,13 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread, onNavigateSearch 
         {error && (
           <div className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
             <p className="text-sm text-[var(--text-muted)]">{error}</p>
-            {cachedCount === 0 && onNavigateSearch && (
+            {total === 0 && (
               <button
                 type="button"
-                onClick={onNavigateSearch}
+                onClick={() => void syncInbox()}
                 className="mt-3 rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-hover)] cursor-pointer"
               >
-                Open Semantic Search to sync
+                Sync inbox
               </button>
             )}
           </div>
