@@ -190,16 +190,45 @@ function isSpaRoute(pathname: string): boolean {
   );
 }
 
+async function fetchSpaShell(env: Env, request: Request): Promise<Response | null> {
+  const origin = new URL(request.url).origin;
+  const paths = ['/spa-index.html', '/spa-index'];
+
+  for (const pathname of paths) {
+    let response = await env.ASSETS.fetch(new Request(new URL(pathname, origin), request));
+
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get('Location');
+      if (location) {
+        response = await env.ASSETS.fetch(new Request(new URL(location, origin), request));
+      }
+    }
+
+    if (response.ok && response.body) return response;
+  }
+
+  return null;
+}
+
 async function serveSpaIndex(env: Env, request: Request): Promise<Response> {
-  const spaRequest = new Request(new URL('/spa-index.html', request.url), request);
-  const response = await env.ASSETS.fetch(spaRequest);
-  if (!response.ok) return response;
+  const response = await fetchSpaShell(env, request);
+  if (!response?.body) {
+    return response ?? new Response('SPA shell missing', { status: 500 });
+  }
+
   const headers = new Headers(response.headers);
+  headers.delete('content-encoding');
+  headers.delete('content-length');
   headers.set('Content-Type', 'text/html; charset=utf-8');
+  headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
   for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
     headers.set(key, value);
   }
-  return new Response(response.body, { status: response.status, headers });
+
+  // Always return 200 at the requested SPA path (/app, /about, …). The assets
+  // binding redirects spa-index.html → /spa-index; forwarding that redirect
+  // breaks React Router, which expects the browser URL to stay on /app.
+  return new Response(response.body, { status: 200, headers });
 }
 
 async function serveLanding(request: Request, env: Env): Promise<Response> {
@@ -247,6 +276,10 @@ export default {
       }
 
       if (request.method === 'GET' && url.pathname === '/' && hasAuthCookie(request)) {
+        return Response.redirect(`${url.origin}/app`, 302);
+      }
+
+      if (request.method === 'GET' && (url.pathname === '/spa-index' || url.pathname === '/spa-index.html')) {
         return Response.redirect(`${url.origin}/app`, 302);
       }
 
