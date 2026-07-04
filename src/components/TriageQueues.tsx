@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Kbd } from '@/components/ui/kbd';
 import { EmailListSkeleton } from '@/components/ui/skeleton';
+import { formatEmailDateShort } from '@/lib/format-date';
 import { isTypingTarget, sessionKeyAction } from '@/lib/triage-session';
 import { actionLabel, stateClass, stateLabel } from '@/lib/triage-actions';
 import { cn } from '@/lib/utils';
@@ -392,11 +393,7 @@ export function TriageQueues({
                 const batchSelected = selectedIds.has(item.id);
                 const lastRecord = latestFor(item.email.id);
                 const lastFailed = lastRecord?.state === 'failed';
-                const date = new Date(item.email.date);
-                const dateLabel = date.toLocaleDateString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                });
+                const dateLabel = formatEmailDateShort(item.email.date);
 
                 return (
                   <li key={item.id}>

@@ -3,12 +3,13 @@
 import { ArrowLeft, Copy, ExternalLink } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { trackCoreAction } from '@/lib/analytics';
+import { wrapEmailHtml } from '@/lib/email-html';
+import { formatEmailDate } from '@/lib/format-date';
 import type { Email } from '@/lib/gmail';
 import { triageItemForEmail } from '@/lib/triage';
 import { TriageActionBar, TriageStateBadge } from '@/components/TriageActionBar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -41,6 +42,11 @@ export function EmailDetail({ email, onBack, showBack = true }: Props) {
   }, [email]);
 
   const triageItem = useMemo(() => triageItemForEmail(email), [email]);
+  const sentAt = useMemo(() => formatEmailDate(email.date), [email.date]);
+  const emailDocument = useMemo(
+    () => wrapEmailHtml(email.body, email.snippet),
+    [email.body, email.snippet]
+  );
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -123,50 +129,53 @@ export function EmailDetail({ email, onBack, showBack = true }: Props) {
           <h1 className="text-xl font-semibold leading-snug tracking-tight text-balance">
             {email.subject}
           </h1>
-          <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--text-muted)]">
-            <span className="truncate">{email.from.replace(/<[^>]+>/, '').trim()}</span>
-            <time className="shrink-0 tabular-nums">{new Date(email.date).toLocaleString()}</time>
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+            <span className="truncate font-medium text-[var(--text)]">
+              {email.from.replace(/<[^>]+>/, '').trim()}
+            </span>
+            <time
+              dateTime={email.date}
+              title={sentAt.title}
+              className="shrink-0 text-[var(--text-muted)] tabular-nums"
+            >
+              {sentAt.label}
+            </time>
           </div>
         </div>
 
         {triageItem ? (
-          <Card className="border-[var(--border)]/70 bg-[var(--bg-card)]/70 shadow-none">
-            <CardContent className="space-y-2 p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={priorityTone(triageItem.priority)}>{triageItem.priority}</Badge>
-                <span className="text-xs text-[var(--text-muted)]">
-                  {triageItem.queue === 'respond'
-                    ? 'Needs response'
-                    : triageItem.queue === 'unsubscribe'
-                      ? 'Unsubscribe candidate'
-                      : triageItem.queue === 'reference'
-                        ? 'Reference'
-                        : 'Quick review'}
-                </span>
-              </div>
-              <p className="text-sm text-[var(--text-muted)]">
-                <span className="font-medium text-[var(--text)]">Why: </span>
-                {triageItem.reason}
-              </p>
-              <p className="text-sm text-[var(--text-muted)]">
-                <span className="font-medium text-[var(--text)]">Suggested: </span>
-                {triageItem.action}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border border-[var(--accent)]/20 border-l-4 border-l-[var(--accent)] bg-[var(--accent-soft)] px-4 py-3.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={priorityTone(triageItem.priority)}>{triageItem.priority}</Badge>
+              <span className="text-xs font-medium text-[var(--text)]">
+                {triageItem.queue === 'respond'
+                  ? 'Needs response'
+                  : triageItem.queue === 'unsubscribe'
+                    ? 'Unsubscribe candidate'
+                    : triageItem.queue === 'reference'
+                      ? 'Reference'
+                      : 'Quick review'}
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-[var(--text)]">
+              <span className="font-medium text-[var(--text-muted)]">Why · </span>
+              {triageItem.reason}
+            </p>
+            <p className="mt-1 text-sm text-[var(--text)]">
+              <span className="font-medium text-[var(--text-muted)]">Suggested · </span>
+              {triageItem.action}
+            </p>
+          </div>
         ) : null}
 
         <TriageActionBar input={triageInput} />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden p-4">
-        <div className="h-full overflow-hidden rounded-2xl border border-[var(--border)]/80 bg-[var(--bg-card)] shadow-[var(--shadow-soft)]">
+      <div className="min-h-0 flex-1 overflow-hidden bg-[var(--bg-elevated)]/40 p-4">
+        <div className="email-reading-pane h-full overflow-hidden rounded-2xl border border-[var(--border)] shadow-[var(--shadow-soft)]">
           <iframe
-            srcDoc={
-              email.body ||
-              `<pre style="font-family:inherit;white-space:pre-wrap;padding:1rem;color:inherit">${email.snippet}</pre>`
-            }
-            className={cn('h-full w-full border-0 bg-[var(--bg-card)]')}
+            srcDoc={emailDocument}
+            className={cn('h-full w-full border-0 bg-white')}
             sandbox="allow-popups allow-popups-to-escape-sandbox"
             title="Email body"
           />

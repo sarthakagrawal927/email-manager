@@ -208,16 +208,12 @@ async function fetchSpaShell(env: Env, request: Request): Promise<Response | nul
   const paths = ['/spa-index', '/spa-index.html'];
 
   for (const pathname of paths) {
-    let response = await env.ASSETS.fetch(
-      assetSubresourceRequest(new URL(pathname, origin).href)
-    );
+    let response = await env.ASSETS.fetch(assetSubresourceRequest(new URL(pathname, origin).href));
 
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('Location');
       if (location) {
-        response = await env.ASSETS.fetch(
-          assetSubresourceRequest(new URL(location, origin).href)
-        );
+        response = await env.ASSETS.fetch(assetSubresourceRequest(new URL(location, origin).href));
       }
     }
 
@@ -304,7 +300,10 @@ export default {
         return Response.redirect(`${url.origin}/app`, 302);
       }
 
-      if (request.method === 'GET' && (url.pathname === '/spa-index' || url.pathname === '/spa-index.html')) {
+      if (
+        request.method === 'GET' &&
+        (url.pathname === '/spa-index' || url.pathname === '/spa-index.html')
+      ) {
         return Response.redirect(`${url.origin}/app`, 302);
       }
 

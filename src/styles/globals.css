@@ -116,3 +116,15 @@ kbd {
 .text-pretty {
   text-wrap: pretty;
 }
+
+.email-reading-pane {
+  background: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .email-reading-pane {
+    box-shadow:
+      0 0 0 1px oklch(0.35 0.02 275 / 0.5),
+      0 8px 32px oklch(0 0 0 / 0.45);
+  }
+}
