@@ -3,9 +3,27 @@
 import posthog from 'posthog-js';
 
 const PROJECT_SLUG = 'email-manager';
-const POSTHOG_KEY =
-  import.meta.env.VITE_POSTHOG_KEY ?? 'phc_qgiAarw4Co4pw9fz3Fxj4UJaHmqzFetqs4JrXhGc35Nd';
+const POSTHOG_KEY = (
+  import.meta.env.VITE_POSTHOG_KEY || 'phc_qgiAarw4Co4pw9fz3Fxj4UJaHmqzFetqs4JrXhGc35Nd'
+).trim();
 const POSTHOG_HOST = 'https://us.i.posthog.com';
+
+export function isPostHogEnabled(): boolean {
+  return POSTHOG_KEY.length > 0;
+}
+
+let postHogInitialized = false;
+
+export function ensurePostHogInitialized(): void {
+  if (typeof window === 'undefined' || postHogInitialized || !isPostHogEnabled()) return;
+  posthog.init(POSTHOG_KEY, {
+    api_host: POSTHOG_HOST,
+    person_profiles: 'always',
+    capture_pageview: false,
+    autocapture: false,
+  });
+  postHogInitialized = true;
+}
 
 function route() {
   if (typeof window === 'undefined') return undefined;
@@ -19,6 +37,7 @@ function messageFrom(error: unknown) {
 }
 
 export function capturePageCrash(error: unknown, source: 'window_error' | 'unhandled_rejection') {
+  if (!isPostHogEnabled()) return;
   posthog.capture('foundry_page_crash', {
     project_id: PROJECT_SLUG,
     route: route(),
@@ -39,6 +58,7 @@ export function captureError(
   error: unknown,
   options: { scope?: ErrorBoundaryScope; digest?: string; source?: string } = {}
 ) {
+  if (!isPostHogEnabled()) return;
   try {
     posthog.capture('error_captured', {
       project_id: PROJECT_SLUG,
@@ -56,12 +76,8 @@ export function captureError(
 
 export function installBrowserMonitoring() {
   if (typeof window === 'undefined') return () => {};
-  posthog.init(POSTHOG_KEY, {
-    api_host: POSTHOG_HOST,
-    person_profiles: 'always',
-    capture_pageview: false,
-    autocapture: false,
-  });
+  ensurePostHogInitialized();
+  if (!isPostHogEnabled()) return () => {};
 
   const onError = (event: ErrorEvent) =>
     capturePageCrash(event.error ?? event.message, 'window_error');

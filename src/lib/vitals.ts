@@ -9,9 +9,10 @@ interface VitalMetric {
 }
 
 function sendToAnalytics(metric: VitalMetric) {
-  // Send to PostHog if available, otherwise beacon to a fleet endpoint
-  const posthog = (window as any).posthog;
-  if (posthog && typeof posthog.capture === 'function') {
+  const posthog = (
+    window as unknown as { posthog?: { capture?: (event: string, props: object) => void } }
+  ).posthog;
+  if (posthog?.capture) {
     posthog.capture('web_vital', {
       name: metric.name,
       value: Math.round(metric.value),
@@ -19,13 +20,17 @@ function sendToAnalytics(metric: VitalMetric) {
       id: metric.id,
       navigation_type: metric.navigationType,
     });
-  } else {
-    // Fallback: beacon to fleet analytics endpoint
+    return;
+  }
+
+  try {
     const body = JSON.stringify({
       project: import.meta.env.VITE_PROJECT_SLUG ?? 'email-manager',
       ...metric,
     });
     navigator.sendBeacon('https://vitals.fleet.workers.dev/collect', body);
+  } catch {
+    // Analytics must never break the app.
   }
 }
 

@@ -18,6 +18,8 @@
 
 import posthog from 'posthog-js';
 
+import { isPostHogEnabled } from '@/lib/foundry-monitoring';
+
 const PROJECT = 'email-manager' as const;
 
 /**
@@ -45,6 +47,7 @@ interface AnalyticsEventMap {
 }
 
 export function trackEvent(event: string, properties: Record<string, unknown> = {}): void {
+  if (!isPostHogEnabled()) return;
   try {
     posthog.capture(event, { project_id: PROJECT, ...properties });
   } catch {

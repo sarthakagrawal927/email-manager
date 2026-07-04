@@ -202,18 +202,6 @@ export default function HomeClient() {
     trackCoreAction('triage_session_started');
   }, [setView]);
 
-  if (status === 'loading') {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[var(--bg)]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    return <SignInScreen />;
-  }
-
   const openDigestContext = useCallback(
     (kind: 'sender' | 'thread', value: string, subject?: string) => {
       if (kind === 'sender') {
@@ -226,6 +214,18 @@ export default function HomeClient() {
     },
     [setView]
   );
+
+  if (status === 'loading') {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[var(--bg)]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <SignInScreen />;
+  }
 
   const isPrimaryView = view === 'today' || view === 'inbox';
   const viewLabel = view.charAt(0).toUpperCase() + view.slice(1);
