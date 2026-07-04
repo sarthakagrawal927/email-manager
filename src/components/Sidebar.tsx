@@ -2,12 +2,11 @@
 
 import {
   BarChart3,
-  Filter,
   Inbox,
+  Lightbulb,
   LogOut,
   Mail,
   Menu,
-  Newspaper,
   RefreshCw,
   Search,
   Send,
@@ -31,8 +30,7 @@ const browseNav = [{ id: 'sent', label: 'Sent', icon: Send }];
 
 const toolsNav = [
   { id: 'subscriptions', label: 'Subscriptions', icon: Mail },
-  { id: 'digest', label: 'Digest', icon: Newspaper },
-  { id: 'filters', label: 'Recipe studio', icon: Filter },
+  { id: 'insights', label: 'Insights', icon: Lightbulb },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
 ];
 

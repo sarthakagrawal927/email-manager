@@ -12,13 +12,12 @@ import { EmailDetail } from '@/components/EmailDetail';
 import { Subscriptions } from '@/components/Subscriptions';
 import { Analytics } from '@/components/Analytics';
 import { SemanticSearch } from '@/components/SemanticSearch';
-import { GmailFilterBuilder } from '@/components/GmailFilterBuilder';
-import { WeeklyDigestView } from '@/components/WeeklyDigestView';
+import { InsightsView } from '@/components/InsightsView';
 import { WorkSurface } from '@/components/WorkSurface';
 import { MailboxStoreProvider, useMailboxStore } from '@/components/MailboxStoreProvider';
 import type { Email } from '@/lib/gmail';
 
-type View = 'inbox' | 'sent' | 'subscriptions' | 'analytics' | 'search' | 'digest' | 'filters';
+type View = 'inbox' | 'sent' | 'subscriptions' | 'analytics' | 'search' | 'insights';
 
 const VIEWS = new Set<string>([
   'inbox',
@@ -26,8 +25,7 @@ const VIEWS = new Set<string>([
   'subscriptions',
   'analytics',
   'search',
-  'digest',
-  'filters',
+  'insights',
 ]);
 
 const HASH_ALIASES: Record<string, View> = {
@@ -35,6 +33,8 @@ const HASH_ALIASES: Record<string, View> = {
   triage: 'inbox',
   trash: 'inbox',
   starred: 'inbox',
+  digest: 'insights',
+  filters: 'insights',
 };
 
 const LABEL_MAP: Record<string, string> = {
@@ -281,13 +281,11 @@ function AuthenticatedHome({
             <Subscriptions />
           ) : view === 'analytics' ? (
             <Analytics />
-          ) : view === 'digest' ? (
-            <WeeklyDigestView
+          ) : view === 'insights' ? (
+            <InsightsView
               onOpenSender={(email) => openDigestContext('sender', email)}
               onOpenThread={(_threadId, subject) => openDigestContext('thread', '', subject)}
             />
-          ) : view === 'filters' ? (
-            <GmailFilterBuilder />
           ) : view === 'sent' ? (
             <WorkSurface
               hasSelection={Boolean(selected)}
