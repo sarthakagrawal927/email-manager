@@ -3,6 +3,7 @@
 import { RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Email } from '@/lib/gmail';
+import { isUnsubscribeSentEmail } from '@/lib/sent-reply';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
@@ -61,7 +62,9 @@ export function SentMailView({ selectedId, onSelect }: Props) {
       }
 
       const data = await res.json();
-      const batch: Email[] = data.emails ?? [];
+      const batch: Email[] = (data.emails ?? []).filter(
+        (email: Email) => !isUnsubscribeSentEmail(email)
+      );
       setEmails((prev) => (pageToken ? [...prev, ...batch] : batch));
       setNextPageToken(data.nextPageToken ?? null);
     } catch {

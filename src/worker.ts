@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { createAuth, isGoogleOAuthConfigured, type AuthEnv } from './lib/auth';
 import { getGmailAccessToken } from './lib/get-access-token';
 import { getEmail, getThread, listEmails } from './lib/gmail';
-import { classifyThreadReplyStatus } from './lib/sent-reply';
+import { classifyThreadReplyStatus, isUnsubscribeSentEmail } from './lib/sent-reply';
 import { SECURITY_HEADERS, withSecurityHeaders } from './lib/security-headers';
 import { withTiming } from './lib/timing';
 
@@ -100,6 +100,10 @@ app.get('/api/emails', async (c) => {
       maxResults,
       metadataOnly,
     });
+
+    if (label === 'SENT' && result.emails.length > 0) {
+      result.emails = result.emails.filter((email) => !isUnsubscribeSentEmail(email));
+    }
 
     if (withReplyStatus && label === 'SENT' && result.emails.length > 0) {
       const session = await createAuth(c.env).api.getSession({ headers: c.req.raw.headers });

@@ -2,6 +2,30 @@ import type { Email } from './gmail';
 
 export type SentReplyStatus = 'awaiting' | 'replied';
 
+const UNSUBSCRIBE_TEXT =
+  /\b(unsubscribe|unsub(?:scribe)?|opt[- ]?out|remove(?:\s+me)?|stop\s+(?:mailing|sending|emails?))\b/i;
+
+const UNSUBSCRIBE_RECIPIENT =
+  /(?:^|[/@])(?:unsubscribe|list-unsubscribe|optout|opt-out|leave-list|leave|unsub)(?:@|[./]|$)/i;
+
+/** Mailto / list-unsubscribe requests the user sent — not real conversations. */
+export function isUnsubscribeSentEmail(email: Pick<Email, 'subject' | 'to' | 'snippet'>): boolean {
+  const subject = email.subject.trim();
+  const to = email.to.toLowerCase();
+  const snippet = email.snippet.trim();
+
+  if (UNSUBSCRIBE_TEXT.test(subject) || UNSUBSCRIBE_TEXT.test(snippet)) {
+    return true;
+  }
+  if (UNSUBSCRIBE_RECIPIENT.test(to)) {
+    return true;
+  }
+  if ((subject === '(no subject)' || subject === '') && /\bunsubscribe\b/i.test(snippet)) {
+    return true;
+  }
+  return false;
+}
+
 export function parseEmailAddress(header: string): string {
   const match = header.match(/<([^>]+)>/);
   return (match?.[1] ?? header).toLowerCase().trim();

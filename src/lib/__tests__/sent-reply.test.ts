@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { classifyThreadReplyStatus, isFromUser } from '../sent-reply';
+import { classifyThreadReplyStatus, isFromUser, isUnsubscribeSentEmail } from '../sent-reply';
 
 describe('sent reply status', () => {
   it('detects user addresses in From headers', () => {
@@ -28,5 +28,41 @@ describe('sent reply status', () => {
       'me@example.com'
     );
     expect(status).toBe('replied');
+  });
+});
+
+describe('isUnsubscribeSentEmail', () => {
+  it('detects unsubscribe subjects and recipients', () => {
+    expect(
+      isUnsubscribeSentEmail({
+        subject: 'Unsubscribe',
+        to: 'news@company.com',
+        snippet: '',
+      })
+    ).toBe(true);
+    expect(
+      isUnsubscribeSentEmail({
+        subject: 'Re: Weekly digest',
+        to: 'unsubscribe@lists.company.com',
+        snippet: '',
+      })
+    ).toBe(true);
+    expect(
+      isUnsubscribeSentEmail({
+        subject: '(no subject)',
+        to: 'news@company.com',
+        snippet: 'Please unsubscribe me from this list.',
+      })
+    ).toBe(true);
+  });
+
+  it('keeps normal sent conversations', () => {
+    expect(
+      isUnsubscribeSentEmail({
+        subject: 'Re: Project update',
+        to: 'colleague@company.com',
+        snippet: 'Thanks for the update.',
+      })
+    ).toBe(false);
   });
 });
