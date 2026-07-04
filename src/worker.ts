@@ -190,21 +190,46 @@ function isSpaRoute(pathname: string): boolean {
   );
 }
 
+function assetSubresourceRequest(url: string): Request {
+  // Use a non-navigation fetch so the assets binding returns the real file
+  // instead of applying not_found_handling → index.html (the landing page).
+  return new Request(url, {
+    method: 'GET',
+    headers: { Accept: 'text/html,application/xhtml+xml' },
+  });
+}
+
+function isSpaShellHtml(html: string): boolean {
+  return html.includes('id="root"') && !html.includes('class="page"');
+}
+
 async function fetchSpaShell(env: Env, request: Request): Promise<Response | null> {
   const origin = new URL(request.url).origin;
-  const paths = ['/spa-index.html', '/spa-index'];
+  const paths = ['/spa-index', '/spa-index.html'];
 
   for (const pathname of paths) {
-    let response = await env.ASSETS.fetch(new Request(new URL(pathname, origin), request));
+    let response = await env.ASSETS.fetch(
+      assetSubresourceRequest(new URL(pathname, origin).href)
+    );
 
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('Location');
       if (location) {
-        response = await env.ASSETS.fetch(new Request(new URL(location, origin), request));
+        response = await env.ASSETS.fetch(
+          assetSubresourceRequest(new URL(location, origin).href)
+        );
       }
     }
 
-    if (response.ok && response.body) return response;
+    if (!response.ok) continue;
+
+    const html = await response.text();
+    if (!isSpaShellHtml(html)) continue;
+
+    const headers = new Headers(response.headers);
+    headers.delete('content-encoding');
+    headers.delete('content-length');
+    return new Response(html, { status: 200, headers });
   }
 
   return null;
