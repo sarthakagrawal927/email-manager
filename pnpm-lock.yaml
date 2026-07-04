@@ -102,6 +102,9 @@ importers:
       concurrently:
         specifier: 9.2.1
         version: 9.2.1
+      lightningcss:
+        specifier: ^1.32.0
+        version: 1.32.0
       tailwindcss:
         specifier: '4'
         version: 4.2.1

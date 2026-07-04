@@ -67,8 +67,12 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  css: {
+    transformer: 'lightningcss',
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    cssMinify: 'lightningcss',
   },
 });
