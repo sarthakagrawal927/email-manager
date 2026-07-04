@@ -10,13 +10,11 @@ import { ShortcutHelpOverlay } from '@/components/ShortcutHelpOverlay';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Kbd } from '@/components/ui/kbd';
-import { PageHeader } from '@/components/ui/page-header';
 import { EmailListSkeleton } from '@/components/ui/skeleton';
-import { StatCard } from '@/components/ui/stat-card';
 import { isTypingTarget, sessionKeyAction } from '@/lib/triage-session';
 import { actionLabel, stateClass, stateLabel } from '@/lib/triage-actions';
 import { cn } from '@/lib/utils';
-import { AlertCircle, CheckCircle2, Clock3, Inbox, Keyboard, ListChecks } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Inbox, Keyboard, RefreshCw, Sparkles } from 'lucide-react';
 
 interface Props {
   emails: Email[];
@@ -30,10 +28,10 @@ interface Props {
   onStartSession?: () => void;
 }
 
-function priorityClass(priority: TriageItem['priority']) {
-  if (priority === 'high') return 'text-red-500 bg-red-500/10';
-  if (priority === 'medium') return 'text-amber-500 bg-amber-500/10';
-  return 'text-[var(--text-muted)] bg-[var(--border)]/40';
+function priorityDot(priority: TriageItem['priority']) {
+  if (priority === 'high') return 'bg-[var(--danger)]';
+  if (priority === 'medium') return 'bg-[var(--warning)]';
+  return 'bg-[var(--text-muted)]/50';
 }
 
 function formatRelative(ms: number, now: number) {
@@ -237,57 +235,69 @@ export function TriageQueues({
   const selectedCount = selectedIds.size;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--bg-card)]/30">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <ShortcutHelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
 
-      <PageHeader
-        title="Today"
-        description={
-          <span className="inline-flex flex-wrap items-center gap-1.5">
-            <Keyboard className="inline h-3.5 w-3.5" aria-hidden />
-            <Kbd>d</Kbd> defer
-            <Kbd>f</Kbd> follow
-            <Kbd>s</Kbd> summarize
-            <Kbd>?</Kbd> help
-          </span>
-        }
-        actions={
-          <>
+      <header className="shrink-0 border-b border-[var(--border)]/70 bg-[var(--bg-card)]/40 px-5 py-4 backdrop-blur-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 space-y-1">
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-xl font-semibold tracking-tight">Today</h1>
+              {summary.total > 0 ? (
+                <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-0.5 text-xs font-medium text-[var(--accent)] tabular-nums">
+                  {summary.total}
+                </span>
+              ) : null}
+            </div>
+            <p className="text-sm text-[var(--text-muted)]">
+              {summary.total === 0
+                ? 'Queue is clear — pull the next batch when ready.'
+                : `${summary.total} message${summary.total === 1 ? '' : 's'} need triage`}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
             {selectedCount > 0 ? (
-              <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--accent)]">
+              <span className="rounded-lg bg-[var(--accent-soft)] px-2.5 py-1 text-xs font-medium text-[var(--accent)]">
                 {selectedCount} selected
               </span>
             ) : null}
-            {onStartSession ? (
-              <Button type="button" variant="secondary" size="sm" onClick={onStartSession}>
-                Focused session
-              </Button>
-            ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-[var(--text-muted)]"
+              onClick={() => setHelpOpen(true)}
+            >
+              <Keyboard className="h-3.5 w-3.5" aria-hidden />
+              Shortcuts
+            </Button>
             {onOpenInbox ? (
               <Button type="button" variant="ghost" size="sm" onClick={onOpenInbox}>
                 Full inbox
               </Button>
             ) : null}
+            {onStartSession ? (
+              <Button type="button" variant="secondary" size="sm" onClick={onStartSession}>
+                <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                Focus
+              </Button>
+            ) : null}
             <Button type="button" size="sm" onClick={onRefresh} disabled={loading}>
-              {loading ? 'Refreshing…' : 'Refresh'}
+              <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} aria-hidden />
+              {loading ? 'Loading…' : 'Refresh'}
             </Button>
-          </>
-        }
-        meta={
-          <div className="grid gap-3 pt-3 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard label="In queue" value={summary.total} icon={ListChecks} tone="accent" />
-            <StatCard label="Queued" value={counts.queued} icon={Clock3} tone="warning" />
-            <StatCard label="Applied" value={counts.applied} icon={CheckCircle2} tone="success" />
-            <StatCard label="Failed" value={counts.failed} icon={AlertCircle} tone="default" />
           </div>
-        }
-      />
+        </div>
 
-      <div className="border-b border-[var(--border)]/80 px-5 py-3">
-        <TriageQueueLedger remaining={summary.total} />
-      </div>
+        {summary.total > 0 || totalProcessed > 0 ? (
+          <div className="mt-4">
+            <TriageQueueLedger remaining={summary.total} />
+          </div>
+        ) : null}
+      </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto" tabIndex={-1}>
+      <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--bg)]" tabIndex={-1}>
         {error ? (
           <EmptyState
             icon={AlertCircle}
@@ -375,149 +385,134 @@ export function TriageQueues({
               </div>
             )}
 
-            <div className="divide-y divide-[var(--border)]">
+            <ul className="mx-auto max-w-4xl divide-y divide-[var(--border)]/50">
               {flatItems.map(({ queue, item }, idx) => {
                 const selected = item.email.id === selectedId;
                 const focused = idx === safeFocusIdx;
                 const batchSelected = selectedIds.has(item.id);
                 const lastRecord = latestFor(item.email.id);
                 const lastFailed = lastRecord?.state === 'failed';
+                const date = new Date(item.email.date);
+                const dateLabel = date.toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                });
+
                 return (
-                  <article
-                    key={item.id}
-                    className={cn(
-                      'border-b border-[var(--border)]/60 px-4 py-3 transition-all duration-150',
-                      batchSelected
-                        ? 'bg-[var(--accent-soft)]'
-                        : focused || selected
-                          ? 'bg-[var(--accent)]/[0.06] ring-1 ring-inset ring-[var(--accent)]/15'
-                          : 'hover:bg-[var(--bg-elevated)]/70'
-                    )}
-                  >
-                    <button
-                      ref={(el) => {
-                        if (el) rowRefs.current[idx] = el;
-                      }}
-                      type="button"
-                      onClick={() => onSelect(item.email)}
-                      onMouseEnter={() => setFocusIdx(idx)}
-                      className="w-full text-left cursor-pointer"
+                  <li key={item.id}>
+                    <article
+                      className={cn(
+                        'px-5 py-3.5 transition-colors duration-150',
+                        batchSelected
+                          ? 'bg-[var(--accent-soft)]'
+                          : focused || selected
+                            ? 'bg-[var(--accent)]/[0.07]'
+                            : 'hover:bg-[var(--bg-elevated)]/60'
+                      )}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span
-                              className={`rounded-full px-1.5 py-0.5 text-[10px] ${priorityClass(item.priority)}`}
-                            >
-                              {item.priority}
-                            </span>
-                            <span className="text-[10px] text-[var(--text-muted)]">
-                              {queue.title}
-                            </span>
-                            <TriageStateBadge emailId={item.email.id} />
-                            {queue.id === 'unsubscribe' && onNavigateFilters && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onNavigateFilters();
-                                }}
-                                className="text-[10px] text-[var(--accent)] hover:underline"
-                              >
-                                → Filters
-                              </button>
-                            )}
-                          </div>
-                          <h3 className="mt-1 truncate text-sm font-medium">
-                            {item.email.subject}
-                          </h3>
-                          <p className="truncate text-xs text-[var(--text-muted)]">
-                            {senderName(item.email)}
-                          </p>
-                        </div>
-                        <span className="shrink-0 text-[10px] text-[var(--text-muted)]">
-                          {new Date(item.email.date).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="mt-1 line-clamp-1 text-xs text-[var(--text-muted)]">
-                        {item.email.snippet}
-                      </p>
-                    </button>
-
-                    {lastFailed && lastRecord.message && (
-                      <p className="mt-1 text-[11px] text-red-500">{lastRecord.message}</p>
-                    )}
-
-                    {/* Keyboard shortcut hints — visible on the focused row */}
-                    {focused && (
-                      <div className="mt-2 flex items-center gap-3">
-                        {ROW_HINTS.map((hint) => (
+                      <button
+                        ref={(el) => {
+                          if (el) rowRefs.current[idx] = el;
+                        }}
+                        type="button"
+                        onClick={() => onSelect(item.email)}
+                        onMouseEnter={() => setFocusIdx(idx)}
+                        className="w-full cursor-pointer text-left"
+                      >
+                        <div className="flex gap-3">
                           <span
-                            key={hint.key}
-                            className="flex items-center gap-1 text-[10px] text-[var(--text-muted)]"
-                          >
-                            <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1.5 py-0.5 font-mono text-[10px]">
-                              {hint.key}
-                            </kbd>
-                            {hint.label}
-                          </span>
-                        ))}
-                        {selectedCount > 1 && (
-                          <span className="ml-auto text-[10px] text-[var(--accent)]">
-                            acting on {selectedCount}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                            className={cn(
+                              'mt-2 h-2 w-2 shrink-0 rounded-full',
+                              priorityDot(item.priority)
+                            )}
+                            title={`${item.priority} priority`}
+                            aria-hidden
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-baseline justify-between gap-3">
+                              <span className="truncate text-sm font-medium text-[var(--text)]">
+                                {senderName(item.email)}
+                              </span>
+                              <time
+                                dateTime={item.email.date}
+                                className="shrink-0 text-xs text-[var(--text-muted)] tabular-nums"
+                              >
+                                {dateLabel}
+                              </time>
+                            </div>
+                            <p className="mt-0.5 truncate text-sm text-[var(--text)]">
+                              {item.email.subject}
+                            </p>
+                            <p className="mt-1 line-clamp-1 text-xs leading-relaxed text-[var(--text-muted)]">
+                              {item.email.snippet}
+                            </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <span className="text-[11px] text-[var(--text-muted)]">
+                                {queue.title}
+                              </span>
+                              <TriageStateBadge emailId={item.email.id} />
+                              {queue.id === 'unsubscribe' && onNavigateFilters ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onNavigateFilters();
+                                  }}
+                                  className="text-[11px] font-medium text-[var(--accent)] hover:underline"
+                                >
+                                  Open filters
+                                </button>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
 
-                    {selected && (
-                      <div className="mt-2">
-                        <TriageActionBar
-                          compact
-                          input={{
-                            emailId: item.email.id,
-                            emailSubject: item.email.subject,
-                            from: item.email.from,
-                            brief: item.brief,
-                          }}
-                        />
-                      </div>
-                    )}
-                  </article>
+                      {lastFailed && lastRecord.message ? (
+                        <p className="ml-5 mt-2 text-xs text-[var(--danger)]">
+                          {lastRecord.message}
+                        </p>
+                      ) : null}
+
+                      {focused ? (
+                        <div className="ml-5 mt-2.5 flex flex-wrap items-center gap-3 text-[11px] text-[var(--text-muted)]">
+                          {ROW_HINTS.map((hint) => (
+                            <span key={hint.key} className="flex items-center gap-1">
+                              <Kbd>{hint.key}</Kbd>
+                              {hint.label}
+                            </span>
+                          ))}
+                          {selectedCount > 1 ? (
+                            <span className="text-[var(--accent)]">
+                              Batch: {selectedCount} selected
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {selected ? (
+                        <div className="ml-5 mt-3">
+                          <TriageActionBar
+                            compact
+                            input={{
+                              emailId: item.email.id,
+                              emailSubject: item.email.subject,
+                              from: item.email.from,
+                              brief: item.brief,
+                            }}
+                          />
+                        </div>
+                      ) : null}
+                    </article>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
 
-            <div className="px-4 py-3 text-center text-[10px] text-[var(--text-muted)]">
-              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
-                j
-              </kbd>{' '}
-              /{' '}
-              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
-                k
-              </kbd>{' '}
-              move ·{' '}
-              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
-                Shift+arrows
-              </kbd>{' '}
-              select ·{' '}
-              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
-                d
-              </kbd>{' '}
-              /{' '}
-              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
-                f
-              </kbd>{' '}
-              /{' '}
-              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
-                s
-              </kbd>{' '}
-              triage ·{' '}
-              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
-                ?
-              </kbd>{' '}
-              help
-            </div>
+            <footer className="sticky bottom-0 border-t border-[var(--border)]/50 bg-[var(--bg-card)]/80 px-5 py-2.5 text-center text-xs text-[var(--text-muted)] backdrop-blur-sm">
+              <Kbd>j</Kbd>/<Kbd>k</Kbd> move · <Kbd>Enter</Kbd> open · <Kbd>d</Kbd>/<Kbd>f</Kbd>/
+              <Kbd>s</Kbd> triage · <Kbd>?</Kbd> help
+            </footer>
           </>
         )}
       </div>

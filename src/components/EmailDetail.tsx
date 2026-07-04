@@ -78,7 +78,7 @@ export function EmailDetail({ email, onBack, showBack = true }: Props) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--bg)]/40">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--bg-subtle)]/30">
       <div className="glass-panel flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-3">
         {showBack ? (
           <Button type="button" variant="ghost" size="sm" onClick={onBack} className="md:hidden">
