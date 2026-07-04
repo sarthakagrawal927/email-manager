@@ -1,24 +1,44 @@
 'use client';
 
+import {
+  BarChart3,
+  Filter,
+  Inbox,
+  LogOut,
+  Mail,
+  Menu,
+  Newspaper,
+  Search,
+  Send,
+  Sparkles,
+  Star,
+  Trash2,
+  Zap,
+} from 'lucide-react';
 import { useEffect } from 'react';
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
+
 const primaryNav = [
-  { id: 'today', label: 'Today', icon: '⚡' },
-  { id: 'inbox', label: 'Inbox', icon: '📥' },
-  { id: 'search', label: 'Semantic search', icon: '🔍' },
+  { id: 'today', label: 'Today', icon: Zap },
+  { id: 'inbox', label: 'Inbox', icon: Inbox },
+  { id: 'search', label: 'Semantic search', icon: Search },
 ];
 
 const browseNav = [
-  { id: 'starred', label: 'Starred', icon: '⭐' },
-  { id: 'sent', label: 'Sent', icon: '📤' },
-  { id: 'trash', label: 'Trash', icon: '🗑' },
+  { id: 'starred', label: 'Starred', icon: Star },
+  { id: 'sent', label: 'Sent', icon: Send },
+  { id: 'trash', label: 'Trash', icon: Trash2 },
 ];
 
 const toolsNav = [
-  { id: 'subscriptions', label: 'Subscriptions', icon: '📬' },
-  { id: 'digest', label: 'Digest', icon: '📓' },
-  { id: 'filters', label: 'Recipe studio', icon: '⚙️' },
-  { id: 'analytics', label: 'Analytics', icon: '📊' },
+  { id: 'subscriptions', label: 'Subscriptions', icon: Mail },
+  { id: 'digest', label: 'Digest', icon: Newspaper },
+  { id: 'filters', label: 'Recipe studio', icon: Filter },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
 interface Props {
@@ -27,9 +47,7 @@ interface Props {
   onSignOut: () => void;
   userImage?: string;
   userName: string;
-  /** Whether the mobile drawer is open. Desktop sidebar ignores this. */
   mobileOpen?: boolean;
-  /** Called to close the mobile drawer. */
   onClose?: () => void;
 }
 
@@ -40,63 +58,109 @@ function NavGroup({
   onNavigate,
 }: {
   label?: string;
-  items: { id: string; label: string; icon: string }[];
+  items: { id: string; label: string; icon: typeof Zap }[];
   view: string;
   onNavigate: (id: string) => void;
 }) {
   return (
     <div className="mb-3">
-      {label && (
-        <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+      {label ? (
+        <p className="px-3 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
           {label}
-        </div>
-      )}
-      {items.map((item) => (
-        <button
-          key={item.id}
-          onClick={() => onNavigate(item.id)}
-          aria-current={view === item.id ? 'page' : undefined}
-          className={`w-full text-left px-3 min-h-11 rounded-lg mb-0.5 flex items-center gap-2.5 transition cursor-pointer text-sm ${
-            view === item.id
-              ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
-              : 'hover:bg-[var(--border)]/50 text-[var(--text-muted)]'
-          }`}
-        >
-          <span aria-hidden>{item.icon}</span>
-          {item.label}
-        </button>
-      ))}
+        </p>
+      ) : null}
+      <div className="space-y-0.5">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const active = view === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onNavigate(item.id)}
+              aria-current={active ? 'page' : undefined}
+              className={cn(
+                'group relative flex min-h-10 w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 text-sm transition-all duration-200',
+                active
+                  ? 'bg-[var(--accent-soft)] font-medium text-[var(--accent)]'
+                  : 'text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text)]'
+              )}
+            >
+              {active ? (
+                <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-[var(--accent)]" />
+              ) : null}
+              <Icon
+                className={cn(
+                  'h-4 w-4 shrink-0 transition-colors',
+                  active
+                    ? 'text-[var(--accent)]'
+                    : 'text-[var(--text-muted)] group-hover:text-[var(--text)]'
+                )}
+                aria-hidden
+              />
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
 function SidebarBody({ view, onNavigate, onSignOut, userImage, userName }: Props) {
+  const initials = userName
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
     <>
-      <div className="px-4 pt-4 pb-3 border-b border-[var(--border)] flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--accent)] text-xs font-bold text-white">
-          K
-        </span>
-        <span className="text-sm font-bold">Kinetic</span>
+      <div className="border-b border-[var(--border)]/80 px-4 py-5">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent)] text-sm font-bold text-[var(--accent-fg)] shadow-[var(--shadow-soft)]">
+            K
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold tracking-tight">Kinetic</p>
+            <p className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
+              <Sparkles className="h-3 w-3 text-[var(--accent)]" aria-hidden />
+              Gmail workspace
+            </p>
+          </div>
+        </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2 py-2">
+      <nav className="flex-1 overflow-y-auto px-2.5 py-4">
         <NavGroup items={primaryNav} view={view} onNavigate={onNavigate} />
         <NavGroup label="Mail" items={browseNav} view={view} onNavigate={onNavigate} />
         <NavGroup label="Tools" items={toolsNav} view={view} onNavigate={onNavigate} />
       </nav>
 
-      <div className="p-3 border-t border-[var(--border)] flex items-center gap-2">
-        {userImage && <img src={userImage} alt="" className="w-7 h-7 rounded-full" />}
-        <span className="text-sm truncate flex-1" title={userName}>
-          {userName}
-        </span>
-        <button
+      <Separator className="bg-[var(--border)]/80" />
+
+      <div className="flex items-center gap-2.5 p-3">
+        <Avatar className="h-9 w-9 ring-2 ring-[var(--border)]">
+          {userImage ? <AvatarImage src={userImage} alt="" /> : null}
+          <AvatarFallback>{initials || 'K'}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium" title={userName}>
+            {userName}
+          </p>
+          <p className="text-[11px] text-[var(--text-muted)]">Connected</p>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           onClick={onSignOut}
-          className="text-xs text-[var(--text-muted)] hover:text-[var(--danger)] cursor-pointer px-2 py-2"
+          aria-label="Sign out"
+          className="text-[var(--text-muted)] hover:text-[var(--danger)]"
         >
-          Sign out
-        </button>
+          <LogOut className="h-4 w-4" />
+        </Button>
       </div>
     </>
   );
@@ -105,7 +169,6 @@ function SidebarBody({ view, onNavigate, onSignOut, userImage, userName }: Props
 export function Sidebar(props: Props) {
   const { mobileOpen, onClose, onNavigate } = props;
 
-  // Lock body scroll while the mobile drawer is open.
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.body.style.overflow = mobileOpen ? 'hidden' : '';
@@ -116,21 +179,19 @@ export function Sidebar(props: Props) {
 
   return (
     <>
-      {/* Desktop sidebar — always visible from md up. */}
-      <aside className="hidden md:flex w-56 border-r border-[var(--border)] bg-[var(--bg-card)] flex-col h-screen shrink-0">
+      <aside className="hidden h-screen w-[var(--sidebar-width)] shrink-0 flex-col border-r border-[var(--border)]/80 bg-[var(--bg-sidebar)]/95 backdrop-blur-xl md:flex">
         <SidebarBody {...props} />
       </aside>
 
-      {/* Mobile drawer — slides in below md. */}
-      {mobileOpen && (
+      {mobileOpen ? (
         <div className="fixed inset-0 z-50 md:hidden">
           <button
             type="button"
             aria-label="Close menu"
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
           />
-          <aside className="relative flex h-full w-[80vw] max-w-xs flex-col border-r border-[var(--border)] bg-[var(--bg-card)] shadow-xl">
+          <aside className="relative flex h-full w-[min(88vw,18rem)] flex-col border-r border-[var(--border)] bg-[var(--bg-sidebar)] shadow-2xl">
             <SidebarBody
               {...props}
               onNavigate={(id) => {
@@ -140,7 +201,16 @@ export function Sidebar(props: Props) {
             />
           </aside>
         </div>
-      )}
+      ) : null}
     </>
+  );
+}
+
+export function MobileMenuButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <Button type="button" variant="ghost" size="icon" onClick={onClick} aria-label="Open menu">
+      <Menu className="h-5 w-5" />
+      <span className="sr-only">{label}</span>
+    </Button>
   );
 }

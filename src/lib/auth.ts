@@ -11,15 +11,47 @@ export type AuthEnv = {
   BETTER_AUTH_SECRET?: string;
   AUTH_SECRET?: string;
   BETTER_AUTH_URL?: string;
+  NODE_ENV?: string;
 };
+
+const LOCAL_DEV_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:8787',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:8787',
+];
+
+const LOCAL_DEV_SECRET = 'local-dev-email-manager-secret-do-not-use-in-production';
 
 function getEnvValue(env: AuthEnv, key: keyof AuthEnv): string | undefined {
   const value = env[key];
   return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
+function isLocalDevBaseUrl(baseURL: string): boolean {
+  return /localhost|127\.0\.0\.1/.test(baseURL);
+}
+
+function resolveSecret(env: AuthEnv, baseURL: string): string | undefined {
+  const configured = getEnvValue(env, 'BETTER_AUTH_SECRET') ?? getEnvValue(env, 'AUTH_SECRET');
+  if (configured) return configured;
+  if (isLocalDevBaseUrl(baseURL) || getEnvValue(env, 'NODE_ENV') === 'development') {
+    return LOCAL_DEV_SECRET;
+  }
+  return undefined;
+}
+
+function resolveTrustedOrigins(baseURL: string): string[] {
+  return [...new Set([baseURL, ...LOCAL_DEV_ORIGINS])];
+}
+
+export function isGoogleOAuthConfigured(env: AuthEnv): boolean {
+  return Boolean(getEnvValue(env, 'GOOGLE_CLIENT_ID') && getEnvValue(env, 'GOOGLE_CLIENT_SECRET'));
+}
+
 export function createAuth(env: AuthEnv) {
   const baseURL = getEnvValue(env, 'BETTER_AUTH_URL') ?? 'https://email-manager-d0r.pages.dev';
+  const secret = resolveSecret(env, baseURL);
 
   return betterAuth({
     database: drizzleAdapter(drizzle(env.DB), {
@@ -27,7 +59,7 @@ export function createAuth(env: AuthEnv) {
       schema: { user, session, account, verification },
     }),
     baseURL,
-    secret: getEnvValue(env, 'BETTER_AUTH_SECRET') ?? getEnvValue(env, 'AUTH_SECRET'),
+    secret,
     socialProviders: {
       google: {
         clientId: getEnvValue(env, 'GOOGLE_CLIENT_ID') ?? '',
@@ -37,7 +69,7 @@ export function createAuth(env: AuthEnv) {
         prompt: 'consent',
       },
     },
-    trustedOrigins: [baseURL],
+    trustedOrigins: resolveTrustedOrigins(baseURL),
     rateLimit: {
       enabled: false,
     },

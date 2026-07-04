@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 export function PrivacyPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-12 text-sm leading-7">
-      <Link to="/" className="text-xs text-gray-500 hover:underline">
+      <a href="/" className="text-xs text-gray-500 hover:underline">
         ← Email Manager
-      </Link>
+      </a>
       <h1 className="mt-3 text-3xl font-bold tracking-tight">Privacy</h1>
       <p className="mt-4 text-xs text-gray-500">Last updated: 2026-05-15.</p>
 

@@ -17,7 +17,9 @@ export async function getSession(): Promise<Session> {
   }
 }
 
-export async function signIn() {
+export type SignInResult = { ok: true } | { ok: false; message: string };
+
+export async function signIn(): Promise<SignInResult> {
   const res = await fetch('/api/auth/sign-in/social', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -32,13 +34,23 @@ export async function signIn() {
     }),
   });
 
+  const data = (await res.json().catch(() => null)) as {
+    url?: string;
+    message?: string;
+    code?: string;
+  } | null;
+
   if (!res.ok) {
-    window.location.href = '/?auth_error=google';
-    return;
+    const message =
+      data?.message ??
+      (res.status === 503
+        ? 'Google sign-in is not configured for this environment.'
+        : 'Google sign-in failed. Try again or check server logs.');
+    return { ok: false, message };
   }
 
-  const data = (await res.json()) as { url?: string };
-  window.location.href = data.url ?? '/app';
+  window.location.href = data?.url ?? '/app';
+  return { ok: true };
 }
 
 export async function signOut() {

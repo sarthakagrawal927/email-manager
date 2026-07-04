@@ -7,8 +7,16 @@ import { useTriageActions } from '@/components/TriageActionsProvider';
 import { TriageActionBar, TriageStateBadge } from '@/components/TriageActionBar';
 import { TriageQueueLedger } from '@/components/TriageQueueLedger';
 import { ShortcutHelpOverlay } from '@/components/ShortcutHelpOverlay';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Kbd } from '@/components/ui/kbd';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmailListSkeleton } from '@/components/ui/skeleton';
+import { StatCard } from '@/components/ui/stat-card';
 import { isTypingTarget, sessionKeyAction } from '@/lib/triage-session';
 import { actionLabel, stateClass, stateLabel } from '@/lib/triage-actions';
+import { cn } from '@/lib/utils';
+import { AlertCircle, CheckCircle2, Clock3, Inbox, Keyboard, ListChecks } from 'lucide-react';
 
 interface Props {
   emails: Email[];
@@ -229,115 +237,84 @@ export function TriageQueues({
   const selectedCount = selectedIds.size;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--bg-card)]/30">
       <ShortcutHelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
 
-      <div className="shrink-0 border-b border-[var(--border)] p-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h1 className="text-lg font-semibold">Today</h1>
-            <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-              Keyboard triage:{' '}
-              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
-                d
-              </kbd>{' '}
-              defer ·{' '}
-              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
-                f
-              </kbd>{' '}
-              follow ·{' '}
-              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
-                s
-              </kbd>{' '}
-              summarize ·{' '}
-              <kbd className="rounded border border-[var(--border)] bg-[var(--border)]/30 px-1 font-mono text-[10px]">
-                ?
-              </kbd>{' '}
-              help
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {selectedCount > 0 && (
-              <span className="rounded-lg bg-[var(--accent)]/10 px-3 py-1.5 text-xs font-medium text-[var(--accent)]">
+      <PageHeader
+        title="Today"
+        description={
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            <Keyboard className="inline h-3.5 w-3.5" aria-hidden />
+            <Kbd>d</Kbd> defer
+            <Kbd>f</Kbd> follow
+            <Kbd>s</Kbd> summarize
+            <Kbd>?</Kbd> help
+          </span>
+        }
+        actions={
+          <>
+            {selectedCount > 0 ? (
+              <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--accent)]">
                 {selectedCount} selected
               </span>
-            )}
-            {onStartSession && (
-              <button
-                type="button"
-                onClick={onStartSession}
-                title="Focused triage session: review one message at a time"
-                className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] transition hover:bg-[var(--border)]/40 cursor-pointer"
-              >
-                ⌨ Focused session
-              </button>
-            )}
-            {onOpenInbox && (
-              <button
-                type="button"
-                onClick={onOpenInbox}
-                className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] transition hover:bg-[var(--border)]/40 cursor-pointer"
-              >
+            ) : null}
+            {onStartSession ? (
+              <Button type="button" variant="secondary" size="sm" onClick={onStartSession}>
+                Focused session
+              </Button>
+            ) : null}
+            {onOpenInbox ? (
+              <Button type="button" variant="ghost" size="sm" onClick={onOpenInbox}>
                 Full inbox
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onRefresh}
-              disabled={loading}
-              className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-60 cursor-pointer"
-            >
+              </Button>
+            ) : null}
+            <Button type="button" size="sm" onClick={onRefresh} disabled={loading}>
               {loading ? 'Refreshing…' : 'Refresh'}
-            </button>
+            </Button>
+          </>
+        }
+        meta={
+          <div className="grid gap-3 pt-3 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard label="In queue" value={summary.total} icon={ListChecks} tone="accent" />
+            <StatCard label="Queued" value={counts.queued} icon={Clock3} tone="warning" />
+            <StatCard label="Applied" value={counts.applied} icon={CheckCircle2} tone="success" />
+            <StatCard label="Failed" value={counts.failed} icon={AlertCircle} tone="default" />
           </div>
-        </div>
+        }
+      />
 
-        <TriageQueueLedger remaining={summary.total} className="mt-3" />
+      <div className="border-b border-[var(--border)]/80 px-5 py-3">
+        <TriageQueueLedger remaining={summary.total} />
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto" tabIndex={-1}>
         {error ? (
-          <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-            <p className="text-sm text-red-500">{error}</p>
-            <button
-              type="button"
-              onClick={onRefresh}
-              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)] cursor-pointer"
-            >
-              Try again
-            </button>
-          </div>
+          <EmptyState
+            icon={AlertCircle}
+            title="Could not load inbox"
+            description={error}
+            action={{ label: 'Try again', onClick: onRefresh }}
+          />
         ) : loading && emails.length === 0 ? (
-          <div className="flex h-40 items-center justify-center">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
-          </div>
+          <EmailListSkeleton />
         ) : emails.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-            <p className="text-sm text-[var(--text-muted)]">No inbox messages loaded yet.</p>
-            <button
-              type="button"
-              onClick={onRefresh}
-              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)] cursor-pointer"
-            >
-              Load inbox
-            </button>
-          </div>
+          <EmptyState
+            icon={Inbox}
+            title="No messages loaded"
+            description="Pull your Gmail inbox to start triaging with keyboard shortcuts."
+            action={{ label: 'Load inbox', onClick: onRefresh }}
+          />
         ) : summary.total === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-            <p className="text-sm text-[var(--text-muted)]">
-              Inbox zero for this batch.
-              {counts.queued > 0
-                ? ` ${counts.queued} item${counts.queued === 1 ? '' : 's'} will reappear when snoozed time elapses.`
-                : ' Refresh to pull the next batch.'}
-            </p>
-            <button
-              type="button"
-              onClick={onRefresh}
-              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)] cursor-pointer"
-            >
-              Pull next batch
-            </button>
-          </div>
+          <EmptyState
+            icon={CheckCircle2}
+            title="Inbox zero for this batch"
+            description={
+              counts.queued > 0
+                ? `${counts.queued} snoozed item${counts.queued === 1 ? '' : 's'} will return when due.`
+                : 'Refresh to pull the next batch of messages.'
+            }
+            action={{ label: 'Pull next batch', onClick: onRefresh }}
+          />
         ) : (
           <>
             {/* Follow-up capture panel — snoozed items coming due */}
@@ -408,15 +385,14 @@ export function TriageQueues({
                 return (
                   <article
                     key={item.id}
-                    className={`px-4 py-3 transition ${
+                    className={cn(
+                      'border-b border-[var(--border)]/60 px-4 py-3 transition-all duration-150',
                       batchSelected
-                        ? 'bg-[var(--accent)]/[0.12]'
-                        : focused
-                          ? 'bg-[var(--accent)]/[0.08]'
-                          : selected
-                            ? 'bg-[var(--accent)]/[0.08]'
-                            : 'hover:bg-[var(--border)]/20'
-                    }`}
+                        ? 'bg-[var(--accent-soft)]'
+                        : focused || selected
+                          ? 'bg-[var(--accent)]/[0.06] ring-1 ring-inset ring-[var(--accent)]/15'
+                          : 'hover:bg-[var(--bg-elevated)]/70'
+                    )}
                   >
                     <button
                       ref={(el) => {

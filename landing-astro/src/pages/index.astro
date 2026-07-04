@@ -26,12 +26,15 @@ const DESCRIPTION =
       <div class="nav-links">
         <a href="/about">About</a>
         <a href="/privacy">Privacy</a>
-        <a href="/app">Open app</a>
+        <a href="/app" class="nav-cta">Open app</a>
       </div>
     </nav>
 
     <section class="hero">
-      <span class="hero-eyebrow">Local-first Gmail search</span>
+      <div class="hero-pill">
+        <span class="hero-pill-dot" aria-hidden="true"></span>
+        Local-first Gmail workspace
+      </div>
       <h1>
         Search your Gmail by meaning<br />
         <span class="accent">without uploading a single email.</span>
@@ -43,13 +46,15 @@ const DESCRIPTION =
         Your inbox and embeddings stay in IndexedDB. Zero server-side
         email storage.
       </p>
+      <div class="trust-row" aria-label="Trust signals">
+        <span class="trust-chip">Read-only Gmail scope</span>
+        <span class="trust-chip">0 bytes on our servers</span>
+        <span class="trust-chip">IndexedDB + ONNX in-browser</span>
+      </div>
       <div class="cta-row">
         <a class="btn btn-primary" href="/app">Connect Gmail and search</a>
       </div>
-      <p class="fine">
-        Read-only Gmail scope. 0 bytes of email content stored on our
-        servers.
-      </p>
+      <p class="fine">Semantic search, triage queues, and filter recipes — all client-side.</p>
 
       <div class="demo" aria-label="Semantic search preview">
         <div class="demo-frame">
@@ -181,9 +186,8 @@ const DESCRIPTION =
 
     <footer class="footer">
       <p class="footer-line">
-        Built by one engineer who got tired of Gmail&rsquo;s keyword
-        search. Open source-ready stack: Next.js, IndexedDB, ONNX
-        Transformers, RFC 8058.
+        Built for people who want Gmail superpowers without giving up
+        control. Vite, IndexedDB, ONNX Transformers, RFC 8058.
       </p>
       <div class="footer-links">
         <a href="/about">About</a><span class="footer-sep">·</span>

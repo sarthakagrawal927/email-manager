@@ -1,9 +1,17 @@
 'use client';
 
+import { RefreshCw, Search } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Email } from '@/lib/gmail';
 import { TriageStateBadge } from '@/components/TriageActionBar';
 import { TriageQueueLedger } from '@/components/TriageQueueLedger';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmailListSkeleton } from '@/components/ui/skeleton';
+
+import { cn } from '@/lib/utils';
 
 interface Props {
   emails: Email[];
@@ -97,76 +105,84 @@ export function EmailList({
   const title = label ? (LABEL_NAMES[label] ?? label) : 'Mail';
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="px-4 pt-4 pb-3 border-b border-[var(--border)] flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="text-lg font-semibold leading-tight">{title}</h1>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">
-              {loading && emails.length === 0
-                ? 'Loading…'
-                : emails.length === 0
-                  ? 'No messages loaded'
-                  : `${emails.length} loaded${unreadCount ? ` · ${unreadCount} unread` : ''}`}
-            </p>
-          </div>
-          {onRefresh && (
-            <button
+    <div className="flex flex-1 flex-col overflow-hidden bg-[var(--bg-card)]/30">
+      <PageHeader
+        title={title}
+        description={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {loading && emails.length === 0
+              ? 'Loading…'
+              : emails.length === 0
+                ? 'No messages loaded'
+                : `${emails.length} loaded`}
+            {unreadCount > 0 ? <Badge variant="secondary">{unreadCount} unread</Badge> : null}
+          </span>
+        }
+        actions={
+          onRefresh ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
               onClick={onRefresh}
               disabled={loading}
-              className="text-xs px-3 py-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--border)]/40 transition cursor-pointer disabled:opacity-50"
             >
-              {loading ? '…' : 'Refresh'}
-            </button>
-          )}
-        </div>
+              <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} aria-hidden />
+              Refresh
+            </Button>
+          ) : undefined
+        }
+      />
+
+      <div className="space-y-3 border-b border-[var(--border)]/80 px-5 py-4">
         <div className="relative">
-          <input
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]"
+            aria-hidden
+          />
+          <Input
             ref={searchRef}
             type="text"
-            placeholder="Search Gmail (try: from:, has:attachment, newer_than:7d)"
+            placeholder="Search Gmail (from:, has:attachment, newer_than:7d)"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full px-3 py-2 pr-10 rounded-lg bg-[var(--bg)] border border-[var(--border)] outline-none focus:border-[var(--accent)] text-sm"
+            className="h-11 pl-10 pr-14"
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[var(--text-muted)] pointer-events-none hidden sm:inline">
-            press /
+          <span className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 text-[10px] text-[var(--text-muted)] sm:inline">
+            press <kbd>/</kbd>
           </span>
         </div>
-        {triageLedger && (
+        {triageLedger ? (
           <div>
-            <p className="mb-2 text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
               Triage queue
             </p>
             <TriageQueueLedger />
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="flex-1 overflow-y-auto" tabIndex={-1}>
         {loading && emails.length === 0 ? (
-          <div className="flex items-center justify-center h-40">
-            <div className="animate-spin w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
-          </div>
+          <EmailListSkeleton />
         ) : emails.length === 0 ? (
-          <div className="flex flex-col items-center justify-center mt-20 px-6 text-center gap-3">
+          <div className="mt-20 flex flex-col items-center justify-center gap-3 px-6 text-center">
             <p className="text-sm text-[var(--text-muted)]">
               {search ? `No matches for "${search}"` : 'No emails to show.'}
             </p>
             {search ? (
-              <button
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => onSearchChange('')}
-                className="text-xs px-3 py-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--border)]/40 transition cursor-pointer"
               >
                 Clear search
-              </button>
+              </Button>
             ) : onRefresh ? (
-              <button
-                onClick={onRefresh}
-                className="text-xs px-3 py-1.5 rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition cursor-pointer"
-              >
+              <Button type="button" size="sm" onClick={onRefresh}>
                 Refresh
-              </button>
+              </Button>
             ) : null}
           </div>
         ) : (
@@ -178,18 +194,20 @@ export function EmailList({
               return (
                 <button
                   key={email.id}
+                  type="button"
                   ref={(el) => {
                     if (el) itemsRef.current[idx] = el;
                   }}
                   onClick={() => onSelect(email)}
                   onMouseEnter={() => setFocusIdx(idx)}
-                  className={`w-full text-left px-4 py-3 border-b border-[var(--border)] transition cursor-pointer ${
+                  className={cn(
+                    'w-full cursor-pointer border-b border-[var(--border)]/80 px-4 py-3 text-left transition-all duration-150',
                     selected || focused
-                      ? 'bg-[var(--accent)]/[0.08]'
+                      ? 'bg-[var(--accent)]/10 ring-1 ring-inset ring-[var(--accent)]/25'
                       : unread
-                        ? 'bg-[var(--accent)]/[0.03] hover:bg-[var(--border)]/30'
-                        : 'hover:bg-[var(--border)]/30'
-                  }`}
+                        ? 'bg-[var(--accent)]/[0.04] hover:bg-[var(--bg-elevated)]'
+                        : 'hover:bg-[var(--bg-elevated)]'
+                  )}
                 >
                   <div className="flex justify-between items-baseline mb-1">
                     <span className="flex items-center gap-2 truncate max-w-[70%]">
@@ -221,15 +239,17 @@ export function EmailList({
                 </button>
               );
             })}
-            {onLoadMore && (
-              <button
+            {onLoadMore ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full rounded-none py-3 text-[var(--accent)]"
                 onClick={onLoadMore}
                 disabled={loading}
-                className="w-full py-3 text-sm text-[var(--accent)] hover:bg-[var(--border)]/30 transition cursor-pointer"
               >
-                {loading ? 'Loading...' : 'Load more'}
-              </button>
-            )}
+                {loading ? 'Loading…' : 'Load more'}
+              </Button>
+            ) : null}
             {primary && (
               <div className="px-4 py-3 text-[10px] text-[var(--text-muted)] text-center">
                 Tip: press <kbd className="px-1 rounded bg-[var(--border)]/60">j</kbd> /{' '}

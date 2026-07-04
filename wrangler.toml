@@ -24,3 +24,6 @@ migrations_dir = "migrations"
 [vars]
 NODE_ENV = "production"
 BETTER_AUTH_URL = "https://email-manager.sarthakagrawal927.workers.dev"
+
+[dev]
+port = 8787

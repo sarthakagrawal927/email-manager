@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 
-import { createAuth, type AuthEnv } from './lib/auth';
+import { createAuth, isGoogleOAuthConfigured, type AuthEnv } from './lib/auth';
 import { getGmailAccessToken } from './lib/get-access-token';
 import { getEmail, listEmails } from './lib/gmail';
 import { SECURITY_HEADERS, withSecurityHeaders } from './lib/security-headers';
@@ -44,11 +44,35 @@ function methodNotAllowed(message: string) {
   );
 }
 
+app.get('/api/health', (c) => {
+  return c.json({
+    ok: true,
+    auth: {
+      googleConfigured: isGoogleOAuthConfigured(c.env),
+      baseUrl: c.env.BETTER_AUTH_URL ?? null,
+    },
+  });
+});
+
 app.on(['GET', 'POST'], '/api/auth/*', async (c) => {
   const path = new URL(c.req.url).pathname;
   if (c.req.method === 'GET' && path.endsWith('/sign-in/social')) {
     return methodNotAllowed(
       'Use POST /api/auth/sign-in/social with a JSON body containing provider.'
+    );
+  }
+  if (
+    c.req.method === 'POST' &&
+    path.endsWith('/sign-in/social') &&
+    !isGoogleOAuthConfigured(c.env)
+  ) {
+    return c.json(
+      {
+        code: 'OAUTH_NOT_CONFIGURED',
+        message:
+          'Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .dev.vars (local) or Worker secrets (production).',
+      },
+      503
     );
   }
   return createAuth(c.env).handler(c.req.raw);

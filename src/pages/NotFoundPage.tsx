@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom';
-
 export function NotFoundPage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-8">
@@ -9,9 +7,9 @@ export function NotFoundPage() {
         <p className="mb-6 text-sm opacity-70">
           The page you&apos;re looking for doesn&apos;t exist or may have moved.
         </p>
-        <Link to="/" className="inline-block rounded border px-4 py-2 hover:opacity-80">
+        <a href="/" className="inline-block rounded border px-4 py-2 hover:opacity-80">
           Back home
-        </Link>
+        </a>
       </div>
     </div>
   );

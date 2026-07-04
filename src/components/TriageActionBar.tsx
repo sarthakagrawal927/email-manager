@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTriageActions } from '@/components/TriageActionsProvider';
+import { Button } from '@/components/ui/button';
 import {
   actionLabel,
   stateClass,
@@ -61,7 +62,7 @@ export function TriageActionBar({ input, compact }: Props) {
 
   return (
     <div
-      className={`flex flex-col gap-2 ${compact ? '' : 'rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-3'}`}
+      className={`flex flex-col gap-2 ${compact ? '' : 'rounded-2xl border border-[var(--border)]/80 bg-[var(--bg-card)]/80 p-3 backdrop-blur-sm'}`}
     >
       {latest && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -81,61 +82,67 @@ export function TriageActionBar({ input, compact }: Props) {
               {latest.message}
             </span>
           )}
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
+            className="ml-auto h-7 px-2"
             onClick={() => undoLatest(input.emailId)}
-            className="ml-auto rounded border border-[var(--border)] px-2 py-0.5 transition hover:bg-[var(--border)]/40"
           >
             Undo
-          </button>
+          </Button>
         </div>
       )}
 
       <div className="flex flex-wrap gap-2">
         {PRIMARY_ACTIONS.map((kind) => (
-          <button
+          <Button
             key={kind}
             type="button"
+            variant={kind === 'skip' ? 'ghost' : 'secondary'}
+            size="sm"
             disabled={running !== null}
             onClick={() => handle(kind)}
-            className={`rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs transition hover:bg-[var(--border)]/50 disabled:opacity-60 ${
-              kind === 'skip' ? 'text-[var(--text-muted)]' : ''
-            }`}
           >
             {running === kind ? '…' : actionLabel(kind)}
-          </button>
+          </Button>
         ))}
 
         {/* Snooze picker */}
         <div className="relative">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             disabled={running !== null}
             onClick={() => setSnoozeOpen((o) => !o)}
-            className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs transition hover:bg-[var(--border)]/50 disabled:opacity-60"
           >
             {running === 'defer' || running === 'followup' ? '…' : 'Snooze ▾'}
-          </button>
+          </Button>
 
           {snoozeOpen && (
-            <div className="absolute left-0 top-full z-10 mt-1 flex gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-1.5 shadow-lg">
+            <div className="absolute left-0 top-full z-10 mt-1 flex gap-1 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-1.5 shadow-[var(--shadow-glow)]">
               {SNOOZE_PRESETS.map((preset) => (
-                <button
+                <Button
                   key={preset.label}
                   type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2"
                   onClick={() => handle(preset.kind, { snoozeMs: preset.ms() })}
-                  className="rounded px-2 py-1 text-xs text-[var(--text)] transition hover:bg-[var(--accent)]/15 whitespace-nowrap"
                 >
                   {preset.label}
-                </button>
+                </Button>
               ))}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2"
                 onClick={() => setSnoozeOpen(false)}
-                className="rounded px-2 py-1 text-xs text-[var(--text-muted)] transition hover:bg-[var(--border)]/40"
               >
                 ×
-              </button>
+              </Button>
             </div>
           )}
         </div>

@@ -44,8 +44,12 @@ const OG_IMAGE = `${SITE_URL}/opengraph-image`;
 
     <meta name="keywords" content="Gmail triage, email filters, inbox cleanup, semantic email search, IndexedDB email" />
 
-    {/* No external fonts — the main app uses a system stack and the
-       LCP path stays one round-trip. */}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <slot />

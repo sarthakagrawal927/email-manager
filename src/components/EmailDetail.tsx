@@ -1,15 +1,26 @@
 'use client';
 
+import { ArrowLeft, Copy, ExternalLink } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { trackCoreAction } from '@/lib/analytics';
 import type { Email } from '@/lib/gmail';
 import { triageItemForEmail } from '@/lib/triage';
 import { TriageActionBar, TriageStateBadge } from '@/components/TriageActionBar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface Props {
   email: Email;
   onBack: () => void;
   showBack?: boolean;
+}
+
+function priorityTone(priority: string) {
+  if (priority === 'high') return 'destructive' as const;
+  if (priority === 'medium') return 'secondary' as const;
+  return 'outline' as const;
 }
 
 export function EmailDetail({ email, onBack, showBack = true }: Props) {
@@ -28,6 +39,8 @@ export function EmailDetail({ email, onBack, showBack = true }: Props) {
         ),
     };
   }, [email]);
+
+  const triageItem = useMemo(() => triageItemForEmail(email), [email]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -65,114 +78,99 @@ export function EmailDetail({ email, onBack, showBack = true }: Props) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--border)] p-3">
-        {showBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="rounded-lg px-3 py-1.5 text-sm hover:bg-[var(--border)]/50 cursor-pointer md:hidden"
-            title="Back (Esc)"
-          >
-            &larr; Back
-          </button>
-        )}
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--bg)]/40">
+      <div className="glass-panel flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-3">
+        {showBack ? (
+          <Button type="button" variant="ghost" size="sm" onClick={onBack} className="md:hidden">
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Back
+          </Button>
+        ) : null}
         <div className="flex-1" />
-        <button
-          type="button"
-          onClick={handleCopySubject}
-          className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-muted)] hover:bg-[var(--border)]/40 cursor-pointer"
-        >
+        <Button type="button" variant="secondary" size="sm" onClick={handleCopySubject}>
+          <Copy className="h-3.5 w-3.5" aria-hidden />
           Copy brief
-        </button>
-        {email.unsubscribeLink &&
-          (email.unsubscribePost ? (
-            <button
+        </Button>
+        {email.unsubscribeLink ? (
+          email.unsubscribePost ? (
+            <Button
               type="button"
+              variant="destructive"
+              size="sm"
               disabled={acting}
               onClick={handleOneClickUnsubscribe}
-              className="rounded-lg bg-[var(--danger)]/10 px-3 py-1.5 text-sm text-[var(--danger)] hover:bg-[var(--danger)]/20 cursor-pointer"
-            >
-              Unsubscribe (1-click)
-            </button>
-          ) : (
-            <a
-              href={email.unsubscribeLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-lg bg-[var(--danger)]/10 px-3 py-1.5 text-sm text-[var(--danger)] hover:bg-[var(--danger)]/20"
             >
               Unsubscribe
-            </a>
-          ))}
+            </Button>
+          ) : (
+            <Button type="button" variant="destructive" size="sm" asChild>
+              <a href={email.unsubscribeLink} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                Unsubscribe
+              </a>
+            </Button>
+          )
+        ) : null}
       </div>
 
-      <div className="shrink-0 border-b border-[var(--border)] p-4">
-        <div className="mb-2 flex flex-wrap items-center gap-2">
+      <div className="shrink-0 space-y-4 border-b border-[var(--border)]/80 px-5 py-5">
+        <div className="flex flex-wrap items-center gap-2">
           <TriageStateBadge emailId={email.id} />
-        </div>
-        <h1 className="mb-2 text-lg font-semibold leading-snug">{email.subject}</h1>
-        <div className="flex flex-wrap justify-between gap-2 text-sm text-[var(--text-muted)]">
-          <span className="truncate">From: {email.from}</span>
-          <span className="shrink-0">{new Date(email.date).toLocaleString()}</span>
+          {email.labelIds.includes('UNREAD') ? <Badge>Unread</Badge> : null}
         </div>
 
-        {/* Inline triage brief */}
-        {(() => {
-          const item = triageItemForEmail(email);
-          if (!item) return null;
-          return (
-            <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 text-xs">
+        <div className="space-y-2">
+          <h1 className="text-xl font-semibold leading-snug tracking-tight text-balance">
+            {email.subject}
+          </h1>
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--text-muted)]">
+            <span className="truncate">{email.from.replace(/<[^>]+>/, '').trim()}</span>
+            <time className="shrink-0 tabular-nums">{new Date(email.date).toLocaleString()}</time>
+          </div>
+        </div>
+
+        {triageItem ? (
+          <Card className="border-[var(--border)]/70 bg-[var(--bg-card)]/70 shadow-none">
+            <CardContent className="space-y-2 p-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={`rounded-full px-1.5 py-0.5 ${
-                    item.priority === 'high'
-                      ? 'text-red-500 bg-red-500/10'
-                      : item.priority === 'medium'
-                        ? 'text-amber-500 bg-amber-500/10'
-                        : 'text-[var(--text-muted)] bg-[var(--border)]/40'
-                  }`}
-                >
-                  {item.priority}
-                </span>
-                <span className="text-[var(--text-muted)]">
-                  {item.email.labelIds.includes('UNREAD') ? 'Unread · ' : ''}
-                  {item.queue === 'respond'
+                <Badge variant={priorityTone(triageItem.priority)}>{triageItem.priority}</Badge>
+                <span className="text-xs text-[var(--text-muted)]">
+                  {triageItem.queue === 'respond'
                     ? 'Needs response'
-                    : item.queue === 'unsubscribe'
+                    : triageItem.queue === 'unsubscribe'
                       ? 'Unsubscribe candidate'
-                      : item.queue === 'reference'
+                      : triageItem.queue === 'reference'
                         ? 'Reference'
                         : 'Quick review'}
                 </span>
               </div>
-              <p className="mt-1 text-[var(--text-muted)]">
+              <p className="text-sm text-[var(--text-muted)]">
                 <span className="font-medium text-[var(--text)]">Why: </span>
-                {item.reason}
+                {triageItem.reason}
               </p>
-              <p className="mt-0.5 text-[var(--text-muted)]">
-                <span className="font-medium text-[var(--text)]">Action: </span>
-                {item.action}
+              <p className="text-sm text-[var(--text-muted)]">
+                <span className="font-medium text-[var(--text)]">Suggested: </span>
+                {triageItem.action}
               </p>
-            </div>
-          );
-        })()}
+            </CardContent>
+          </Card>
+        ) : null}
 
-        <div className="mt-2">
-          <TriageActionBar input={triageInput} />
-        </div>
+        <TriageActionBar input={triageInput} />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        <iframe
-          srcDoc={
-            email.body ||
-            `<pre style="font-family:inherit;white-space:pre-wrap">${email.snippet}</pre>`
-          }
-          className="h-full w-full border-0"
-          sandbox="allow-popups allow-popups-to-escape-sandbox"
-          title="Email body"
-        />
+      <div className="min-h-0 flex-1 overflow-hidden p-4">
+        <div className="h-full overflow-hidden rounded-2xl border border-[var(--border)]/80 bg-[var(--bg-card)] shadow-[var(--shadow-soft)]">
+          <iframe
+            srcDoc={
+              email.body ||
+              `<pre style="font-family:inherit;white-space:pre-wrap;padding:1rem;color:inherit">${email.snippet}</pre>`
+            }
+            className={cn('h-full w-full border-0 bg-[var(--bg-card)]')}
+            sandbox="allow-popups allow-popups-to-escape-sandbox"
+            title="Email body"
+          />
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import { Brain, RefreshCw, Search, Sparkles } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import type { Email } from '@/lib/gmail';
 import {
@@ -12,6 +13,13 @@ import {
 import type { StoredEmail } from '@/lib/db';
 import { embed, prepareEmailText } from '@/lib/embeddings';
 import { semanticSearch, type SearchResult } from '@/lib/semantic-search';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Input } from '@/components/ui/input';
+import { PageHeader } from '@/components/ui/page-header';
+import { Spinner } from '@/components/ui/spinner';
+import { cn } from '@/lib/utils';
 
 interface Props {
   onSelect: (email: Email) => void;
@@ -97,8 +105,9 @@ export function SemanticSearch({ onSelect }: Props) {
         setProgress('');
         await refreshStatus();
       }
-    } catch (err: any) {
-      if (mountedRef.current) setProgress(`Error: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Sync failed';
+      if (mountedRef.current) setProgress(`Error: ${message}`);
     } finally {
       if (mountedRef.current) setSyncing(false);
     }
@@ -123,79 +132,103 @@ export function SemanticSearch({ onSelect }: Props) {
     }
   }
 
+  const indexPct = total > 0 ? Math.round((indexed / total) * 100) : 0;
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="p-3 border-b border-[var(--border)] flex items-center gap-3">
-        <input
-          type="text"
-          placeholder={indexed > 0 ? 'Search by meaning...' : 'Sync emails first...'}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          disabled={indexed === 0}
-          className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] outline-none focus:border-[var(--accent)] text-sm disabled:opacity-50"
-        />
-        <button
-          onClick={handleSync}
-          disabled={syncing}
-          className="px-3 py-2 rounded-lg bg-[var(--accent)] text-white text-sm hover:bg-[var(--accent-hover)] transition cursor-pointer disabled:opacity-50 shrink-0"
-        >
-          {syncing ? 'Syncing...' : 'Sync & Index'}
-        </button>
+    <div className="flex flex-1 flex-col overflow-hidden bg-[var(--bg-card)]/30">
+      <PageHeader
+        title="Semantic search"
+        description="Query by meaning — embeddings run entirely in your browser."
+        actions={
+          <Button type="button" onClick={handleSync} disabled={syncing}>
+            <RefreshCw className={cn('h-4 w-4', syncing && 'animate-spin')} aria-hidden />
+            {syncing ? 'Syncing…' : 'Sync & Index'}
+          </Button>
+        }
+        meta={
+          <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
+            <Badge variant="secondary">
+              <Brain className="mr-1 inline h-3 w-3" aria-hidden />
+              {indexed} / {total} indexed
+            </Badge>
+            {total > 0 ? <Badge variant="outline">{indexPct}% ready</Badge> : null}
+            {progress ? <span>{progress}</span> : null}
+            {searching && !progress ? <Spinner className="h-4 w-4" /> : null}
+          </div>
+        }
+      />
+
+      <div className="border-b border-[var(--border)]/80 px-5 py-4">
+        <div className="relative max-w-3xl">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]"
+            aria-hidden
+          />
+          <Input
+            type="text"
+            placeholder={
+              indexed > 0
+                ? 'Try: "lease renewal from last spring" or "flight confirmation"'
+                : 'Sync emails first to enable semantic search'
+            }
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            disabled={indexed === 0}
+            className="h-11 pl-10 text-[15px]"
+          />
+        </div>
       </div>
 
-      <div className="px-4 py-1.5 text-xs text-[var(--text-muted)] border-b border-[var(--border)] flex justify-between">
-        <span>
-          {indexed} of {total} emails indexed
-        </span>
-        {progress && <span>{progress}</span>}
-        {searching && !progress && <span>Searching...</span>}
-      </div>
-
-      <div className="flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {searchError ? (
-          <div className="text-center mt-20 px-6 space-y-3">
-            <p className="text-sm text-[var(--text-muted)]">{searchError}</p>
-            <button
-              onClick={() => performSearch(query)}
-              className="px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm hover:bg-[var(--accent-hover)] transition cursor-pointer"
-            >
-              Try again
-            </button>
-          </div>
+          <EmptyState
+            icon={Sparkles}
+            title="Search unavailable"
+            description={searchError}
+            action={{ label: 'Try again', onClick: () => performSearch(query) }}
+          />
         ) : results.length === 0 && query && !searching ? (
-          <div className="text-center text-[var(--text-muted)] mt-20">No results found</div>
+          <EmptyState
+            icon={Search}
+            title="No matches"
+            description={`Nothing in your local index matched "${query}". Try different wording.`}
+          />
         ) : results.length === 0 ? (
-          <div className="text-center text-[var(--text-muted)] mt-20 px-6">
-            {indexed === 0
-              ? 'Click "Sync & Index" to import your emails for semantic search'
-              : 'Search by meaning \u2014 e.g., "emails about project deadlines"'}
-          </div>
+          <EmptyState
+            icon={Brain}
+            title={indexed === 0 ? 'Index your inbox first' : 'Search by meaning'}
+            description={
+              indexed === 0
+                ? 'Sync up to 500 inbox messages and generate on-device embeddings.'
+                : 'Describe what you remember — Kinetic ranks results by cosine similarity.'
+            }
+            action={indexed === 0 ? { label: 'Sync & Index', onClick: handleSync } : undefined}
+          />
         ) : (
-          results.map(({ email, score }) => (
-            <button
-              key={email.id}
-              onClick={() => onSelect(email)}
-              className="w-full text-left px-4 py-3 border-b border-[var(--border)] hover:bg-[var(--border)]/30 transition cursor-pointer"
-            >
-              <div className="flex justify-between items-baseline mb-1">
-                <span className="text-sm font-medium truncate max-w-[70%]">
-                  {email.from.replace(/<[^>]+>/, '').trim()}
-                </span>
-                <div className="flex items-baseline gap-2 shrink-0 ml-2">
-                  <span className="text-[10px] text-[var(--text-muted)] opacity-60">
-                    {(score * 100).toFixed(0)}%
+          <div className="divide-y divide-[var(--border)]/70">
+            {results.map(({ email, score }) => (
+              <button
+                key={email.id}
+                type="button"
+                onClick={() => onSelect(email)}
+                className="w-full cursor-pointer px-5 py-4 text-left transition-colors hover:bg-[var(--bg-elevated)]/80"
+              >
+                <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                  <span className="truncate text-sm font-medium">
+                    {email.from.replace(/<[^>]+>/, '').trim()}
                   </span>
-                  <span className="text-xs text-[var(--text-muted)]">
-                    {new Date(email.date).toLocaleDateString()}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Badge>{(score * 100).toFixed(0)}% match</Badge>
+                    <span className="text-xs tabular-nums text-[var(--text-muted)]">
+                      {new Date(email.date).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div className="text-sm truncate">{email.subject}</div>
-              <div className="text-xs text-[var(--text-muted)] truncate mt-0.5">
-                {email.snippet}
-              </div>
-            </button>
-          ))
+                <p className="truncate text-sm font-medium">{email.subject}</p>
+                <p className="mt-1 truncate text-xs text-[var(--text-muted)]">{email.snippet}</p>
+              </button>
+            ))}
+          </div>
         )}
       </div>
     </div>

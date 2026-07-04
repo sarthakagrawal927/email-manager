@@ -1,10 +1,11 @@
 'use client';
 
-import { signIn, signOut } from '@/lib/auth-client';
+import { signOut } from '@/lib/auth-client';
 import { useSession } from '@/lib/use-session';
 import { trackActivated, trackCoreAction, trackReturned, trackSignup } from '@/lib/analytics';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Sidebar } from '@/components/Sidebar';
+import { SignInScreen } from '@/components/SignInScreen';
+import { MobileMenuButton, Sidebar } from '@/components/Sidebar';
 import { EmailList } from '@/components/EmailList';
 import { EmailDetail } from '@/components/EmailDetail';
 import { Subscriptions } from '@/components/Subscriptions';
@@ -83,6 +84,7 @@ export default function HomeClient() {
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [triageSession, setTriageSession] = useState(false);
+
   const fetchingRef = useRef(false);
   const fetchSeqRef = useRef(0);
   const trackedSessionRef = useRef<string | null>(null);
@@ -202,44 +204,14 @@ export default function HomeClient() {
 
   if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full" />
+      <div className="flex h-screen items-center justify-center bg-[var(--bg)]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
       </div>
     );
   }
 
   if (!session) {
-    // Unauthenticated users at /app get the sign-in screen. The Astro
-    // landing at / is static (no JS), so its "Open Kinetic" CTA links
-    // here — this is the only place that can launch the Google OAuth
-    // flow (auth-client.signIn(), callbackURL: "/app"). Redirecting
-    // back to / would loop: / → /app → / forever.
-    return (
-      <main className="flex h-screen flex-col items-center justify-center gap-4 px-6 text-center">
-        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent)] text-xl font-bold text-white">
-          K
-        </span>
-        <h1 className="text-xl font-semibold">Sign in to Kinetic</h1>
-        <p className="max-w-sm text-sm text-[var(--text-muted)]">
-          Connect Gmail with read-only access to start triaging. Your messages and search embeddings
-          stay in your browser.
-        </p>
-        <button
-          type="button"
-          onClick={() => signIn()}
-          className="cursor-pointer rounded-lg bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)]"
-        >
-          Sign in with Google
-        </button>
-        {/* Plain <a>, not next/link: `/` must be a full document load so
-            the Worker's ASSETS short-circuit serves the static Astro
-            landing — client-side navigation would render the Next.js
-            fallback page instead. */}
-        <a href="/" className="text-xs text-[var(--text-muted)] underline">
-          Back to landing
-        </a>
-      </main>
-    );
+    return <SignInScreen />;
   }
 
   const openDigestContext = useCallback(
@@ -259,7 +231,7 @@ export default function HomeClient() {
   const viewLabel = view.charAt(0).toUpperCase() + view.slice(1);
 
   return (
-    <div className="flex h-screen">
+    <div className="app-mesh flex h-screen">
       <Sidebar
         view={view}
         onNavigate={(v) => setView(v as View)}
@@ -272,18 +244,9 @@ export default function HomeClient() {
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Mobile header — hamburger nav below md. */}
-        <header className="flex items-center gap-3 border-b border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 md:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(true)}
-            aria-label="Open menu"
-            className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-[var(--border)]/50 cursor-pointer"
-          >
-            <span className="text-xl" aria-hidden>
-              ☰
-            </span>
-          </button>
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--accent)] text-xs font-bold text-white">
+        <header className="glass-panel flex items-center gap-3 border-b px-3 py-2.5 md:hidden">
+          <MobileMenuButton onClick={() => setMobileMenuOpen(true)} label={viewLabel} />
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--accent)] text-xs font-bold text-[var(--accent-fg)]">
             K
           </span>
           <span className="text-sm font-semibold">{viewLabel}</span>
