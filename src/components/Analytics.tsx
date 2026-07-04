@@ -2,6 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Email } from '@/lib/gmail';
+import {
+  appendSamplePage,
+  emptyInboxSample,
+  hasEnoughSample,
+  sliceSample,
+  type InboxSampleState,
+} from '@/lib/inbox-sample';
 
 interface SenderStat {
   email: string;
@@ -47,7 +54,8 @@ export function Analytics() {
   const [dateRange, setDateRange] = useState('');
   const [bucket, setBucket] = useState(100);
   const abortRef = useRef<AbortController | null>(null);
-  const cacheRef = useRef<Email[]>([]);
+  const sampleRef = useRef<InboxSampleState>(emptyInboxSample());
+  const fetchGenRef = useRef(0);
 
   function computeStats(emails: Email[]) {
     setTotalEmails(emails.length);
@@ -104,43 +112,57 @@ export function Analytics() {
   }
 
   const fetchAnalytics = useCallback(async (target: number) => {
-    // If we already have enough cached emails, just recompute from cache
-    if (cacheRef.current.length >= target) {
-      computeStats(cacheRef.current.slice(0, target));
+    const generation = ++fetchGenRef.current;
+    const stale = () => fetchGenRef.current !== generation;
+
+    // Reuse cached pages when lowering or re-selecting a smaller bucket.
+    if (hasEnoughSample(sampleRef.current, target)) {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      computeStats(sliceSample(sampleRef.current, target));
       return;
     }
 
-    // Cancel any in-flight request
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
+    const startingCount = sampleRef.current.emails.length;
+    const hadPartialCache = startingCount > 0;
+
     setLoading(true);
     setError(null);
-    setStats([]);
-    setProgress('Fetching...');
-    setDateRange('');
+    setProgress(`Fetching... ${startingCount}/${target}`);
+
+    if (!hadPartialCache) {
+      setStats([]);
+      setDateRange('');
+    } else {
+      computeStats(sliceSample(sampleRef.current, Math.min(startingCount, target)));
+    }
 
     try {
-      const allEmails: Email[] = [];
-      let pageToken: string | undefined;
-      const perPage = Math.min(target, 500); // Gmail API caps at 500
+      let state = sampleRef.current;
+      let pageToken = state.exhausted ? undefined : state.nextPageToken;
 
-      while (allEmails.length < target) {
-        if (controller.signal.aborted) return;
+      while (state.emails.length < target && !state.exhausted) {
+        if (controller.signal.aborted || stale()) return;
 
         const params = new URLSearchParams({
           label: 'INBOX',
-          maxResults: String(perPage),
+          maxResults: String(Math.min(500, target - state.emails.length)),
           metadataOnly: 'true',
         });
         if (pageToken) params.set('pageToken', pageToken);
 
-        setProgress(`Fetching... ${allEmails.length}/${target}`);
+        if (!stale()) {
+          setProgress(`Fetching... ${state.emails.length}/${target}`);
+        }
 
         const res = await fetch(`/api/emails?${params}`, { signal: controller.signal });
         if (!res.ok) {
-          if (allEmails.length === 0) {
+          if (state.emails.length === 0) {
+            if (stale()) return;
             setError(`Couldn't load email data (${res.status}).`);
             setLoading(false);
             setProgress('');
@@ -150,24 +172,18 @@ export function Analytics() {
         }
 
         const data = await res.json();
-        const emails: Email[] = data.emails ?? [];
-        if (emails.length === 0) break;
-
-        allEmails.push(...emails);
-        pageToken = data.nextPageToken;
-        if (!pageToken) break; // no more pages
+        const batch: Email[] = data.emails ?? [];
+        state = appendSamplePage(state, batch, data.nextPageToken);
+        sampleRef.current = state;
+        pageToken = state.nextPageToken;
       }
 
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted || stale()) return;
 
-      // Update cache if we fetched more than before
-      if (allEmails.length > cacheRef.current.length) {
-        cacheRef.current = allEmails;
-      }
-
-      computeStats(allEmails.slice(0, target));
-    } catch (err: any) {
-      if (err?.name === 'AbortError') return;
+      computeStats(sliceSample(sampleRef.current, target));
+    } catch (err: unknown) {
+      if (stale()) return;
+      if (err instanceof Error && err.name === 'AbortError') return;
       console.error('Analytics fetch error:', err);
       setError("Couldn't load email data. Check your connection.");
       setLoading(false);
@@ -183,7 +199,7 @@ export function Analytics() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   function getEmailsForSender(senderEmail: string): Email[] {
-    const sliced = cacheRef.current.slice(0, bucket);
+    const sliced = sliceSample(sampleRef.current, bucket);
     return sliced
       .filter((e) => {
         const m = e.from.match(/<([^>]+)>/);
@@ -213,7 +229,6 @@ export function Analytics() {
               <button
                 key={opt.value}
                 onClick={() => setBucket(opt.value)}
-                disabled={loading}
                 className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
                   bucket === opt.value
                     ? 'bg-[var(--accent)] text-white'
