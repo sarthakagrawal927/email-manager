@@ -13,7 +13,6 @@ import {
   Send,
   Sparkles,
   Star,
-  Trash2,
   Zap,
 } from 'lucide-react';
 import { useEffect } from 'react';
@@ -22,10 +21,10 @@ import { useMailboxStore } from '@/components/MailboxStoreProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { formatSyncAge } from '@/lib/sync-age';
 import { cn } from '@/lib/utils';
 
 const primaryNav = [
-  { id: 'today', label: 'Today', icon: Zap },
   { id: 'inbox', label: 'Inbox', icon: Inbox },
   { id: 'search', label: 'Semantic search', icon: Search },
 ];
@@ -33,10 +32,10 @@ const primaryNav = [
 const browseNav = [
   { id: 'starred', label: 'Starred', icon: Star },
   { id: 'sent', label: 'Sent', icon: Send },
-  { id: 'trash', label: 'Trash', icon: Trash2 },
 ];
 
 const toolsNav = [
+  { id: 'triage', label: 'Triage', icon: Zap },
   { id: 'subscriptions', label: 'Subscriptions', icon: Mail },
   { id: 'digest', label: 'Digest', icon: Newspaper },
   { id: 'filters', label: 'Recipe studio', icon: Filter },
@@ -110,11 +109,9 @@ function NavGroup({
 }
 
 function MailboxSyncPanel() {
-  const { total, indexed, syncing, progress, lastSyncedAt, syncInbox } = useMailboxStore();
+  const { total, indexed, syncing, progress, lastSyncedAt, isStale, syncInbox } = useMailboxStore();
 
-  const lastSyncLabel = lastSyncedAt
-    ? new Date(lastSyncedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-    : 'never';
+  const syncLabel = syncing ? progress || 'Syncing…' : `Synced ${formatSyncAge(lastSyncedAt)}`;
 
   return (
     <div className="rounded-xl border border-[var(--border)]/80 bg-[var(--bg-card)]/60 p-3">
@@ -129,8 +126,14 @@ function MailboxSyncPanel() {
               <span className="text-[var(--text-muted)] font-normal"> · {indexed} indexed</span>
             ) : null}
           </p>
-          <p className="mt-0.5 truncate text-[10px] text-[var(--text-muted)]">
-            {syncing ? progress || 'Syncing…' : `Last sync ${lastSyncLabel}`}
+          <p
+            className={cn(
+              'mt-0.5 truncate text-[10px]',
+              isStale && !syncing ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--text-muted)]'
+            )}
+          >
+            {syncLabel}
+            {isStale && !syncing ? ' · refresh recommended' : ''}
           </p>
         </div>
         <Button

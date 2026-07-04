@@ -243,7 +243,7 @@ export function TriageQueues({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2.5">
-              <h1 className="text-xl font-semibold tracking-tight">Today</h1>
+              <h1 className="text-xl font-semibold tracking-tight">Triage</h1>
               {summary.total > 0 ? (
                 <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-0.5 text-xs font-medium text-[var(--accent)] tabular-nums">
                   {summary.total}

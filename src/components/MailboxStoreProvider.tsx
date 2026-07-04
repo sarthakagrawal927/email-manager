@@ -18,8 +18,13 @@ import {
   getInboxSyncMeta,
   type StoredEmail,
 } from '@/lib/db';
-import { DEFAULT_INBOX_SYNC, ensureInboxEmails } from '@/lib/inbox-sync';
+import {
+  DEFAULT_INBOX_SYNC,
+  ensureInboxEmails,
+  refreshInboxHead,
+} from '@/lib/inbox-sync';
 import { loadSubscriptionSenders } from '@/lib/subscription-senders';
+import { isInboxStale } from '@/lib/sync-age';
 
 interface MailboxStoreContextValue {
   emails: StoredEmail[];
@@ -28,11 +33,14 @@ interface MailboxStoreContextValue {
   syncing: boolean;
   progress: string;
   lastSyncedAt: string | null;
+  isStale: boolean;
   inboxExhausted: boolean;
   subscriptionSenders: Email[];
   ready: boolean;
   refresh: () => Promise<void>;
   syncInbox: (opts?: { target?: number; metadataOnly?: boolean }) => Promise<void>;
+  refreshInbox: () => Promise<void>;
+  ensureFreshInbox: () => Promise<void>;
   ensureInboxCount: (target: number, opts?: { metadataOnly?: boolean }) => Promise<StoredEmail[]>;
   getInboxSlice: (limit: number) => StoredEmail[];
 }
@@ -111,12 +119,53 @@ export function MailboxStoreProvider({ children }: { children: ReactNode }) {
     [refresh]
   );
 
+  const runRefreshHead = useCallback(async () => {
+    if (syncLockRef.current) return;
+    syncLockRef.current = true;
+    setSyncing(true);
+    setProgress('Checking for new mail…');
+    try {
+      await refreshInboxHead({
+        onProgress: (message) => {
+          if (mountedRef.current) setProgress(message);
+        },
+      });
+      if (mountedRef.current) {
+        setProgress('');
+        await refresh();
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Refresh failed';
+      if (mountedRef.current) setProgress(`Error: ${message}`);
+      throw err;
+    } finally {
+      syncLockRef.current = false;
+      if (mountedRef.current) setSyncing(false);
+    }
+  }, [refresh]);
+
   const syncInbox = useCallback(
     async (opts?: { target?: number; metadataOnly?: boolean }) => {
       await runSync(opts?.target ?? DEFAULT_INBOX_SYNC, opts?.metadataOnly ?? false);
     },
     [runSync]
   );
+
+  const refreshInbox = useCallback(async () => {
+    await runRefreshHead();
+  }, [runRefreshHead]);
+
+  const ensureFreshInbox = useCallback(async () => {
+    const meta = await getInboxSyncMeta();
+    const count = await getEmailCount();
+    if (count === 0) {
+      await syncInbox();
+      return;
+    }
+    if (isInboxStale(meta.lastSyncedAt)) {
+      await refreshInbox();
+    }
+  }, [refreshInbox, syncInbox]);
 
   const ensureInboxCount = useCallback(
     async (target: number, opts?: { metadataOnly?: boolean }) => {
@@ -135,23 +184,28 @@ export function MailboxStoreProvider({ children }: { children: ReactNode }) {
 
   const getInboxSlice = useCallback((limit: number) => emails.slice(0, limit), [emails]);
 
+  const isStale = useMemo(() => isInboxStale(lastSyncedAt), [lastSyncedAt]);
+
   useEffect(() => {
     mountedRef.current = true;
     void (async () => {
-      const count = await getEmailCount();
+      const [count, meta] = await Promise.all([getEmailCount(), getInboxSyncMeta()]);
       await refresh();
-      if (count === 0) {
-        try {
+
+      try {
+        if (count === 0) {
           await runSync(DEFAULT_INBOX_SYNC);
-        } catch {
-          // Background sync may fail offline — views still render cached state.
+        } else if (isInboxStale(meta.lastSyncedAt)) {
+          await runRefreshHead();
         }
+      } catch {
+        // Background sync may fail offline — views still render cached state.
       }
     })();
     return () => {
       mountedRef.current = false;
     };
-  }, [refresh, runSync]);
+  }, [refresh, runRefreshHead, runSync]);
 
   const value = useMemo(
     () => ({
@@ -161,11 +215,14 @@ export function MailboxStoreProvider({ children }: { children: ReactNode }) {
       syncing,
       progress,
       lastSyncedAt,
+      isStale,
       inboxExhausted,
       subscriptionSenders,
       ready,
       refresh,
       syncInbox,
+      refreshInbox,
+      ensureFreshInbox,
       ensureInboxCount,
       getInboxSlice,
     }),
@@ -176,11 +233,14 @@ export function MailboxStoreProvider({ children }: { children: ReactNode }) {
       syncing,
       progress,
       lastSyncedAt,
+      isStale,
       inboxExhausted,
       subscriptionSenders,
       ready,
       refresh,
       syncInbox,
+      refreshInbox,
+      ensureFreshInbox,
       ensureInboxCount,
       getInboxSlice,
     ]

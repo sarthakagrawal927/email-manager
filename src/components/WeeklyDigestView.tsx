@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import { trackCoreAction } from '@/lib/analytics';
 import { useMailboxStore } from '@/components/MailboxStoreProvider';
+import { getInboxEmailsSorted } from '@/lib/db';
 import { buildWeeklyDigest, type WeeklyDigest } from '@/lib/digest';
+import { formatSyncAge } from '@/lib/sync-age';
+import { DEFAULT_INBOX_SYNC } from '@/lib/inbox-sync';
 
 interface Props {
   onOpenSender?: (senderEmail: string) => void;
@@ -11,17 +14,19 @@ interface Props {
 }
 
 function formatQuietDays(days: number): string {
-  if (days < 30) return `${days}d quiet`;
+  if (days < 30) return `${days} days without mail`;
   const months = Math.round(days / 30);
-  return `${months}mo quiet`;
+  return `about ${months} month${months === 1 ? '' : 's'} without mail`;
 }
 
 function revisitReasonLabel(reason: 'starred_stale' | 'long_thread_stale'): string {
-  return reason === 'starred_stale' ? 'Starred · stale' : 'Long thread · stale';
+  return reason === 'starred_stale'
+    ? 'Starred thread · no activity in 2+ weeks'
+    : 'Long thread · no activity in 2+ weeks';
 }
 
 export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
-  const { emails, total, syncInbox } = useMailboxStore();
+  const { total, lastSyncedAt, isStale, syncing, ensureFreshInbox, syncInbox } = useMailboxStore();
   const [digest, setDigest] = useState<WeeklyDigest | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,19 +35,31 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
     setLoading(true);
     setError(null);
     try {
-      if (emails.length === 0) {
+      if (total === 0) {
+        await syncInbox();
+      } else if (isStale) {
+        await ensureFreshInbox();
+      }
+
+      const localEmails = await getInboxEmailsSorted();
+      if (localEmails.length === 0) {
         setDigest(null);
-        setError('No locally cached emails yet. Sync your inbox from the sidebar.');
+        setError('No inbox emails in your local cache yet. Use Sync in the sidebar, then try again.');
         return;
       }
-      setDigest(buildWeeklyDigest(emails));
+
+      setDigest(buildWeeklyDigest(localEmails));
       trackCoreAction('digest_generated');
     } catch {
-      setError('Could not read local email cache.');
+      setError('Could not refresh or read your local inbox cache.');
     } finally {
       setLoading(false);
     }
   }
+
+  const dataBasis = total
+    ? `Based on ${total.toLocaleString()} synced inbox email${total === 1 ? '' : 's'} (up to ${DEFAULT_INBOX_SYNC.toLocaleString()}). Last sync: ${formatSyncAge(lastSyncedAt)}.`
+    : 'No emails synced yet — sync from the sidebar first.';
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -50,24 +67,25 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Weekly digest</h1>
-            <p className="mt-1 text-sm text-[var(--text-muted)]">
-              Quiet relationships, threads to revisit, and weekly themes — built locally from your
-              cached inbox. No message bodies leave this device.
+            <p className="mt-1 max-w-2xl text-sm text-[var(--text-muted)]">
+              A quick read on who went quiet, which threads may need attention, and what topics
+              showed up this week — all computed locally from your synced inbox.
             </p>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
-              {total === 0
-                ? 'Local inbox index is empty.'
-                : `${total.toLocaleString()} email${total === 1 ? '' : 's'} in shared local index.`}
+            <p
+              className={`mt-2 text-xs ${isStale ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--text-muted)]'}`}
+            >
+              {dataBasis}
+              {isStale && !syncing ? ' Data may be outdated — generate will refresh first.' : ''}
             </p>
           </div>
 
           <button
             type="button"
-            onClick={generate}
-            disabled={loading}
-            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-60 cursor-pointer"
+            onClick={() => void generate()}
+            disabled={loading || syncing}
+            className="shrink-0 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-60 cursor-pointer"
           >
-            {loading ? 'Generating…' : 'Generate this week'}
+            {loading || syncing ? 'Refreshing…' : 'Generate this week'}
           </button>
         </div>
       </div>
@@ -91,13 +109,14 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
         {!digest && !error && !loading && (
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
             <p className="max-w-md text-sm text-[var(--text-muted)]">
-              Generate a reflection loop from emails already stored in your browser. Run Semantic
-              Search sync first if the cache is empty.
+              Hit generate to refresh your local inbox (if needed) and summarize the past week.
+              This only sees mail you have synced — not your entire Gmail history.
             </p>
             <button
               type="button"
-              onClick={generate}
-              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)] cursor-pointer"
+              onClick={() => void generate()}
+              disabled={syncing}
+              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)] disabled:opacity-60 cursor-pointer"
             >
               Generate this week
             </button>
@@ -106,20 +125,23 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
 
         {digest && (
           <div className="mx-auto max-w-3xl space-y-8">
-            <p className="text-xs text-[var(--text-muted)]">
-              Week {digest.periodStart} – {digest.periodEnd} · generated{' '}
-              {new Date(digest.generatedAt).toLocaleString()}
-            </p>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)]/50 px-4 py-3 text-xs text-[var(--text-muted)]">
+              Week of {digest.periodStart} – {digest.periodEnd} · generated{' '}
+              {new Date(digest.generatedAt).toLocaleString()} · {dataBasis}
+            </div>
 
             <section>
               <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Quiet relationships
+                People you have not heard from
               </h2>
               <p className="mt-1 text-xs text-[var(--text-muted)]">
-                Historically active senders with no recent mail.
+                Senders you emailed at least 3 times before, but nothing in the last ~60 days.
+                Newsletters and bulk mail are excluded.
               </p>
               {digest.relationshipsQuiet.length === 0 ? (
-                <p className="mt-3 text-sm text-[var(--text-muted)]">None this week.</p>
+                <p className="mt-3 text-sm text-[var(--text-muted)]">
+                  No quiet relationships in your synced mail.
+                </p>
               ) : (
                 <ul className="mt-3 space-y-2">
                   {digest.relationshipsQuiet.map((item) => (
@@ -134,7 +156,7 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
                             {item.senderEmail}
                           </p>
                           <p className="mt-2 text-xs text-[var(--text-muted)]">
-                            {item.priorMessageCount} prior messages · last{' '}
+                            {item.priorMessageCount} messages in cache · last heard{' '}
                             {new Date(item.lastMessageAt).toLocaleDateString()} ·{' '}
                             {formatQuietDays(item.quietDays)}
                           </p>
@@ -145,7 +167,7 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
                             onClick={() => onOpenSender(item.senderEmail)}
                             className="shrink-0 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs transition hover:bg-[var(--border)]/40 cursor-pointer"
                           >
-                            Open sender
+                            Find in inbox
                           </button>
                         )}
                       </div>
@@ -157,13 +179,14 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
 
             <section>
               <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Threads to revisit
+                Threads worth another look
               </h2>
               <p className="mt-1 text-xs text-[var(--text-muted)]">
-                Starred or long threads that have gone stale.
+                Starred threads or conversations with 4+ messages that have gone quiet for 2+
+                weeks in your synced mail.
               </p>
               {digest.threadsToRevisit.length === 0 ? (
-                <p className="mt-3 text-sm text-[var(--text-muted)]">None flagged.</p>
+                <p className="mt-3 text-sm text-[var(--text-muted)]">Nothing flagged right now.</p>
               ) : (
                 <ul className="mt-3 space-y-2">
                   {digest.threadsToRevisit.map((item) => (
@@ -175,7 +198,7 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
                         <div className="min-w-0">
                           <p className="font-medium truncate">{item.subject || '(no subject)'}</p>
                           <p className="mt-2 text-xs text-[var(--text-muted)]">
-                            {item.messageCount} messages · last{' '}
+                            {item.messageCount} messages in cache · last activity{' '}
                             {new Date(item.lastMessageAt).toLocaleDateString()} ·{' '}
                             {revisitReasonLabel(item.reason)}
                           </p>
@@ -186,7 +209,7 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
                             onClick={() => onOpenThread(item.threadId, item.subject)}
                             className="shrink-0 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs transition hover:bg-[var(--border)]/40 cursor-pointer"
                           >
-                            Open thread
+                            Find in inbox
                           </button>
                         )}
                       </div>
@@ -198,13 +221,16 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
 
             <section>
               <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Weekly themes
+                What this week looked like
               </h2>
               <p className="mt-1 text-xs text-[var(--text-muted)]">
-                Subject-pattern buckets for mail received this week.
+                Rough topic buckets from subject lines in mail received this calendar week (not
+                AI-generated — simple keyword grouping).
               </p>
               {digest.weeklyThemes.length === 0 ? (
-                <p className="mt-3 text-sm text-[var(--text-muted)]">No themes in this window.</p>
+                <p className="mt-3 text-sm text-[var(--text-muted)]">
+                  No themed mail in this week&apos;s window.
+                </p>
               ) : (
                 <ul className="mt-3 space-y-2">
                   {digest.weeklyThemes.map((theme) => (
@@ -220,7 +246,7 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
                       </div>
                       {theme.topDomains.length > 0 && (
                         <p className="mt-2 text-xs text-[var(--text-muted)]">
-                          Top domains: {theme.topDomains.join(', ')}
+                          Mostly from: {theme.topDomains.join(', ')}
                         </p>
                       )}
                     </li>

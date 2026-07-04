@@ -135,15 +135,15 @@ export function TriageSession({ emails, loading, onExit }: Props) {
             </p>
             <p className="max-w-sm text-xs text-[var(--text-muted)]">
               {queue.length === 0
-                ? 'No unread, unsorted messages in this batch. Refresh the Today queue to pull more.'
-                : `${handled} of ${queue.length} message${queue.length === 1 ? '' : 's'} handled. Press k to review, or Esc to go back to Today.`}
+                ? 'No unread, unsorted messages in this batch. Refresh the triage queue to pull more.'
+                : `${handled} of ${queue.length} message${queue.length === 1 ? '' : 's'} handled. Press k to review, or Esc to go back to Triage.`}
             </p>
             <button
               type="button"
               onClick={onExit}
               className="cursor-pointer rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)]"
             >
-              Back to Today
+              Back to Triage
             </button>
           </div>
         )}

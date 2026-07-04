@@ -21,11 +21,10 @@ import { MailboxStoreProvider, useMailboxStore } from '@/components/MailboxStore
 import type { Email } from '@/lib/gmail';
 
 type View =
-  | 'today'
+  | 'triage'
   | 'inbox'
   | 'starred'
   | 'sent'
-  | 'trash'
   | 'subscriptions'
   | 'analytics'
   | 'search'
@@ -33,11 +32,10 @@ type View =
   | 'filters';
 
 const VIEWS = new Set<string>([
-  'today',
+  'triage',
   'inbox',
   'starred',
   'sent',
-  'trash',
   'subscriptions',
   'analytics',
   'search',
@@ -45,18 +43,23 @@ const VIEWS = new Set<string>([
   'filters',
 ]);
 
+const HASH_ALIASES: Record<string, View> = {
+  today: 'triage',
+  trash: 'inbox',
+};
+
 const LABEL_MAP: Record<string, string> = {
-  today: 'INBOX',
+  triage: 'INBOX',
   inbox: 'INBOX',
   starred: 'STARRED',
   sent: 'SENT',
-  trash: 'TRASH',
 };
 
 function getViewFromHash(): View {
-  if (typeof window === 'undefined') return 'today';
+  if (typeof window === 'undefined') return 'inbox';
   const hash = window.location.hash.replace('#', '');
-  return VIEWS.has(hash) ? (hash as View) : 'today';
+  if (HASH_ALIASES[hash]) return HASH_ALIASES[hash];
+  return VIEWS.has(hash) ? (hash as View) : 'inbox';
 }
 
 export default function HomeClient() {
@@ -89,7 +92,7 @@ function AuthenticatedHome({
   sessionData: { user?: { id: string; name?: string; image?: string } };
 }) {
   const mailbox = useMailboxStore();
-  const [view, setViewState] = useState<View>('today');
+  const [view, setViewState] = useState<View>('inbox');
 
   useEffect(() => {
     setViewState(getViewFromHash());
@@ -209,7 +212,7 @@ function AuthenticatedHome({
     [view, search]
   );
 
-  const usesCachedInbox = (view === 'today' || view === 'inbox') && !search;
+  const usesCachedInbox = (view === 'triage' || view === 'inbox') && !search;
 
   useEffect(() => {
     setSelected(null);
@@ -225,15 +228,14 @@ function AuthenticatedHome({
     if (LABEL_MAP[view]) fetchEmails();
   }, [view, search, usesCachedInbox, mailbox.emails, mailbox.ready, mailbox.syncing, fetchEmails]);
 
-  // Keyboard triage session lives on the Today queue only — navigating to
-  // another view ends it.
+  // Keyboard triage session lives on the Triage queue only — navigating away ends it.
   useEffect(() => {
-    if (view !== 'today') setTriageSession(false);
+    if (view !== 'triage') setTriageSession(false);
   }, [view]);
 
   const startTriageSession = useCallback(() => {
     setSelected(null);
-    setView('today');
+    setView('triage');
     setTriageSession(true);
     trackCoreAction('triage_session_started');
   }, [setView]);
@@ -267,7 +269,7 @@ function AuthenticatedHome({
     if (nextPageToken) fetchEmails(nextPageToken);
   }, [usesCachedInbox, mailbox, nextPageToken, fetchEmails]);
 
-  const isPrimaryView = view === 'today' || view === 'inbox';
+  const isPrimaryView = view === 'inbox';
   const viewLabel = view.charAt(0).toUpperCase() + view.slice(1);
 
   return (
@@ -305,13 +307,13 @@ function AuthenticatedHome({
                 />
             ) : view === 'filters' ? (
               <GmailFilterBuilder />
-            ) : view === 'today' && triageSession ? (
+            ) : view === 'triage' && triageSession ? (
               <TriageSession
                 emails={emails}
                 loading={loading}
                 onExit={() => setTriageSession(false)}
               />
-            ) : view === 'today' ? (
+            ) : view === 'triage' ? (
               <WorkSurface
                 hasSelection={Boolean(selected)}
                 list={

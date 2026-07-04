@@ -32,8 +32,7 @@ const LABEL_NAMES: Record<string, string> = {
   inbox: 'Inbox',
   starred: 'Starred',
   sent: 'Sent',
-  trash: 'Trash',
-  today: 'Inbox',
+  triage: 'Triage',
 };
 
 export function EmailList({

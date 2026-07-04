@@ -9,6 +9,7 @@ import {
 import type { Email } from './gmail';
 
 export const DEFAULT_INBOX_SYNC = 500;
+export const REFRESH_HEAD_COUNT = 100;
 
 export interface EnsureInboxOptions {
   target: number;
@@ -93,6 +94,64 @@ export async function ensureInboxEmails(options: EnsureInboxOptions): Promise<En
     fetched: fetchedThisRun,
     total: all.length,
   };
+}
+
+/**
+ * Re-fetch the newest inbox messages from Gmail and merge into the local cache.
+ * Always starts from the top of the inbox so returning users see fresh mail.
+ */
+export async function refreshInboxHead(options?: {
+  maxEmails?: number;
+  metadataOnly?: boolean;
+  onProgress?: (message: string) => void;
+  signal?: AbortSignal;
+}): Promise<number> {
+  const maxEmails = options?.maxEmails ?? REFRESH_HEAD_COUNT;
+  const existing = await getAllEmails();
+  const embeddingById = new Map(existing.map((e) => [e.id, e.embedding]));
+
+  let fetched = 0;
+  let pageToken: string | undefined;
+
+  options?.onProgress?.('Checking for new mail…');
+
+  do {
+    if (options?.signal?.aborted) break;
+
+    const params = new URLSearchParams({
+      label: 'INBOX',
+      maxResults: String(Math.min(100, maxEmails - fetched)),
+    });
+    if (options?.metadataOnly) params.set('metadataOnly', 'true');
+    if (pageToken) params.set('pageToken', pageToken);
+
+    const res = await fetch(`/api/emails?${params}`, { signal: options?.signal });
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+
+    const data = await res.json();
+    const batch: Email[] = data.emails ?? [];
+
+    if (batch.length > 0) {
+      const toStore: StoredEmail[] = batch.map((e) => ({
+        ...e,
+        embedding: embeddingById.get(e.id) ?? null,
+      }));
+      await storeEmails(toStore);
+      fetched += batch.length;
+      options?.onProgress?.(`Updated ${fetched} recent emails…`);
+    }
+
+    pageToken = data.nextPageToken ?? undefined;
+    if (batch.length === 0 || !pageToken) break;
+  } while (fetched < maxEmails);
+
+  const meta = await getInboxSyncMeta();
+  await setInboxSyncMeta({
+    ...meta,
+    lastSyncedAt: new Date().toISOString(),
+  });
+
+  return fetched;
 }
 
 /** Convenience wrapper for the default inbox sync size. */
