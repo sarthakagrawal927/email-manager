@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Email } from '@/lib/gmail';
+import { EmailHoverPreview } from '@/components/EmailHoverPreview';
+import { formatEmailDateShort } from '@/lib/format-date';
 import {
   appendSamplePage,
   emptyInboxSample,
@@ -307,17 +309,25 @@ export function Analytics() {
                 </div>
 
                 {isExpanded && (
-                  <div className="ml-7 mt-1 mb-2 border-l-2 border-[var(--border)] pl-3 space-y-1">
+                  <div className="ml-7 mt-1 mb-2 border-l-2 border-[var(--border)] pl-3 space-y-0.5">
                     {getEmailsForSender(sender.email).map((email) => (
-                      <div key={email.id} className="flex items-baseline gap-2 py-1 text-sm">
-                        <span className="text-xs text-[var(--text-muted)] shrink-0 w-16">
-                          {new Date(email.date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </span>
-                        <span className="truncate">{email.subject}</span>
-                      </div>
+                      <EmailHoverPreview
+                        key={email.id}
+                        email={email}
+                        className="rounded-md px-1.5 py-1 transition-colors hover:bg-[var(--bg-elevated)]/80"
+                      >
+                        <div className="flex items-baseline gap-2 text-sm">
+                          <time
+                            dateTime={email.date}
+                            className="w-16 shrink-0 text-xs text-[var(--text-muted)] tabular-nums"
+                          >
+                            {formatEmailDateShort(email.date)}
+                          </time>
+                          <span className="min-w-0 truncate text-[var(--text)]">
+                            {email.subject}
+                          </span>
+                        </div>
+                      </EmailHoverPreview>
                     ))}
                   </div>
                 )}
