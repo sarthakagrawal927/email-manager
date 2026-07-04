@@ -3,8 +3,6 @@
 import { RefreshCw, Search } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Email } from '@/lib/gmail';
-import { TriageStateBadge } from '@/components/TriageActionBar';
-import { TriageQueueLedger } from '@/components/TriageQueueLedger';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,15 +22,12 @@ interface Props {
   onLoadMore?: () => void;
   onRefresh?: () => void;
   primary?: boolean;
-  /** Show triage queue ledger above the message list. */
-  triageLedger?: boolean;
 }
 
 const LABEL_NAMES: Record<string, string> = {
   inbox: 'Inbox',
   starred: 'Starred',
   sent: 'Sent',
-  triage: 'Triage',
 };
 
 export function EmailList({
@@ -46,7 +41,6 @@ export function EmailList({
   onLoadMore,
   onRefresh,
   primary,
-  triageLedger,
 }: Props) {
   const [focusIdx, setFocusIdx] = useState(-1);
   const itemsRef = useRef<HTMLButtonElement[]>([]);
@@ -151,14 +145,6 @@ export function EmailList({
             press <kbd>/</kbd>
           </span>
         </div>
-        {triageLedger ? (
-          <div>
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-              Triage queue
-            </p>
-            <TriageQueueLedger />
-          </div>
-        ) : null}
       </div>
 
       <div className="flex-1 overflow-y-auto" tabIndex={-1}>
@@ -223,7 +209,6 @@ export function EmailList({
                       </span>
                     </span>
                     <span className="flex shrink-0 items-center gap-2 ml-2">
-                      <TriageStateBadge emailId={email.id} />
                       <span className="text-xs text-[var(--text-muted)]">
                         {new Date(email.date).toLocaleDateString()}
                       </span>

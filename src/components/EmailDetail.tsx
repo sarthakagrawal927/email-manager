@@ -6,8 +6,6 @@ import { trackCoreAction } from '@/lib/analytics';
 import { wrapEmailHtml } from '@/lib/email-html';
 import { formatEmailDate } from '@/lib/format-date';
 import type { Email } from '@/lib/gmail';
-import { triageItemForEmail } from '@/lib/triage';
-import { TriageActionBar, TriageStateBadge } from '@/components/TriageActionBar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -18,30 +16,9 @@ interface Props {
   showBack?: boolean;
 }
 
-function priorityTone(priority: string) {
-  if (priority === 'high') return 'destructive' as const;
-  if (priority === 'medium') return 'secondary' as const;
-  return 'outline' as const;
-}
-
 export function EmailDetail({ email, onBack, showBack = true }: Props) {
   const [acting, setActing] = useState(false);
 
-  const triageInput = useMemo(() => {
-    const item = triageItemForEmail(email);
-    return {
-      emailId: email.id,
-      emailSubject: email.subject,
-      from: email.from,
-      brief:
-        item?.brief ??
-        [`Subject: ${email.subject}`, `From: ${email.from}`, `Context: ${email.snippet}`].join(
-          '\n'
-        ),
-    };
-  }, [email]);
-
-  const triageItem = useMemo(() => triageItemForEmail(email), [email]);
   const sentAt = useMemo(() => formatEmailDate(email.date), [email.date]);
   const emailDocument = useMemo(
     () => wrapEmailHtml(email.body, email.snippet),
@@ -121,7 +98,6 @@ export function EmailDetail({ email, onBack, showBack = true }: Props) {
 
       <div className="shrink-0 space-y-4 border-b border-[var(--border)]/80 px-5 py-5">
         <div className="flex flex-wrap items-center gap-2">
-          <TriageStateBadge emailId={email.id} />
           {email.labelIds.includes('UNREAD') ? <Badge>Unread</Badge> : null}
         </div>
 
@@ -142,33 +118,6 @@ export function EmailDetail({ email, onBack, showBack = true }: Props) {
             </time>
           </div>
         </div>
-
-        {triageItem ? (
-          <div className="rounded-xl border border-[var(--accent)]/20 border-l-4 border-l-[var(--accent)] bg-[var(--accent-soft)] px-4 py-3.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={priorityTone(triageItem.priority)}>{triageItem.priority}</Badge>
-              <span className="text-xs font-medium text-[var(--text)]">
-                {triageItem.queue === 'respond'
-                  ? 'Needs response'
-                  : triageItem.queue === 'unsubscribe'
-                    ? 'Unsubscribe candidate'
-                    : triageItem.queue === 'reference'
-                      ? 'Reference'
-                      : 'Quick review'}
-              </span>
-            </div>
-            <p className="mt-2 text-sm text-[var(--text)]">
-              <span className="font-medium text-[var(--text-muted)]">Why · </span>
-              {triageItem.reason}
-            </p>
-            <p className="mt-1 text-sm text-[var(--text)]">
-              <span className="font-medium text-[var(--text-muted)]">Suggested · </span>
-              {triageItem.action}
-            </p>
-          </div>
-        ) : null}
-
-        <TriageActionBar input={triageInput} />
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden bg-[var(--bg-elevated)]/40 p-4">

@@ -12,17 +12,13 @@ import { EmailDetail } from '@/components/EmailDetail';
 import { Subscriptions } from '@/components/Subscriptions';
 import { Analytics } from '@/components/Analytics';
 import { SemanticSearch } from '@/components/SemanticSearch';
-import { TriageQueues } from '@/components/TriageQueues';
-import { TriageSession } from '@/components/TriageSession';
 import { GmailFilterBuilder } from '@/components/GmailFilterBuilder';
 import { WeeklyDigestView } from '@/components/WeeklyDigestView';
 import { WorkSurface } from '@/components/WorkSurface';
-import { TriageActionsProvider } from '@/components/TriageActionsProvider';
 import { MailboxStoreProvider, useMailboxStore } from '@/components/MailboxStoreProvider';
 import type { Email } from '@/lib/gmail';
 
 type View =
-  | 'triage'
   | 'inbox'
   | 'starred'
   | 'sent'
@@ -33,7 +29,6 @@ type View =
   | 'filters';
 
 const VIEWS = new Set<string>([
-  'triage',
   'inbox',
   'starred',
   'sent',
@@ -45,12 +40,12 @@ const VIEWS = new Set<string>([
 ]);
 
 const HASH_ALIASES: Record<string, View> = {
-  today: 'triage',
+  today: 'inbox',
+  triage: 'inbox',
   trash: 'inbox',
 };
 
 const LABEL_MAP: Record<string, string> = {
-  triage: 'INBOX',
   inbox: 'INBOX',
   starred: 'STARRED',
   sent: 'SENT',
@@ -114,7 +109,6 @@ function AuthenticatedHome({
   const [search, setSearch] = useState('');
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [triageSession, setTriageSession] = useState(false);
 
   const fetchingRef = useRef(false);
   const fetchSeqRef = useRef(0);
@@ -213,7 +207,7 @@ function AuthenticatedHome({
     [view, search]
   );
 
-  const usesCachedInbox = (view === 'triage' || view === 'inbox') && !search;
+  const usesCachedInbox = view === 'inbox' && !search;
 
   useEffect(() => {
     setSelected(null);
@@ -236,18 +230,6 @@ function AuthenticatedHome({
 
     if (LABEL_MAP[view]) fetchEmails();
   }, [view, search, usesCachedInbox, mailbox.emails, mailbox.ready, mailbox.syncing, fetchEmails]);
-
-  // Keyboard triage session lives on the Triage queue only — navigating away ends it.
-  useEffect(() => {
-    if (view !== 'triage') setTriageSession(false);
-  }, [view]);
-
-  const startTriageSession = useCallback(() => {
-    setSelected(null);
-    setView('triage');
-    setTriageSession(true);
-    trackCoreAction('triage_session_started');
-  }, [setView]);
 
   const openDigestContext = useCallback(
     (kind: 'sender' | 'thread', value: string, subject?: string) => {
@@ -304,38 +286,63 @@ function AuthenticatedHome({
         </header>
 
         <main className="flex flex-1 overflow-hidden">
-          <TriageActionsProvider>
-            {view === 'subscriptions' ? (
-              <Subscriptions />
-            ) : view === 'analytics' ? (
-              <Analytics />
-            ) : view === 'digest' ? (
-              <WeeklyDigestView
-                onOpenSender={(email) => openDigestContext('sender', email)}
-                onOpenThread={(_threadId, subject) => openDigestContext('thread', '', subject)}
-              />
-            ) : view === 'filters' ? (
-              <GmailFilterBuilder />
-            ) : view === 'triage' && triageSession ? (
-              <TriageSession
-                emails={emails}
-                loading={loading}
-                onExit={() => setTriageSession(false)}
-              />
-            ) : view === 'triage' ? (
+          {view === 'subscriptions' ? (
+            <Subscriptions />
+          ) : view === 'analytics' ? (
+            <Analytics />
+          ) : view === 'digest' ? (
+            <WeeklyDigestView
+              onOpenSender={(email) => openDigestContext('sender', email)}
+              onOpenThread={(_threadId, subject) => openDigestContext('thread', '', subject)}
+            />
+          ) : view === 'filters' ? (
+            <GmailFilterBuilder />
+          ) : view === 'sent' ? (
+            <WorkSurface
+              hasSelection={Boolean(selected)}
+              list={<SentMailView selectedId={selected?.id} onSelect={handleSelectEmail} />}
+              detail={
+                selected ? (
+                  <EmailDetail email={selected} onBack={() => setSelected(null)} showBack />
+                ) : null
+              }
+            />
+          ) : view === 'inbox' ? (
+            error ? (
+              <div className="flex flex-1 items-center justify-center">
+                <div className="max-w-sm space-y-4 px-6 text-center">
+                  <p className="text-sm text-[var(--text-muted)]">{error}</p>
+                  <button
+                    onClick={refreshMailboxView}
+                    className="cursor-pointer rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)]"
+                  >
+                    Try again
+                  </button>
+                </div>
+              </div>
+            ) : (
               <WorkSurface
                 hasSelection={Boolean(selected)}
                 list={
-                  <TriageQueues
+                  <EmailList
                     emails={emails}
                     loading={loading}
-                    error={error}
+                    search={search}
+                    label={view}
                     selectedId={selected?.id}
+                    onSearchChange={setSearch}
                     onSelect={handleSelectEmail}
                     onRefresh={refreshMailboxView}
-                    onOpenInbox={() => setView('inbox')}
-                    onNavigateFilters={() => setView('filters')}
-                    onStartSession={startTriageSession}
+                    onLoadMore={
+                      usesCachedInbox
+                        ? mailbox.inboxExhausted
+                          ? undefined
+                          : loadMoreInbox
+                        : nextPageToken
+                          ? loadMoreInbox
+                          : undefined
+                    }
+                    primary={isPrimaryView}
                   />
                 }
                 detail={
@@ -344,93 +351,37 @@ function AuthenticatedHome({
                   ) : null
                 }
               />
-            ) : view === 'sent' ? (
-              <WorkSurface
-                hasSelection={Boolean(selected)}
-                list={<SentMailView selectedId={selected?.id} onSelect={handleSelectEmail} />}
-                detail={
-                  selected ? (
-                    <EmailDetail email={selected} onBack={() => setSelected(null)} showBack />
-                  ) : null
-                }
-              />
-            ) : view === 'inbox' ? (
-              error ? (
-                <div className="flex flex-1 items-center justify-center">
-                  <div className="max-w-sm space-y-4 px-6 text-center">
-                    <p className="text-sm text-[var(--text-muted)]">{error}</p>
-                    <button
-                      onClick={refreshMailboxView}
-                      className="cursor-pointer rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)]"
-                    >
-                      Try again
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <WorkSurface
-                  hasSelection={Boolean(selected)}
-                  list={
-                    <EmailList
-                      emails={emails}
-                      loading={loading}
-                      search={search}
-                      label={view}
-                      selectedId={selected?.id}
-                      onSearchChange={setSearch}
-                      onSelect={handleSelectEmail}
-                      onRefresh={refreshMailboxView}
-                      onLoadMore={
-                        usesCachedInbox
-                          ? mailbox.inboxExhausted
-                            ? undefined
-                            : loadMoreInbox
-                          : nextPageToken
-                            ? loadMoreInbox
-                            : undefined
-                      }
-                      primary={isPrimaryView}
-                      triageLedger
-                    />
-                  }
-                  detail={
-                    selected ? (
-                      <EmailDetail email={selected} onBack={() => setSelected(null)} showBack />
-                    ) : null
-                  }
-                />
-              )
-            ) : selected ? (
-              <EmailDetail email={selected} onBack={() => setSelected(null)} />
-            ) : view === 'search' ? (
-              <SemanticSearch onSelect={handleSelectEmail} />
-            ) : error ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center space-y-4 max-w-sm px-6">
-                  <p className="text-sm text-[var(--text-muted)]">{error}</p>
-                  <button
-                    onClick={refreshMailboxView}
-                    className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition cursor-pointer text-sm font-medium"
-                  >
-                    Try again
-                  </button>
-                </div>
+            )
+          ) : selected ? (
+            <EmailDetail email={selected} onBack={() => setSelected(null)} />
+          ) : view === 'search' ? (
+            <SemanticSearch onSelect={handleSelectEmail} />
+          ) : error ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center space-y-4 max-w-sm px-6">
+                <p className="text-sm text-[var(--text-muted)]">{error}</p>
+                <button
+                  onClick={refreshMailboxView}
+                  className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition cursor-pointer text-sm font-medium"
+                >
+                  Try again
+                </button>
               </div>
-            ) : (
-              <EmailList
-                emails={emails}
-                loading={loading}
-                search={search}
-                label={view}
-                selectedId={null}
-                onSearchChange={setSearch}
-                onSelect={handleSelectEmail}
-                onRefresh={refreshMailboxView}
-                onLoadMore={nextPageToken ? loadMoreInbox : undefined}
-                primary={isPrimaryView}
-              />
-            )}
-          </TriageActionsProvider>
+            </div>
+          ) : (
+            <EmailList
+              emails={emails}
+              loading={loading}
+              search={search}
+              label={view}
+              selectedId={null}
+              onSearchChange={setSearch}
+              onSelect={handleSelectEmail}
+              onRefresh={refreshMailboxView}
+              onLoadMore={nextPageToken ? loadMoreInbox : undefined}
+              primary={isPrimaryView}
+            />
+          )}
         </main>
       </div>
     </div>

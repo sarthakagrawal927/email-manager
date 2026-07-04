@@ -13,7 +13,6 @@ import {
   Send,
   Sparkles,
   Star,
-  Zap,
 } from 'lucide-react';
 import { useEffect } from 'react';
 
@@ -35,7 +34,6 @@ const browseNav = [
 ];
 
 const toolsNav = [
-  { id: 'triage', label: 'Triage', icon: Zap },
   { id: 'subscriptions', label: 'Subscriptions', icon: Mail },
   { id: 'digest', label: 'Digest', icon: Newspaper },
   { id: 'filters', label: 'Recipe studio', icon: Filter },
@@ -59,7 +57,7 @@ function NavGroup({
   onNavigate,
 }: {
   label?: string;
-  items: { id: string; label: string; icon: typeof Zap }[];
+  items: { id: string; label: string; icon: typeof Inbox }[];
   view: string;
   onNavigate: (id: string) => void;
 }) {

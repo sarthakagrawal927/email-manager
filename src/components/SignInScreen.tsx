@@ -49,7 +49,7 @@ export function SignInScreen() {
 
           <div className="space-y-4">
             <h1 className="max-w-xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
-              Triage Gmail with clarity,
+              Search and understand Gmail,
               <span className="text-[var(--accent)]"> not cloud uploads.</span>
             </h1>
             <p className="max-w-lg text-base leading-relaxed text-[var(--text-muted)] text-pretty">
