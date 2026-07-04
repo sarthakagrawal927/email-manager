@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { SignInScreen } from '@/components/SignInScreen';
 import { MobileMenuButton, Sidebar } from '@/components/Sidebar';
 import { EmailList } from '@/components/EmailList';
+import { SentMailView } from '@/components/SentMailView';
 import { EmailDetail } from '@/components/EmailDetail';
 import { Subscriptions } from '@/components/Subscriptions';
 import { Analytics } from '@/components/Analytics';
@@ -217,6 +218,14 @@ function AuthenticatedHome({
   useEffect(() => {
     setSelected(null);
 
+    if (view === 'sent') {
+      setEmails([]);
+      setLoading(false);
+      setError(null);
+      setNextPageToken(null);
+      return;
+    }
+
     if (usesCachedInbox) {
       setEmails(mailbox.emails);
       setLoading(!mailbox.ready || (mailbox.syncing && mailbox.emails.length === 0));
@@ -301,10 +310,10 @@ function AuthenticatedHome({
             ) : view === 'analytics' ? (
               <Analytics />
             ) : view === 'digest' ? (
-                <WeeklyDigestView
-                  onOpenSender={(email) => openDigestContext('sender', email)}
-                  onOpenThread={(_threadId, subject) => openDigestContext('thread', '', subject)}
-                />
+              <WeeklyDigestView
+                onOpenSender={(email) => openDigestContext('sender', email)}
+                onOpenThread={(_threadId, subject) => openDigestContext('thread', '', subject)}
+              />
             ) : view === 'filters' ? (
               <GmailFilterBuilder />
             ) : view === 'triage' && triageSession ? (
@@ -329,6 +338,16 @@ function AuthenticatedHome({
                     onStartSession={startTriageSession}
                   />
                 }
+                detail={
+                  selected ? (
+                    <EmailDetail email={selected} onBack={() => setSelected(null)} showBack />
+                  ) : null
+                }
+              />
+            ) : view === 'sent' ? (
+              <WorkSurface
+                hasSelection={Boolean(selected)}
+                list={<SentMailView selectedId={selected?.id} onSelect={handleSelectEmail} />}
                 detail={
                   selected ? (
                     <EmailDetail email={selected} onBack={() => setSelected(null)} showBack />

@@ -84,6 +84,12 @@ export async function getIndexedCount(): Promise<number> {
   return all.filter((e) => e.embedding).length;
 }
 
+export async function getPendingIndexCount(): Promise<number> {
+  const db = await getDB();
+  const all = await db.getAll('emails');
+  return all.filter((e) => !e.embedding).length;
+}
+
 export async function getInboxSyncMeta(): Promise<InboxSyncMeta> {
   const db = await getDB();
   const stored = await db.get('meta', INBOX_SYNC_META_KEY);

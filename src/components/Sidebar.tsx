@@ -129,7 +129,9 @@ function MailboxSyncPanel() {
           <p
             className={cn(
               'mt-0.5 truncate text-[10px]',
-              isStale && !syncing ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--text-muted)]'
+              isStale && !syncing
+                ? 'text-amber-600 dark:text-amber-400'
+                : 'text-[var(--text-muted)]'
             )}
           >
             {syncLabel}

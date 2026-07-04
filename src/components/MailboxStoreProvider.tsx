@@ -16,13 +16,11 @@ import {
   getIndexedCount,
   getInboxEmailsSorted,
   getInboxSyncMeta,
+  getPendingIndexCount,
   type StoredEmail,
 } from '@/lib/db';
-import {
-  DEFAULT_INBOX_SYNC,
-  ensureInboxEmails,
-  refreshInboxHead,
-} from '@/lib/inbox-sync';
+import { indexEmailsForSearch, SEMANTIC_INDEX_LIMIT } from '@/lib/email-index';
+import { DEFAULT_INBOX_SYNC, ensureInboxEmails, refreshInboxHead } from '@/lib/inbox-sync';
 import { loadSubscriptionSenders } from '@/lib/subscription-senders';
 import { isInboxStale } from '@/lib/sync-age';
 
@@ -30,6 +28,8 @@ interface MailboxStoreContextValue {
   emails: StoredEmail[];
   total: number;
   indexed: number;
+  pendingIndex: number;
+  indexing: boolean;
   syncing: boolean;
   progress: string;
   lastSyncedAt: string | null;
@@ -39,6 +39,7 @@ interface MailboxStoreContextValue {
   ready: boolean;
   refresh: () => Promise<void>;
   syncInbox: (opts?: { target?: number; metadataOnly?: boolean }) => Promise<void>;
+  indexForSearch: () => Promise<void>;
   refreshInbox: () => Promise<void>;
   ensureFreshInbox: () => Promise<void>;
   ensureInboxCount: (target: number, opts?: { metadataOnly?: boolean }) => Promise<StoredEmail[]>;
@@ -62,6 +63,8 @@ export function MailboxStoreProvider({ children }: { children: ReactNode }) {
   const [emails, setEmails] = useState<StoredEmail[]>([]);
   const [total, setTotal] = useState(0);
   const [indexed, setIndexed] = useState(0);
+  const [pendingIndex, setPendingIndex] = useState(0);
+  const [indexing, setIndexing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState('');
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
@@ -72,10 +75,11 @@ export function MailboxStoreProvider({ children }: { children: ReactNode }) {
   const syncLockRef = useRef(false);
 
   const refresh = useCallback(async () => {
-    const [sorted, t, i, senders, meta] = await Promise.all([
+    const [sorted, t, i, pending, senders, meta] = await Promise.all([
       getInboxEmailsSorted(),
       getEmailCount(),
       getIndexedCount(),
+      getPendingIndexCount(),
       loadSubscriptionSenders(),
       getInboxSyncMeta(),
     ]);
@@ -83,6 +87,7 @@ export function MailboxStoreProvider({ children }: { children: ReactNode }) {
     setEmails(sorted);
     setTotal(t);
     setIndexed(i);
+    setPendingIndex(pending);
     setSubscriptionSenders(senders);
     setLastSyncedAt(meta.lastSyncedAt);
     setInboxExhausted(meta.exhausted);
@@ -155,6 +160,32 @@ export function MailboxStoreProvider({ children }: { children: ReactNode }) {
     await runRefreshHead();
   }, [runRefreshHead]);
 
+  const indexForSearch = useCallback(async () => {
+    if (syncLockRef.current) return;
+    syncLockRef.current = true;
+    setIndexing(true);
+    setProgress('Preparing search index…');
+    try {
+      await indexEmailsForSearch({
+        limit: SEMANTIC_INDEX_LIMIT,
+        onProgress: (message) => {
+          if (mountedRef.current) setProgress(message);
+        },
+      });
+      if (mountedRef.current) {
+        setProgress('');
+        await refresh();
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Indexing failed';
+      if (mountedRef.current) setProgress(`Error: ${message}`);
+      throw err;
+    } finally {
+      syncLockRef.current = false;
+      if (mountedRef.current) setIndexing(false);
+    }
+  }, [refresh]);
+
   const ensureFreshInbox = useCallback(async () => {
     const meta = await getInboxSyncMeta();
     const count = await getEmailCount();
@@ -212,6 +243,8 @@ export function MailboxStoreProvider({ children }: { children: ReactNode }) {
       emails,
       total,
       indexed,
+      pendingIndex,
+      indexing,
       syncing,
       progress,
       lastSyncedAt,
@@ -221,6 +254,7 @@ export function MailboxStoreProvider({ children }: { children: ReactNode }) {
       ready,
       refresh,
       syncInbox,
+      indexForSearch,
       refreshInbox,
       ensureFreshInbox,
       ensureInboxCount,
@@ -230,6 +264,8 @@ export function MailboxStoreProvider({ children }: { children: ReactNode }) {
       emails,
       total,
       indexed,
+      pendingIndex,
+      indexing,
       syncing,
       progress,
       lastSyncedAt,
@@ -239,6 +275,7 @@ export function MailboxStoreProvider({ children }: { children: ReactNode }) {
       ready,
       refresh,
       syncInbox,
+      indexForSearch,
       refreshInbox,
       ensureFreshInbox,
       ensureInboxCount,

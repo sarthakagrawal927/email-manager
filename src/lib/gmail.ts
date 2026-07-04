@@ -46,6 +46,8 @@ export interface Email {
   labelIds: string[];
   unsubscribeLink: string | null;
   unsubscribePost: boolean;
+  /** Present on sent-mail fetches when thread reply status is resolved. */
+  replyStatus?: 'awaiting' | 'replied';
 }
 
 function decodeBase64Url(data: string): string {
@@ -183,6 +185,27 @@ export async function listEmails(
   }
 
   return { emails, nextPageToken: listData.nextPageToken ?? null };
+}
+
+export async function getThread(
+  accessToken: string,
+  threadId: string,
+  options?: { metadataOnly?: boolean }
+) {
+  const format = options?.metadataOnly === false ? 'full' : 'metadata';
+  const params = new URLSearchParams({ format });
+  if (format === 'metadata') {
+    for (const h of ['Subject', 'From', 'To', 'Date']) {
+      params.append('metadataHeaders', h);
+    }
+  }
+
+  const data = await gmailFetch<{ messages?: unknown[] }>(
+    accessToken,
+    `/threads/${threadId}?${params}`
+  );
+  const messages = (data.messages ?? []).map((msg) => parseMessage(msg));
+  return { id: threadId, messages };
 }
 
 export async function getEmail(

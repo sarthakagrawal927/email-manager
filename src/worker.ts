@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 
 import { createAuth, isGoogleOAuthConfigured, type AuthEnv } from './lib/auth';
 import { getGmailAccessToken } from './lib/get-access-token';
-import { getEmail, listEmails } from './lib/gmail';
+import { getEmail, getThread, listEmails } from './lib/gmail';
+import { classifyThreadReplyStatus } from './lib/sent-reply';
 import { SECURITY_HEADERS, withSecurityHeaders } from './lib/security-headers';
 import { withTiming } from './lib/timing';
 
@@ -89,6 +90,7 @@ app.get('/api/emails', async (c) => {
   const maxResultsRaw = Number(searchParams.get('maxResults'));
   const maxResults = maxResultsRaw > 0 && maxResultsRaw <= 500 ? maxResultsRaw : undefined;
   const metadataOnly = searchParams.get('metadataOnly') === 'true';
+  const withReplyStatus = searchParams.get('replyStatus') === 'true';
 
   try {
     const result = await listEmails(token, {
@@ -98,6 +100,34 @@ app.get('/api/emails', async (c) => {
       maxResults,
       metadataOnly,
     });
+
+    if (withReplyStatus && label === 'SENT' && result.emails.length > 0) {
+      const session = await createAuth(c.env).api.getSession({ headers: c.req.raw.headers });
+      const userEmail = session?.user?.email;
+      if (userEmail) {
+        const threadIds = [...new Set(result.emails.map((email) => email.threadId))];
+        const statusByThread = new Map<string, 'awaiting' | 'replied'>();
+        const BATCH = 10;
+        for (let i = 0; i < threadIds.length; i += BATCH) {
+          const batch = threadIds.slice(i, i + BATCH);
+          await Promise.all(
+            batch.map(async (threadId) => {
+              try {
+                const thread = await getThread(token, threadId, { metadataOnly: true });
+                statusByThread.set(threadId, classifyThreadReplyStatus(thread.messages, userEmail));
+              } catch {
+                statusByThread.set(threadId, 'awaiting');
+              }
+            })
+          );
+        }
+        result.emails = result.emails.map((email) => ({
+          ...email,
+          replyStatus: statusByThread.get(email.threadId) ?? 'awaiting',
+        }));
+      }
+    }
+
     return c.json(result);
   } catch (err: unknown) {
     const error = err as { message?: string; status?: number; code?: number };

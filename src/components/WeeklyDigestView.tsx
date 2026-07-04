@@ -44,7 +44,9 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
       const localEmails = await getInboxEmailsSorted();
       if (localEmails.length === 0) {
         setDigest(null);
-        setError('No inbox emails in your local cache yet. Use Sync in the sidebar, then try again.');
+        setError(
+          'No inbox emails in your local cache yet. Use Sync in the sidebar, then try again.'
+        );
         return;
       }
 
@@ -109,8 +111,8 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
         {!digest && !error && !loading && (
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
             <p className="max-w-md text-sm text-[var(--text-muted)]">
-              Hit generate to refresh your local inbox (if needed) and summarize the past week.
-              This only sees mail you have synced — not your entire Gmail history.
+              Hit generate to refresh your local inbox (if needed) and summarize the past week. This
+              only sees mail you have synced — not your entire Gmail history.
             </p>
             <button
               type="button"
@@ -182,8 +184,8 @@ export function WeeklyDigestView({ onOpenSender, onOpenThread }: Props) {
                 Threads worth another look
               </h2>
               <p className="mt-1 text-xs text-[var(--text-muted)]">
-                Starred threads or conversations with 4+ messages that have gone quiet for 2+
-                weeks in your synced mail.
+                Starred threads or conversations with 4+ messages that have gone quiet for 2+ weeks
+                in your synced mail.
               </p>
               {digest.threadsToRevisit.length === 0 ? (
                 <p className="mt-3 text-sm text-[var(--text-muted)]">Nothing flagged right now.</p>

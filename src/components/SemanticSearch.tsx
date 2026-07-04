@@ -3,8 +3,7 @@
 import { Brain, RefreshCw, Search, Sparkles } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import type { Email } from '@/lib/gmail';
-import { storeEmail, getEmailsWithoutEmbedding } from '@/lib/db';
-import { embed, prepareEmailText } from '@/lib/embeddings';
+import { SEMANTIC_INDEX_LIMIT } from '@/lib/email-index';
 import { useMailboxStore } from '@/components/MailboxStoreProvider';
 import { semanticSearch, type SearchResult } from '@/lib/semantic-search';
 import { Badge } from '@/components/ui/badge';
@@ -20,13 +19,21 @@ interface Props {
 }
 
 export function SemanticSearch({ onSelect }: Props) {
-  const { total, indexed, syncing, progress, syncInbox, refresh } = useMailboxStore();
+  const {
+    total,
+    indexed,
+    pendingIndex,
+    syncing,
+    indexing,
+    progress,
+    syncInbox,
+    indexForSearch,
+    refresh,
+  } = useMailboxStore();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [indexing, setIndexing] = useState(false);
-  const [indexProgress, setIndexProgress] = useState('');
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -44,40 +51,24 @@ export function SemanticSearch({ onSelect }: Props) {
     return () => clearTimeout(timer);
   }, [query, indexed]);
 
-  async function handleSync() {
-    setIndexing(true);
-    setIndexProgress('');
+  async function handleIndex() {
     try {
-      await syncInbox();
-
-      const unembedded = await getEmailsWithoutEmbedding();
-      if (unembedded.length > 0) {
-        if (mountedRef.current) setIndexProgress('Loading AI model...');
-        await embed('warmup');
-
-        for (let i = 0; i < unembedded.length; i++) {
-          if (!mountedRef.current) break;
-          setIndexProgress(`Indexing ${i + 1} of ${unembedded.length}...`);
-          const text = prepareEmailText(unembedded[i]);
-          const embedding = await embed(text);
-          await storeEmail({ ...unembedded[i], embedding });
-        }
-      }
-
-      if (mountedRef.current) {
-        setIndexProgress('');
-        await refresh();
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Sync failed';
-      if (mountedRef.current) setIndexProgress(`Error: ${message}`);
-    } finally {
-      if (mountedRef.current) setIndexing(false);
+      await indexForSearch();
+      if (mountedRef.current) await refresh();
+    } catch {
+      // progress message already set in provider
     }
   }
 
-  const busy = syncing || indexing;
-  const statusMessage = indexProgress || progress;
+  async function handleSyncAndIndex() {
+    try {
+      await syncInbox({ target: SEMANTIC_INDEX_LIMIT, metadataOnly: false });
+      await indexForSearch();
+      if (mountedRef.current) await refresh();
+    } catch {
+      // progress message already set in provider
+    }
+  }
 
   async function performSearch(q: string) {
     setSearching(true);
@@ -90,7 +81,7 @@ export function SemanticSearch({ onSelect }: Props) {
       if (mountedRef.current) {
         setResults([]);
         setSearchError(
-          'Search failed. The local AI model may not have loaded — try syncing again.'
+          'Search failed. The local AI model may not have loaded — try indexing again.'
         );
       }
     } finally {
@@ -98,7 +89,12 @@ export function SemanticSearch({ onSelect }: Props) {
     }
   }
 
-  const indexPct = total > 0 ? Math.round((indexed / total) * 100) : 0;
+  const busy = syncing || indexing;
+  const statusMessage = progress;
+  const indexPct =
+    indexed > 0 ? Math.round((indexed / Math.min(total, SEMANTIC_INDEX_LIMIT)) * 100) : 0;
+  const needsIndexOnly = total > 0 && indexed === 0 && pendingIndex > 0;
+  const needsSync = total === 0;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-[var(--bg-card)]/30">
@@ -106,18 +102,35 @@ export function SemanticSearch({ onSelect }: Props) {
         title="Semantic search"
         description="Query by meaning — embeddings run entirely in your browser."
         actions={
-          <Button type="button" onClick={handleSync} disabled={busy}>
-            <RefreshCw className={cn('h-4 w-4', busy && 'animate-spin')} aria-hidden />
-            {busy ? 'Syncing…' : 'Sync & Index'}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {needsSync ? (
+              <Button type="button" onClick={handleSyncAndIndex} disabled={busy}>
+                <RefreshCw className={cn('h-4 w-4', busy && 'animate-spin')} aria-hidden />
+                {busy ? 'Working…' : 'Sync & Index'}
+              </Button>
+            ) : needsIndexOnly ? (
+              <Button type="button" onClick={handleIndex} disabled={busy}>
+                <Brain className={cn('h-4 w-4', busy && 'animate-pulse')} aria-hidden />
+                {busy ? 'Indexing…' : 'Index for search'}
+              </Button>
+            ) : (
+              <Button type="button" variant="secondary" onClick={handleIndex} disabled={busy}>
+                <RefreshCw className={cn('h-4 w-4', busy && 'animate-spin')} aria-hidden />
+                {busy ? 'Indexing…' : 'Re-index'}
+              </Button>
+            )}
+          </div>
         }
         meta={
           <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
             <Badge variant="secondary">
               <Brain className="mr-1 inline h-3 w-3" aria-hidden />
-              {indexed} / {total} indexed
+              {indexed} indexed for search
             </Badge>
-            {total > 0 ? <Badge variant="outline">{indexPct}% ready</Badge> : null}
+            {total > indexed ? (
+              <Badge variant="outline">{total.toLocaleString()} cached locally</Badge>
+            ) : null}
+            {indexed > 0 ? <Badge variant="outline">{indexPct}% ready</Badge> : null}
             {statusMessage ? <span>{statusMessage}</span> : null}
             {searching && !statusMessage ? <Spinner className="h-4 w-4" /> : null}
           </div>
@@ -135,7 +148,9 @@ export function SemanticSearch({ onSelect }: Props) {
             placeholder={
               indexed > 0
                 ? 'Try: "lease renewal from last spring" or "flight confirmation"'
-                : 'Sync emails first to enable semantic search'
+                : needsIndexOnly
+                  ? 'Index cached mail to enable semantic search'
+                  : 'Sync inbox first to enable semantic search'
             }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -162,13 +177,27 @@ export function SemanticSearch({ onSelect }: Props) {
         ) : results.length === 0 ? (
           <EmptyState
             icon={Brain}
-            title={indexed === 0 ? 'Index your inbox first' : 'Search by meaning'}
-            description={
-              indexed === 0
-                ? 'Sync up to 500 inbox messages and generate on-device embeddings.'
-                : 'Describe what you remember — Kinetic ranks results by cosine similarity.'
+            title={
+              needsIndexOnly
+                ? 'Cached mail needs indexing'
+                : indexed === 0
+                  ? 'Sync inbox to search'
+                  : 'Search by meaning'
             }
-            action={indexed === 0 ? { label: 'Sync & Index', onClick: handleSync } : undefined}
+            description={
+              needsIndexOnly
+                ? `${total.toLocaleString()} emails are cached locally (often from Analytics), but semantic search needs separate on-device embeddings. Index up to ${SEMANTIC_INDEX_LIMIT} recent messages to start searching.`
+                : indexed === 0
+                  ? `Sync up to ${SEMANTIC_INDEX_LIMIT} inbox messages, then generate embeddings locally.`
+                  : 'Describe what you remember — Kinetic ranks results by cosine similarity.'
+            }
+            action={
+              needsIndexOnly
+                ? { label: 'Index for search', onClick: handleIndex }
+                : indexed === 0
+                  ? { label: 'Sync & Index', onClick: handleSyncAndIndex }
+                  : undefined
+            }
           />
         ) : (
           <div className="divide-y divide-[var(--border)]/70">
