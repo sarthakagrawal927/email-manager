@@ -18,19 +18,10 @@ import { WorkSurface } from '@/components/WorkSurface';
 import { MailboxStoreProvider, useMailboxStore } from '@/components/MailboxStoreProvider';
 import type { Email } from '@/lib/gmail';
 
-type View =
-  | 'inbox'
-  | 'starred'
-  | 'sent'
-  | 'subscriptions'
-  | 'analytics'
-  | 'search'
-  | 'digest'
-  | 'filters';
+type View = 'inbox' | 'sent' | 'subscriptions' | 'analytics' | 'search' | 'digest' | 'filters';
 
 const VIEWS = new Set<string>([
   'inbox',
-  'starred',
   'sent',
   'subscriptions',
   'analytics',
@@ -43,11 +34,11 @@ const HASH_ALIASES: Record<string, View> = {
   today: 'inbox',
   triage: 'inbox',
   trash: 'inbox',
+  starred: 'inbox',
 };
 
 const LABEL_MAP: Record<string, string> = {
   inbox: 'INBOX',
-  starred: 'STARRED',
   sent: 'SENT',
 };
 

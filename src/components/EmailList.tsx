@@ -26,7 +26,6 @@ interface Props {
 
 const LABEL_NAMES: Record<string, string> = {
   inbox: 'Inbox',
-  starred: 'Starred',
   sent: 'Sent',
 };
 

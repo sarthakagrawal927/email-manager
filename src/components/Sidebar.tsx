@@ -12,7 +12,6 @@ import {
   Search,
   Send,
   Sparkles,
-  Star,
 } from 'lucide-react';
 import { useEffect } from 'react';
 
@@ -28,10 +27,7 @@ const primaryNav = [
   { id: 'search', label: 'Semantic search', icon: Search },
 ];
 
-const browseNav = [
-  { id: 'starred', label: 'Starred', icon: Star },
-  { id: 'sent', label: 'Sent', icon: Send },
-];
+const browseNav = [{ id: 'sent', label: 'Sent', icon: Send }];
 
 const toolsNav = [
   { id: 'subscriptions', label: 'Subscriptions', icon: Mail },
