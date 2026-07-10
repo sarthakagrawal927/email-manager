@@ -175,8 +175,12 @@ Last updated: 2026-07-04
 
 ### Planned
 
-1. IndexedDB `digests` store with 90-day retention (`src/lib/db.ts`; see `docs/plans/2026-06-04-email-memories-digest.md`).
-2. Add e2e to `ci.yml` for signed-in flows (currently manual OAuth only).
+1. ~~IndexedDB `digests` store with 90-day retention.~~ **Paused** — maintenance mode; reopen only for validated digest usage.
+2. ~~Add e2e to `ci.yml` for signed-in flows.~~ **Paused** — OAuth remains operator/manual-only.
+
+### Closure
+
+- **Finish-and-pause (2026-07-10):** shipped keyboard triage, digest verification, and error handling are the maintained baseline. No new feature work is planned.
 
 ### Deferred
 
