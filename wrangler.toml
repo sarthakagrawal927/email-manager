@@ -11,6 +11,10 @@ assets = { directory = "dist", binding = "ASSETS", not_found_handling = "none" }
 [placement]
 mode = "smart"
 
+routes = [
+  { pattern = "mail.sassmaker.com/*", zone_name = "sassmaker.com" }
+]
+
 [observability]
 enabled = true
 head_sampling_rate = 0.1
@@ -26,7 +30,7 @@ migrations_dir = "migrations"
 
 [vars]
 NODE_ENV = "production"
-BETTER_AUTH_URL = "https://email-manager.sarthakagrawal927.workers.dev"
+BETTER_AUTH_URL = "https://mail.sassmaker.com"
 
 [dev]
 port = 8787
