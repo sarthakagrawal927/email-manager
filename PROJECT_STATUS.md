@@ -48,7 +48,7 @@ Last updated: 2026-07-04
 
 **OAuth callbacks (must register in Google Cloud Console):**
 - `http://localhost:8787/api/auth/callback/google`
-- `https://email-manager.sarthakagrawal927.workers.dev/api/auth/callback/google`
+- `https://mail.sassmaker.com/api/auth/callback/google`
 
 ## Timeline
 
@@ -62,7 +62,7 @@ Last updated: 2026-07-04
 
 ## Products
 
-- **Worker (SPA + API):** https://email-manager.sarthakagrawal927.workers.dev — worker `email-manager`; D1 `email-manager-auth` (`e770dfa2-1032-4a12-b0fb-52e77f5319e8`).
+- **Worker (SPA + API):** https://mail.sassmaker.com — worker `email-manager`; D1 `email-manager-auth` (`e770dfa2-1032-4a12-b0fb-52e77f5319e8`).
 - **Landing:** `/` Astro static marketing overlaid to `dist/index.html` (not separate Pages project).
 - **App shell:** `/app` SPA with hash-based sub-views; signed-in users 302 from `/` → `/app`.
 - **Local dev:** Vite :5173 + wrangler :8787.

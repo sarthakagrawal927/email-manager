@@ -12,7 +12,7 @@ import sitemap from '@astrojs/sitemap';
 // Lightning CSS replaces the default PostCSS pipeline as both
 // transformer and minifier (fleet web-stack standard).
 export default defineConfig({
-  site: 'https://email-manager.sarthakagrawal927.workers.dev',
+  site: 'https://mail.sassmaker.com',
   output: 'static',
   trailingSlash: 'never',
   // Emit `index.html` (the only page) directly at dist root.

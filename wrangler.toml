@@ -8,12 +8,12 @@ compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 # fallback here would serve the landing page for /app navigations.
 assets = { directory = "dist", binding = "ASSETS", not_found_handling = "none" }
 
+routes = [
+  { pattern = "mail.sassmaker.com", custom_domain = true }
+]
+
 [placement]
 mode = "smart"
-
-routes = [
-  { pattern = "mail.sassmaker.com/*", zone_name = "sassmaker.com" }
-]
 
 [observability]
 enabled = true

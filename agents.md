@@ -68,7 +68,7 @@ pnpm test       # vitest run
 - **Read-only**: `gmail.readonly` scope only. No compose/reply/archive/delete.
 - **Unsubscribe**: RFC 8058 one-click POST + fallback browser-open for mailto/HTTP links.
 - Env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`.
-- **OAuth redirect URI**: `https://email-manager.sarthakagrawal927.workers.dev/api/auth/callback/google` registered in Google Cloud Console (2026-06-28).
+- **OAuth redirect URI**: `https://mail.sassmaker.com/api/auth/callback/google` registered in Google Cloud Console (2026-06-28).
 
 <!-- FLEET-GUIDANCE:START -->
 
