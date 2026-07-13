@@ -52,6 +52,8 @@ Last updated: 2026-07-04
 
 ## Timeline
 
+- **2026-07-13:** Allowed Cloudflare Web Analytics in the production CSP so the canonical `mail.sassmaker.com` surface loads without blocked-script errors.
+
 - **2026-07-04** — Keyboard-driven batch triage promoted to the primary `#today` interface: `j`/`k` + arrows navigate, `Shift+arrows` extend multi-select, `d`/`f`/`s` act on all selected (or focused) messages, `?` toggles a shortcut help overlay, `Esc` clears selection. Per-row kbd hints on the focused message; `ShortcutHelpOverlay` component shared by both the queue and the focused session. `isTypingTarget` extracted to `triage-session.ts` (duck-typed, Node-safe) so shortcuts never fire inside text inputs.
 - **2026-07-03** — Keyboard triage session mode on `#today`: works through next 25 unread-but-unsorted messages one at a time with single-key actions (`d`/`f`/`s`, `j`/`k`, `Esc`); closes planned "triage keyboard shortcuts" item.
 - **2026-07-02** — Added `app.onError()` global error handler to Hono worker (catches unhandled errors → 500 JSON + console.error logging).
