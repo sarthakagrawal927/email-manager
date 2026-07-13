@@ -1,6 +1,6 @@
 # Email memories and personal digest — product brief
 
-**Status:** Planned (fixture-backed mock only; no UI ship in this pass)  
+**Status:** Shipped (2026-06-20) — the builder and `#digest` UI landed through the later weekly-digest PRD; unimplemented follow-on phases are deferred in `PROJECT_STATUS.md`, not active backlog.
 **Source:** [saas-ideas consolidation](https://github.com/sarthakagrawal927/saas-ideas) @ `aba1a83`, via SaaS Maker Symphony `45a9d3f6-ac51-4710-902f-c9e51d67766a`  
 **Product:** Kinetic / `email-manager`  
 **Date:** 2026-06-04
