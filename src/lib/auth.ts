@@ -51,7 +51,7 @@ export function isGoogleOAuthConfigured(env: AuthEnv): boolean {
 }
 
 export function createAuth(env: AuthEnv) {
-  const baseURL = getEnvValue(env, 'BETTER_AUTH_URL') ?? 'https://email-manager-d0r.pages.dev';
+  const baseURL = getEnvValue(env, 'BETTER_AUTH_URL') ?? 'https://mail.sassmaker.com';
   const secret = resolveSecret(env, baseURL);
 
   return betterAuth({
