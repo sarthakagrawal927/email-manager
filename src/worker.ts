@@ -55,6 +55,11 @@ app.get('/api/health', (c) => {
   });
 });
 
+app.get('/api/auth/client-config', (c) => {
+  c.header('Cache-Control', 'no-store');
+  return c.json({ googleClientId: c.env.GOOGLE_CLIENT_ID?.trim() || null });
+});
+
 app.on(['GET', 'POST'], '/api/auth/*', async (c) => {
   const path = new URL(c.req.url).pathname;
   if (c.req.method === 'GET' && path.endsWith('/sign-in/social')) {

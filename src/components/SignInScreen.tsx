@@ -2,9 +2,9 @@
 
 import { motion } from 'framer-motion';
 import { Database, LogIn, Mail, ShieldCheck, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { signIn } from '@/lib/auth-client';
+import { signIn, startGoogleOneTap } from '@/lib/auth-client';
 import { AuroraBackground } from '@/components/ui/aurora-background';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +30,13 @@ const features = [
 export function SignInScreen() {
   const [signInError, setSignInError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    void startGoogleOneTap('/app').catch(() => {
+      // OAuth remains available when FedCM/GIS is blocked, dismissed, or the
+      // user has not previously granted Gmail access.
+    });
+  }, []);
 
   return (
     <main className="relative flex min-h-screen overflow-hidden">

@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { oneTap } from 'better-auth/plugins';
 import { drizzle } from 'drizzle-orm/d1';
 import { user, session, account, verification } from '../db/schema';
 
@@ -70,6 +71,9 @@ export function createAuth(env: AuthEnv) {
       },
     },
     trustedOrigins: resolveTrustedOrigins(baseURL),
+    // First-time users must use OAuth once to grant gmail.readonly. One Tap is
+    // intentionally limited to returning accounts that already hold that grant.
+    plugins: [oneTap({ disableSignup: true })],
     rateLimit: {
       enabled: false,
     },
