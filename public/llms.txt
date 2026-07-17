@@ -1,0 +1,17 @@
+# Email Manager
+
+> Gmail workspace with local semantic search — private email tooling.
+
+## Product
+
+- [Home](https://mail.sassmaker.com/): App shell
+
+## Machine surfaces
+
+- [Agent catalog](https://mail.sassmaker.com/api/ai): JSON inventory of public surfaces
+- [Homepage markdown](https://mail.sassmaker.com/index.md): Product brief without JS
+- [This index](https://mail.sassmaker.com/llms.txt)
+
+## Optional
+
+- [Foundry](https://sassmaker.com): Parent fleet showcase

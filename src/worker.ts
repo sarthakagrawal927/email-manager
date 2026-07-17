@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 
+import { handleAgentEdge } from './agent-edge.mjs';
 import { createAuth, isGoogleOAuthConfigured, type AuthEnv } from './lib/auth';
 import { getGmailAccessToken } from './lib/get-access-token';
 import { getEmail, getThread, listEmails } from './lib/gmail';
@@ -17,6 +18,13 @@ const SPA_PATH_PREFIXES = ['/app', '/about', '/privacy'];
 const LANDING_CACHE_CONTROL = 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800';
 
 const app = new Hono<{ Bindings: Env }>();
+
+// Fleet agent indexing (GEO) — before SPA asset fallback
+app.use('*', async (c, next) => {
+  const agent = handleAgentEdge(c.req.raw);
+  if (agent) return agent;
+  return next();
+});
 
 app.use('/api/*', async (c, next) => {
   await next();
