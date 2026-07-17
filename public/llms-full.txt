@@ -1,0 +1,37 @@
+# Email Manager — full agent brief
+
+Gmail workspace with local semantic search — private email tooling.
+
+## Index
+
+# Email Manager
+
+Gmail workspace with local semantic search.
+
+## Privacy
+
+Mailbox content is private. Agents should only use public product description surfaces.
+
+## Agent entrypoints
+
+- https://mail.sassmaker.com/llms.txt
+- https://mail.sassmaker.com/api/ai
+- https://mail.sassmaker.com/index.md
+
+## Product links
+
+- Home: https://mail.sassmaker.com/ — App shell
+
+## Machine surfaces
+
+- https://mail.sassmaker.com/llms.txt
+- https://mail.sassmaker.com/llms-full.txt
+- https://mail.sassmaker.com/api/ai
+- https://mail.sassmaker.com/index.md
+- https://mail.sassmaker.com/sitemap.xml
+- https://mail.sassmaker.com/robots.txt
+
+## Contact / fleet
+
+- Fleet: https://sassmaker.com
+- Agent email for directory verification: sarthakagrawal@agentmail.to
