@@ -1,45 +1,69 @@
 /**
- * Portable agent-edge handler — copy or generate into each product.
+ * Portable agent-edge handler (fleet GEO standard).
  * Spec: fleet-ops/docs/agent-indexing-standard.md
- *
- * Usage in worker.mjs (before openNext.fetch):
- *   import { handleAgentEdge } from './agent-edge.mjs'
- *   const agent = handleAgentEdge(request)
- *   if (agent) return agent
  */
 
-/** @type {{ name: string, url: string, llmsTxt: string, indexMd: string, catalog: object, llmsFull?: string | null }} */
 export const AGENT_SURFACE = {
-  "name": "Email Manager",
-  "url": "https://mail.sassmaker.com",
-  "llmsTxt": "# Email Manager\n\n> Gmail workspace with local semantic search — private email tooling.\n\n## Product\n\n- [Home](https://mail.sassmaker.com/): App shell\n\n## Machine surfaces\n\n- [Agent catalog](https://mail.sassmaker.com/api/ai): JSON inventory of public surfaces\n- [Homepage markdown](https://mail.sassmaker.com/index.md): Product brief without JS\n- [This index](https://mail.sassmaker.com/llms.txt)\n\n## Optional\n\n- [Foundry](https://sassmaker.com): Parent fleet showcase\n",
-  "indexMd": "# Email Manager\n\nGmail workspace with local semantic search.\n\n## Privacy\n\nMailbox content is private. Agents should only use public product description surfaces.\n\n## Agent entrypoints\n\n- https://mail.sassmaker.com/llms.txt\n- https://mail.sassmaker.com/api/ai\n- https://mail.sassmaker.com/index.md\n",
-  "catalog": {
-    "name": "Email Manager",
-    "version": "1",
-    "url": "https://mail.sassmaker.com",
-    "llms": "https://mail.sassmaker.com/llms.txt",
-    "llmsFull": null,
-    "sitemap": "https://mail.sassmaker.com/sitemap.xml",
-    "markdown": {
-      "suffix": ".md",
-      "negotiation": true
+  name: 'Email Manager',
+  url: 'https://mail.sassmaker.com',
+  llmsTxt:
+    '# Email Manager\n' +
+    '\n' +
+    '> Gmail workspace with local semantic search — private email tooling.\n' +
+    '\n' +
+    '## Product\n' +
+    '\n' +
+    '- [Home](https://mail.sassmaker.com/): App shell\n' +
+    '\n' +
+    '## Machine surfaces\n' +
+    '\n' +
+    '- [Agent catalog](https://mail.sassmaker.com/api/ai): JSON inventory of public surfaces\n' +
+    '- [Homepage markdown](https://mail.sassmaker.com/index.md): Product brief without JS\n' +
+    '- [This index](https://mail.sassmaker.com/llms.txt)\n' +
+    '\n' +
+    '## Optional\n' +
+    '\n' +
+    '- [Foundry](https://sassmaker.com): Parent fleet showcase\n',
+  indexMd:
+    '# Email Manager\n' +
+    '\n' +
+    'Gmail workspace with local semantic search.\n' +
+    '\n' +
+    '## Privacy\n' +
+    '\n' +
+    'Mailbox content is private. Agents should only use public product description surfaces.\n' +
+    '\n' +
+    '## Agent entrypoints\n' +
+    '\n' +
+    '- https://mail.sassmaker.com/llms.txt\n' +
+    '- https://mail.sassmaker.com/api/ai\n' +
+    '- https://mail.sassmaker.com/index.md\n',
+  catalog: {
+    name: 'Email Manager',
+    version: '1',
+    url: 'https://mail.sassmaker.com',
+    llms: 'https://mail.sassmaker.com/llms.txt',
+    llmsFull: null,
+    sitemap: 'https://mail.sassmaker.com/sitemap.xml',
+    markdown: {
+      suffix: '.md',
+      negotiation: true,
     },
-    "surfaces": [
+    surfaces: [
       {
-        "id": "home",
-        "url": "https://mail.sassmaker.com/",
-        "md": "https://mail.sassmaker.com/index.md",
-        "kind": "spa",
-        "description": "Product home"
-      }
+        id: 'home',
+        url: 'https://mail.sassmaker.com/',
+        md: 'https://mail.sassmaker.com/index.md',
+        kind: 'spa',
+        description: 'Product home',
+      },
     ],
-    "auth": {
-      "public": true,
-      "notes": "Auth-walled app routes are not agent-indexed unless listed here."
-    }
+    auth: {
+      public: true,
+      notes: 'Auth-walled app routes are not agent-indexed unless listed here.',
+    },
   },
-  "llmsFull": null
+  llmsFull: null,
 };
 
 /**
@@ -52,6 +76,7 @@ export function handleAgentEdge(request) {
   const path = url.pathname === '' ? '/' : url.pathname;
 
   if (path === '/llms.txt') {
+    if (AGENT_SURFACE.skipLlms) return null;
     return text(AGENT_SURFACE.llmsTxt, 'text/plain; charset=utf-8');
   }
   if (path === '/llms-full.txt' && AGENT_SURFACE.llmsFull) {
@@ -61,7 +86,6 @@ export function handleAgentEdge(request) {
     return text(AGENT_SURFACE.indexMd, 'text/markdown; charset=utf-8');
   }
   if (path === '/api/ai') {
-    // Re-bind origin so preview/custom domains stay correct
     const catalog = {
       ...AGENT_SURFACE.catalog,
       url: url.origin,
@@ -78,7 +102,6 @@ export function handleAgentEdge(request) {
     return json(catalog);
   }
 
-  // Homepage markdown negotiation
   if ((path === '/' || path === '') && wantsMarkdown(request)) {
     return text(AGENT_SURFACE.indexMd, 'text/markdown; charset=utf-8', {
       Link: '</index.md>; rel="alternate"; type="text/markdown"',
