@@ -3,7 +3,7 @@
 Concrete, earned lessons from building this app. No general advice — only things that
 actually burned time or required non-obvious fixes here.
 
-For decision rationale see `docs/decisions.md`. For phase-level retrospectives see `docs/retros/`.
+For decision rationale see [`../../architecture/decisions.md`](../../architecture/decisions.md). For phase-level retrospectives see [`../../retros/`](../../retros/).
 
 ---
 
@@ -55,7 +55,7 @@ switching.
 
 `src/lib/db.ts` opens `email-search` at `DB_VERSION = 1`. The `upgrade` callback
 creates the `emails` store with a `by-date` index. If a future version adds stores (e.g.
-the planned `digests` store from `docs/plans/2026-06-04-email-memories-digest.md`), the
+the planned `digests` store from [`../../plans/2026-06-04-email-memories-digest.md`](../../plans/2026-06-04-email-memories-digest.md)), the
 version number must increment and the `upgrade` callback must handle the old version
 gracefully. Not incrementing the version with a schema change silently ignores the change
 for existing users.
@@ -85,6 +85,15 @@ storage. No guard currently exists.
 ---
 
 ## Cloudflare Workers
+
+> **Note:** Lessons 9–16 below were written during the Next.js + OpenNext era
+> (pre-2026-06-20). The app has since migrated to Vite SPA + Hono Worker
+> (De-OpenNext migration). Lessons 9–13 about Workers runtime constraints
+> (bundle limits, `global_fetch_strictly_public`, Smart Placement, `caches.default`,
+> Pages vs Workers) remain relevant. Lessons 14–16 about the OpenNext/Beasties
+> build pipeline are **historical** — the fragile multi-step build no longer
+> exists. See
+> [`../failed-approaches/2026-06-20-opennext-build-pipeline.md`](../failed-approaches/2026-06-20-opennext-build-pipeline.md).
 
 ### 9. 1 MB compressed bundle limit is the main constraint
 

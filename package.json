@@ -25,7 +25,11 @@
     "deploy": "pnpm build && wrangler deploy",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "check": "biome check ."
+    "check": "biome check .",
+    "check:docs": "node scripts/check-docs.mjs",
+    "docs:dev": "pnpm --filter ./apps/docs-blume dev",
+    "docs:build": "pnpm --filter ./apps/docs-blume build",
+    "docs:preview": "pnpm --filter ./apps/docs-blume preview"
   },
   "dependencies": {
     "@huggingface/transformers": "4.0.0",

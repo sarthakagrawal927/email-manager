@@ -140,6 +140,8 @@ must be present in the Google Cloud Console OAuth app, otherwise sign-in fails w
 `redirect_uri_mismatch`.
 
 See `agents.md` for implementation conventions and deeper architecture notes.
+See `docs/README.md` for the full knowledge-system layout (product, architecture,
+decisions, development, operations, learnings).
 
 <!-- ACTIVE-AI-TASK-LOG:START -->
 ## Active AI Task Log
