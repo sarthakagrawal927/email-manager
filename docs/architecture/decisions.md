@@ -1,7 +1,7 @@
 # Architecture Decision Records — email-manager
 
 One-page ADR log. Each entry: decision, alternatives considered, rationale, and tradeoffs.
-For product-phase context see `docs/retros/`. For PRD-level detail see `docs/plans/`.
+For product-phase context see [`../retros/`](../retros/). For PRD-level detail see [`../plans/`](../plans/).
 
 ---
 
@@ -26,7 +26,7 @@ For product-phase context see `docs/retros/`. For PRD-level detail see `docs/pla
 - WASM SIMD is not available on all mobile devices; single-threaded execution on older clients.
 - Model must be stubbed out on the server side (webpack alias `@huggingface/transformers: false` + `serverExternalPackages`), requiring a custom OpenNext patch.
 
-**Key files:** `src/lib/embeddings.ts`, `next.config.ts` (`serverExternalPackages`, webpack alias), `patches/opennext-cloudflare-externals.js`
+**Key files:** `src/lib/embeddings.ts`. (Historically required `next.config.ts` webpack aliases + `patches/opennext-cloudflare-externals.js` to keep ONNX out of the OpenNext server bundle — no longer needed after the 2026-06-20 Vite SPA migration; Vite handles client-only imports natively.)
 
 ---
 
@@ -84,7 +84,7 @@ For product-phase context see `docs/retros/`. For PRD-level detail see `docs/pla
 **Date:** 2026-04-25 (CF Workers migration)
 **Status:** Accepted
 
-**Decision:** Deploy on Cloudflare Workers via `@opennextjs/cloudflare` (OpenNext). Use CF D1 (`email-manager-auth`) for better-auth session/account tables only.
+**Decision:** Deploy on Cloudflare Workers. Use CF D1 (`email-manager-auth`) for better-auth session/account tables only. (Originally via `@opennextjs/cloudflare` (OpenNext); migrated to Vite SPA + Hono Worker on 2026-06-20 — see [`../knowledge/failed-approaches/2026-06-20-opennext-build-pipeline.md`](../knowledge/failed-approaches/2026-06-20-opennext-build-pipeline.md).)
 
 **Alternatives:**
 - Vercel (default Next.js target): easier deploys, no OpenNext needed.
@@ -101,7 +101,7 @@ For product-phase context see `docs/retros/`. For PRD-level detail see `docs/pla
 - Worker bundle size limit (1 MB compressed) forces careful exclusion of native modules.
 - D1 row/storage limits are generous for auth-only use; would constrain server-side email storage if ever attempted.
 
-**Key files:** `wrangler.toml`, `open-next.config.ts`, `worker.mjs`
+**Key files:** `wrangler.toml`, `src/worker.ts` (Hono Worker entry; replaced `worker.mjs` + `open-next.config.ts` on 2026-06-20)
 
 ---
 
@@ -156,7 +156,7 @@ For product-phase context see `docs/retros/`. For PRD-level detail see `docs/pla
 ## ADR-007 — OpenNext + custom worker entry + Beasties build pipeline
 
 **Date:** 2026-04-25 through 2026-06-04 (iterative)
-**Status:** Accepted (fragile — see `docs/lessons.md`)
+**Status:** Superseded (2026-06-20 De-OpenNext migration — see [`../knowledge/failed-approaches/2026-06-20-opennext-build-pipeline.md`](../knowledge/failed-approaches/2026-06-20-opennext-build-pipeline.md)). Kept for historical context.
 
 **Decision:** Use `@opennextjs/cloudflare` to adapt the Next.js build for Workers. Wrap the generated worker in a custom `worker.mjs` that handles edge caching for `/`. Run Beasties (critical-CSS inlining) post-build, before the OpenNext `--skipNextBuild` pass.
 
@@ -174,7 +174,7 @@ For product-phase context see `docs/retros/`. For PRD-level detail see `docs/pla
 - The `patches/opennext-cloudflare-externals.js` script patches OpenNext's internal `bundle-server.js` and must be re-checked on OpenNext upgrades.
 - The `scripts/cf-build.mjs` workaround (copy full Next.js dist into `.next/node_modules/.pnpm` store) is required because pnpm sparse installs drop files that OpenNext's esbuild needs.
 
-**Key files:** `worker.mjs`, `open-next.config.ts`, `scripts/cf-build.mjs`, `scripts/inline-critical-css.mjs`, `scripts/overlay-astro-landing.mjs`, `patches/opennext-cloudflare-externals.js`
+**Key files:** `worker.mjs` (removed), `open-next.config.ts` (removed), `scripts/cf-build.mjs` (removed), `scripts/inline-critical-css.mjs` (removed), `scripts/overlay-astro-landing.mjs` (removed), `patches/opennext-cloudflare-externals.js` (removed). All removed in the 2026-06-20 De-OpenNext migration to Vite SPA + Hono worker.
 
 ---
 
@@ -183,7 +183,7 @@ For product-phase context see `docs/retros/`. For PRD-level detail see `docs/pla
 **Date:** 2026-02-24
 **Status:** Accepted
 
-**Decision:** All Gmail API calls go through Next.js API routes (`/api/emails`, `/api/emails/[id]`) that hold the access token server-side. The browser never receives the OAuth access token.
+**Decision:** All Gmail API calls go through Worker API routes (`/api/emails`, `/api/emails/:id`) that hold the access token server-side. The browser never receives the OAuth access token. (Originally Next.js API routes; migrated to Hono Worker routes on 2026-06-20.)
 
 **Alternatives:**
 - Client-side Gmail fetch with token passed to the browser: simpler, but leaks the token to JS.
@@ -195,7 +195,7 @@ For product-phase context see `docs/retros/`. For PRD-level detail see `docs/pla
 **Tradeoffs:**
 - Every Gmail fetch adds one server round-trip (client → CF Worker → Gmail API → client). On cold start this adds latency.
 
-**Key files:** `src/lib/gmail.ts`, `src/app/api/emails/route.ts`, `src/app/api/emails/[id]/route.ts`
+**Key files:** `src/lib/gmail.ts`, `src/worker.ts` (Hono routes for `/api/emails`, `/api/emails/:id`)
 
 ---
 

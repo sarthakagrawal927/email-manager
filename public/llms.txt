@@ -5,6 +5,7 @@
 ## Product
 
 - [Home](https://mail.sassmaker.com/): App shell
+- [FAQ](https://mail.sassmaker.com/faq): Frequently asked questions
 
 ## Machine surfaces
 

@@ -133,7 +133,7 @@ node scripts/verify-digest-fixture.mjs
 
 ## Evaluation
 
-**Fit:** Strong. IndexedDB + sender analytics + semantic search already match “Personal Memory OS” fleet direction ([saas-ideas consolidation](../../../saas-maker/docs/ideas/saas-ideas-consolidation-2026-06-03.md)).
+**Fit:** Strong. IndexedDB + sender analytics + semantic search already match "Personal Memory OS" fleet direction (saas-ideas consolidation — see `saas-maker/docs/ideas/saas-ideas-consolidation-2026-06-03.md` in the fleet workspace).
 
 **Decision:** **Proceed to phase 1** only after manual dogfood of fixture preview; keep commercial scope at zero unless weekly active digest users appear.
 

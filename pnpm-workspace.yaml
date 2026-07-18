@@ -1,6 +1,7 @@
 packages:
   - "."
   - "landing-astro"
+  - "apps/docs-blume"
 
 # Pin packages that were published in the last 24h so the
 # supply-chain policy on `pnpm install --frozen-lockfile` doesn't

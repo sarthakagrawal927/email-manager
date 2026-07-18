@@ -48,7 +48,7 @@ A single day of commits (2026-04-25) rewired three major infrastructure pieces s
 ## Lessons taken forward
 
 - Validate CF runtime API compatibility before committing to a deploy target.
-  See `docs/lessons.md` lesson 13.
+  See [`../knowledge/learnings/lessons.md`](../knowledge/learnings/lessons.md) lesson 13.
 - Refresh-token silent expiry is now handled by `auth.api.getAccessToken`;
-  raw D1 token lookups are gone. See `docs/lessons.md` lessons 17–18.
+  raw D1 token lookups are gone. See [`../knowledge/learnings/lessons.md`](../knowledge/learnings/lessons.md) lessons 17–18.
 - Keep auth, deploy target, and ML pipeline changes in separate PRs when possible.
