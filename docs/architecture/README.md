@@ -9,8 +9,9 @@ How email-manager is structured and how its parts interact.
   better-auth handler, Gmail proxy, static asset serving.
 - **D1** `email-manager-auth` (Drizzle ORM) — auth tables only (`user`,
   `session`, `account`, `verification`).
-- **IndexedDB** `email-search` v1 (client-side, `idb` wrapper) — email metadata,
-  bodies, and embeddings. Store `emails` keyed by `id`, index `by-date`.
+- **IndexedDB** `email-search` v2 (client-side, `idb` wrapper) — email metadata,
+  bodies, and embeddings. Store `emails` keyed by `id`, index `by-date`; store
+  `meta` (added in v2) holds the `inbox-sync` cursor for resumable paged sync.
 - **HuggingFace Transformers** (ONNX runtime, WASM backend) — in-browser
   embeddings via `Xenova/all-MiniLM-L6-v2` at `fp32`.
 - **PostHog** — client analytics (`posthog-js`).

@@ -32,7 +32,7 @@ is fetched on demand and cached locally in IndexedDB inside the browser.
 | Auth | better-auth + Google OAuth |
 | Analytics | PostHog (`posthog-js`) |
 | AI | `@huggingface/transformers` — runs client-side in the browser for semantic search |
-| CI/CD | GitHub Actions — auto-deploy to Cloudflare Workers on push to `main` |
+| CI/CD | GitHub Actions — `ci.yml` (lint/typecheck/test/build) on push/PR to `main`; `deploy.yml` deploys to Cloudflare Workers on manual `workflow_dispatch` only (production deploys are manual) |
 
 ## Local Development
 
@@ -79,8 +79,10 @@ Google OAuth must allow the local and production callback URLs:
 - `pnpm dev:spa` — Vite only
 - `pnpm build` — Vite build + Astro landing overlay → `dist/`
 - `pnpm typecheck` — TypeScript check (app + worker)
-- `pnpm lint` — ESLint
+- `pnpm lint` — Biome (`biome check .`)
+- `pnpm test` — Vitest unit suite
 - `pnpm test:e2e` — Playwright e2e suite
+- `pnpm check:docs` — documentation validation (`scripts/check-docs.mjs`)
 - `pnpm deploy` — build and deploy to Cloudflare Workers
 
 ## Architecture

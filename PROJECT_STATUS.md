@@ -41,7 +41,7 @@ Last updated: 2026-07-04
 | `pnpm dev:spa` | Vite only |
 | `pnpm build` | Vite build + Astro overlay → `dist/` |
 | `pnpm typecheck` | TS check (app + worker) |
-| `pnpm lint` | ESLint |
+| `pnpm lint` | Biome (`biome check .`) |
 | `pnpm test:e2e` | Playwright (desktop + mobile) |
 | `pnpm digest:verify` | Golden-file digest fixture check |
 | `pnpm deploy` | Build + `wrangler deploy` |
@@ -102,16 +102,16 @@ Last updated: 2026-07-04
 - `GET /` serves Astro landing; signed-in users 302 → `/app`.
 - SPA shell at `/app`, `/about`, `/privacy` from `dist/spa-index.html`.
 - Hono worker handles `/api/*`: better-auth, Gmail proxy reads, unsubscribe POST.
-- Gmail fetched on demand via worker with 429 exponential backoff (1s/2s/4s); cached in IndexedDB `email-search` v1.
+- Gmail fetched on demand via worker with 429 exponential backoff (1s/2s/4s); cached in IndexedDB `email-search` v2.
 - Embeddings generated in-browser with Hugging Face Transformers/ONNX; semantic search client-side.
 - D1 (`email-manager-auth`) stores only better-auth tables — no mailbox data.
 - Build: Vite → `dist/spa-index.html`; Astro landing overlaid to `dist/index.html` via `scripts/overlay-landing.mjs`.
 
 ### IndexedDB schema (`src/lib/db.ts`)
 
-- Database: `email-search` v1; store `emails` keyed by `id`; index `by-date`.
+- Database: `email-search` v2; store `emails` keyed by `id` (index `by-date`) + store `meta` (added in v2) holding the `inbox-sync` cursor.
 - Record: `StoredEmail` = `Email` + `embedding: number[] | null`.
-- Helpers: `storeEmails`, `getAllEmails`, `getEmailsWithoutEmbedding`, `getEmailCount`, `getIndexedCount`, `exportEmails`.
+- Helpers: `storeEmails`, `getAllEmails`, `getEmailsWithoutEmbedding`, `getEmailCount`, `getIndexedCount`, `getInboxSyncMeta`, `setInboxSyncMeta`, `exportEmails`.
 
 ### D1 schema (`migrations/0001_better_auth.sql`)
 

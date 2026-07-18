@@ -51,14 +51,17 @@ switching.
 
 ## IndexedDB
 
-### 5. Schema version is 1 and has not been migrated
+### 5. Schema migrations must gate on `oldVersion`
 
-`src/lib/db.ts` opens `email-search` at `DB_VERSION = 1`. The `upgrade` callback
-creates the `emails` store with a `by-date` index. If a future version adds stores (e.g.
-the planned `digests` store from [`../../plans/2026-06-04-email-memories-digest.md`](../../plans/2026-06-04-email-memories-digest.md)), the
-version number must increment and the `upgrade` callback must handle the old version
-gracefully. Not incrementing the version with a schema change silently ignores the change
-for existing users.
+`src/lib/db.ts` opens `email-search` at `DB_VERSION = 2`. The `upgrade` callback
+creates the `emails` store (with a `by-date` index) on first install, then adds
+the `meta` store guarded by `oldVersion < 2` so existing v1 users get the new
+store without clobbering their cached emails. Any future version (e.g. the
+planned `digests` store from [`../../plans/2026-06-04-email-memories-digest.md`](../../plans/2026-06-04-email-memories-digest.md))
+must bump `DB_VERSION` again and add another `oldVersion`-gated branch. Not
+incrementing the version with a schema change silently ignores the change for
+existing users; not gating on `oldVersion` re-runs migrations and can throw when
+a store already exists.
 
 ### 6. `getEmailsWithoutEmbedding` does a full table scan
 

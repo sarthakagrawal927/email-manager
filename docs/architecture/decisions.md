@@ -58,7 +58,7 @@ For product-phase context see [`../retros/`](../retros/). For PRD-level detail s
 **Date:** 2026-02-24 (initial commit)
 **Status:** Accepted
 
-**Decision:** Email metadata, bodies, and embeddings are cached exclusively in browser IndexedDB (`idb` wrapper, `email-search` DB v1). The server (CF Workers + D1) stores only auth tables.
+**Decision:** Email metadata, bodies, and embeddings are cached exclusively in browser IndexedDB (`idb` wrapper, `email-search` DB v2 — `emails` store plus a `meta` store for the sync cursor). The server (CF Workers + D1) stores only auth tables.
 
 **Alternatives:**
 - Store emails in D1: would require server-side Gmail fetch, indexing, and data-at-rest compliance.
