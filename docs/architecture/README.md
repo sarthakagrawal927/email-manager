@@ -29,6 +29,10 @@ How email-manager is structured and how its parts interact.
 
 ## Files
 
+- [`how-it-works.md`](how-it-works.md) — learning-tier, code-grounded
+  walkthrough of a single email end-to-end: sign-in, Gmail proxy fetch,
+  IndexedDB cache, in-browser ONNX embedding, semantic search, triage, and
+  unsubscribe. Start here to understand the system before the reference tables.
 - [`overview.md`](overview.md) — system shape, data flow, tech stack, key
   components, and the local-first privacy architecture.
 - [`decisions.md`](decisions.md) — Architecture Decision Records (ADR-001

@@ -31,6 +31,7 @@ is fetched on demand and cached locally in IndexedDB inside the browser.
 ## Documentation
 
 - [Product overview](product/overview) — what it is, who uses it, scope boundaries.
+- [How it works](architecture/how-it-works) — end-to-end walkthrough: fetch → embed → IndexedDB → search.
 - [Architecture](architecture/overview) — system shape, data flow, tech stack.
 - [Architecture decisions](architecture/decisions) — ADR-001 through ADR-009.
 - [Development](development/workflows) — local dev, build, test, deploy workflows.
