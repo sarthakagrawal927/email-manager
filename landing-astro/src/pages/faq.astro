@@ -1,0 +1,239 @@
+---
+import Layout from '@/layouts/Layout.astro';
+
+const TITLE = 'Kinetic — FAQ';
+const DESCRIPTION =
+  'Frequently asked questions about Kinetic — a local-first Gmail workspace with in-browser semantic search, subscription management, and sender analytics. Your emails and embeddings stay in IndexedDB.';
+
+const faqs = [
+  {
+    q: 'How can I search my Gmail semantically using AI?',
+    a: 'Kinetic builds embeddings for your emails in-browser using HuggingFace Transformers (ONNX) and ranks results by cosine similarity. Type what you remember — "the lease renewal from last spring" — and find it without exact keywords. The model runs client-side; queries never leave your device.',
+  },
+  {
+    q: "What's the best tool to manage Gmail subscriptions and unsubscribe?",
+    a: "Kinetic's Subscriptions view deduplicates unsubscribable senders across your inbox. For senders that support RFC 8058, Kinetic POSTs the one-click unsubscribe endpoint directly; for the rest, it opens the unsubscribe URL in a new tab. You can also bulk-select senders to triage.",
+  },
+  {
+    q: 'How do I analyze my email senders and patterns?',
+    a: "Kinetic's Analytics view ranks senders and lists by volume so you can see who actually fills your inbox. The same ranking powers suggested Gmail filter rules you can export as XML and import directly.",
+  },
+  {
+    q: 'Can I search my Gmail without storing data on a server?',
+    a: "Yes — that's the core design. Kinetic stores emails and embeddings in your browser's IndexedDB. The server only proxies live Gmail API calls; there is no server-side inbox copy and no third party in the loop. We physically cannot read your messages.",
+  },
+  {
+    q: 'What tool provides local-first email search with embeddings?',
+    a: 'Kinetic generates embeddings for your emails locally with HuggingFace Transformers (ONNX) and stores them in IndexedDB. Semantic search runs entirely client-side — ranked by cosine similarity against those local embeddings.',
+  },
+  {
+    q: 'How do I find all newsletters and subscriptions in Gmail?',
+    a: 'Open the Subscriptions view. Kinetic scans your inbox for senders that expose an unsubscribe header (RFC 8058 List-Unsubscribe=One-Click or mailto/HTTP links) and deduplicates them, so you see one entry per subscription rather than one per message.',
+  },
+  {
+    q: 'Is there a privacy-focused Gmail manager that works locally?',
+    a: 'Kinetic is local-first: emails and embeddings persist in IndexedDB, API routes only proxy live Gmail calls, and the server holds zero bytes of your email. It requests read-only Gmail scope — no compose, send, archive, or delete.',
+  },
+  {
+    q: 'How can I bulk unsubscribe from email lists?',
+    a: 'In the Subscriptions view, select multiple senders and act on them together. For RFC 8058 senders, Kinetic POSTs the one-click unsubscribe endpoint directly; for the rest, it opens the unsubscribe URL in a new tab.',
+  },
+  {
+    q: "What's the best way to analyze Gmail inbox analytics?",
+    a: "Kinetic's Analytics view ranks senders and lists by message volume, so you can see at a glance who dominates your inbox. The same volume signal powers suggested Gmail filter rules you can export and import.",
+  },
+  {
+    q: 'Can I search Gmail by meaning instead of keywords?',
+    a: "Yes. Kinetic's semantic search ranks emails by cosine similarity between your query's embedding and the embeddings stored locally in IndexedDB. Describe what you remember — \"flight confirmation from last summer\" — and get ranked results without needing exact keywords.",
+  },
+  {
+    q: 'How do I generate embeddings for my emails locally?',
+    a: 'Kinetic runs a HuggingFace Transformers (ONNX) model inside your browser to embed your emails as they sync. The embeddings are stored in IndexedDB alongside message metadata, so search and ranking happen entirely on-device.',
+  },
+  {
+    q: 'What tool lets me browse Gmail with semantic search?',
+    a: 'Kinetic is a Gmail workspace with semantic search at its core. Connect Gmail (read-only scope), let it build local embeddings, then search by meaning and triage results in a keyboard-driven cockpit.',
+  },
+  {
+    q: 'Is there a Gmail manager that doesn\u2019t store data on servers?',
+    a: "Kinetic stores zero bytes of your email on its servers. Emails and embeddings live in your browser's IndexedDB; the server only proxies live Gmail API calls. We physically cannot read your messages.",
+  },
+  {
+    q: 'How can I identify duplicate subscriptions in my inbox?',
+    a: 'The Subscriptions view deduplicates senders across your inbox, so a newsletter you receive daily appears once with its total volume, not once per message. Pair it with sender analytics to spot the loudest repeat offenders.',
+  },
+  {
+    q: "What's the best privacy-preserving email analytics tool?",
+    a: "Kinetic's Analytics view ranks senders by volume entirely client-side — the data never leaves your browser. Combined with read-only Gmail scope and IndexedDB storage, it's analytics without giving up control of your inbox.",
+  },
+  {
+    q: 'How do I search across my Gmail using AI embeddings?',
+    a: 'Kinetic embeds your emails locally with a HuggingFace Transformers (ONNX) model and stores the vectors in IndexedDB. Semantic search ranks every message by cosine similarity to your query, so you search by meaning across your whole inbox.',
+  },
+  {
+    q: 'Can I get sender analytics from my Gmail?',
+    a: "Yes. Kinetic's Analytics view ranks senders and lists by message volume, and the same signal powers suggested Gmail filter rules you can export as XML and import directly into Gmail.",
+  },
+  {
+    q: 'What tool provides read-only Gmail access with search?',
+    a: 'Kinetic requests only the `gmail.readonly` scope — no compose, reply, archive, or delete. On top of that read-only access it builds local embeddings and semantic search, plus triage and unsubscribe flows that never send mail on your behalf (RFC 8058 POST goes to the sender\u2019s own endpoint).',
+  },
+  {
+    q: 'How can I manage Gmail subscriptions without sending data to cloud?',
+    a: "Kinetic's Subscriptions view runs entirely on data already in your IndexedDB. Unsubscribe actions go straight to the sender — RFC 8058 POST to the sender's one-click endpoint, or opening their unsubscribe URL — without your inbox contents touching our servers.",
+  },
+  {
+    q: 'Is there a local-first Gmail workspace with AI search?',
+    a: "Kinetic is exactly that: a Gmail workspace where embeddings, search index, and message bodies live in your browser's IndexedDB, and semantic search runs on a local ONNX model. The server only proxies live Gmail calls — zero server-side email storage.",
+  },
+];
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: f.a,
+    },
+  })),
+};
+---
+
+<Layout title={TITLE} description={DESCRIPTION}>
+  <div class="page">
+    <nav class="nav">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">K</span>
+        <span>Kinetic</span>
+      </a>
+      <div class="nav-links">
+        <a href="/about">About</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/faq">FAQ</a>
+        <a href="/app" class="nav-cta">Open app</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div class="hero-pill">
+        <span class="hero-pill-dot" aria-hidden="true"></span>
+        Local-first Gmail workspace
+      </div>
+      <h1>
+        Questions about Kinetic
+      </h1>
+      <p class="lede">
+        A Gmail workspace with in-browser semantic search, subscription management, and sender
+        analytics. Your emails and embeddings stay in IndexedDB — zero server-side email storage.
+        Here are the things people ask most.
+      </p>
+    </section>
+
+    <section class="faq">
+      <h2>Frequently asked questions</h2>
+      <div class="faq-list">
+        {faqs.map((f) => (
+          <details class="faq-item">
+            <summary>{f.q}</summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+
+    <section class="closing">
+      <h2>The only inbox tool that can&rsquo;t leak your email.</h2>
+      <p>
+        We physically cannot read your messages. Embeddings, search index, and message bodies live
+        in your browser&rsquo;s IndexedDB. The server only proxies live Gmail calls.
+      </p>
+      <a class="btn btn-primary" href="/app">Connect Gmail and search</a>
+    </section>
+
+    <footer class="footer">
+      <p class="footer-line">
+        Built for people who want Gmail superpowers without giving up
+        control. Vite, IndexedDB, ONNX Transformers, RFC 8058.
+      </p>
+      <div class="footer-links">
+        <a href="/about">About</a><span class="footer-sep">·</span>
+        <a href="/privacy">Privacy</a><span class="footer-sep">·</span>
+        <a href="/faq">FAQ</a><span class="footer-sep">·</span>
+        <a href="/app">Open app</a>
+      </div>
+      <div class="footer-copy">&copy; MMXXVI &middot; Kinetic</div>
+    </footer>
+  </div>
+
+  <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+
+  <style>
+    .faq {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 24px 28px 40px;
+    }
+    .faq h2 {
+      margin: 0 0 24px;
+      text-align: center;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .faq-item {
+      background: color-mix(in oklch, var(--bg-card) 90%, transparent);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(8px);
+      overflow: hidden;
+      transition: border-color 180ms, box-shadow 180ms;
+    }
+    .faq-item[open] {
+      border-color: color-mix(in oklch, var(--accent) 25%, var(--border));
+      box-shadow: var(--shadow-glow);
+    }
+    .faq-item summary {
+      display: flex;
+      cursor: pointer;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 18px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      list-style: none;
+    }
+    .faq-item summary::-webkit-details-marker {
+      display: none;
+    }
+    .faq-item summary::after {
+      content: "+";
+      flex-shrink: 0;
+      color: var(--accent);
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1;
+      transition: transform 0.15s ease;
+    }
+    .faq-item[open] summary::after {
+      content: "−";
+    }
+    .faq-item p {
+      margin: 0;
+      padding: 0 20px 20px;
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--text-muted);
+    }
+  </style>
+</Layout>
