@@ -26,7 +26,7 @@ export function isUnsubscribeSentEmail(email: Pick<Email, 'subject' | 'to' | 'sn
   return false;
 }
 
-export function parseEmailAddress(header: string): string {
+function parseEmailAddress(header: string): string {
   const match = header.match(/<([^>]+)>/);
   return (match?.[1] ?? header).toLowerCase().trim();
 }

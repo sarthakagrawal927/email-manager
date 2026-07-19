@@ -1,7 +1,7 @@
 import type { Email } from './gmail';
 
-export type TriageQueueId = 'respond' | 'review' | 'unsubscribe' | 'reference';
-export type TriagePriority = 'high' | 'medium' | 'low';
+type TriageQueueId = 'respond' | 'review' | 'unsubscribe' | 'reference';
+type TriagePriority = 'high' | 'medium' | 'low';
 
 export interface TriageItem {
   id: string;
@@ -14,7 +14,7 @@ export interface TriageItem {
   score: number;
 }
 
-export interface TriageQueue {
+interface TriageQueue {
   id: TriageQueueId;
   title: string;
   description: string;
@@ -38,15 +38,6 @@ const bulkPatterns = [/\b(newsletter|digest|weekly|roundup|webinar|promotion|sal
 
 function textFor(email: Email) {
   return `${email.subject}\n${email.from}\n${email.snippet}`.toLowerCase();
-}
-
-function senderName(email: Email) {
-  return (
-    email.from
-      .replace(/<[^>]+>/g, '')
-      .replaceAll('"', '')
-      .trim() || email.from
-  );
 }
 
 function priorityFrom(score: number): TriagePriority {
@@ -153,19 +144,3 @@ export function triageEmails(emails: Email[]): TriageQueue[] {
       .sort((a, b) => b.score - a.score || Date.parse(b.email.date) - Date.parse(a.email.date)),
   }));
 }
-
-export function triageItemForEmail(email: Email): TriageItem | undefined {
-  return triageEmails([email]).flatMap((queue) => queue.items)[0];
-}
-
-export function triageSummary(queues: TriageQueue[]) {
-  const all = queues.flatMap((queue) => queue.items);
-  return {
-    total: all.length,
-    highPriority: all.filter((item) => item.priority === 'high').length,
-    needsResponse: queues.find((queue) => queue.id === 'respond')?.items.length ?? 0,
-    unsubscribeCandidates: queues.find((queue) => queue.id === 'unsubscribe')?.items.length ?? 0,
-  };
-}
-
-export { senderName };

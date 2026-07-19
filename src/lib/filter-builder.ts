@@ -1,6 +1,6 @@
 import type { Email } from './gmail';
 
-export type FilterCategory = 'newsletter' | 'receipt' | 'notification' | 'followup';
+type FilterCategory = 'newsletter' | 'receipt' | 'notification' | 'followup';
 
 export interface GmailFilterSuggestion {
   id: string;

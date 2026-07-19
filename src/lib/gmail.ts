@@ -88,7 +88,7 @@ function getHeader(headers: any[], name: string): string {
   return headers?.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value ?? '';
 }
 
-export function parseMessage(msg: any): Email {
+function parseMessage(msg: any): Email {
   const hdrs = msg.payload?.headers ?? [];
   const unsubHeader = getHeader(hdrs, 'List-Unsubscribe');
   const unsubPostHeader = getHeader(hdrs, 'List-Unsubscribe-Post');
