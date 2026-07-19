@@ -1,10 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
-  "entry": [
-    "src/main.tsx",
-    "src/worker.ts",
-    "src/agent-edge.mjs"
-  ],
+  "entry": ["src/main.tsx", "src/worker.ts", "src/agent-edge.mjs"],
   "project": ["**/*.{ts,tsx,js,jsx,mjs,cjs,mts}"],
   "ignore": [
     "**/dist/**",
