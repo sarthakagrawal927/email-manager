@@ -8,7 +8,10 @@ human-readable companion.
 
 - [`deployment.md`](deployment.md) — deploy model, Cloudflare Worker config,
   env vars, D1 binding, custom domain.
-- [`jobs/`](jobs/) — catalog of scheduled jobs (CI, weekly quality, deploy).
+- [`foundry-evidence.md`](foundry-evidence.md) — privacy-safe build/sync/auth
+  evidence for the Foundry.
+- [`jobs/`](jobs/) — catalog of scheduled jobs (CI, weekly quality, foundry
+  evidence, deploy).
 - [`runbooks/`](runbooks/) — step-by-step runbooks (local dev, OAuth setup,
   digest verify, deploy).
 
@@ -23,6 +26,7 @@ human-readable companion.
 | `pnpm test:e2e` | E2E tests (Playwright) |
 | `pnpm digest:verify` | Golden-file digest fixture check |
 | `pnpm check:docs` | Validate docs/ (broken links, empty docs, required files) |
+| `pnpm foundry:evidence` | Generate privacy-safe `foundry-evidence.json` |
 
 ## External services
 
