@@ -9,6 +9,18 @@ export interface InboxSyncMeta {
   nextPageToken?: string;
   exhausted: boolean;
   lastSyncedAt: string | null;
+  /**
+   * Sanitized, durable record of the most recent unresolved sync failure.
+   * Contains NO message content, addresses, subjects, or credentials — only
+   * the failing stage, a coarse error class, and the timestamp. Cleared on
+   * the next successful sync. Null when the last sync completed cleanly.
+   */
+  lastError?: {
+    stage: 'fetch_page' | 'store' | 'auth' | 'network';
+    /** Coarse class: http_4xx | http_5xx | http_429 | network | auth | unknown */
+    class: string;
+    at: string;
+  } | null;
 }
 
 interface EmailDB extends DBSchema {

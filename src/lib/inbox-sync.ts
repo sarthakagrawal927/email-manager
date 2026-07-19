@@ -4,12 +4,32 @@ import {
   getInboxSyncMeta,
   setInboxSyncMeta,
   storeEmails,
+  type InboxSyncMeta,
   type StoredEmail,
 } from './db';
 import type { Email } from './gmail';
 
 export const DEFAULT_INBOX_SYNC = 500;
 export const REFRESH_HEAD_COUNT = 100;
+export const SYNC_MAX_PAGE = 500;
+
+export type SyncErrorStage = NonNullable<NonNullable<InboxSyncMeta['lastError']>['stage']>;
+
+/** Coarse, privacy-safe error class for durable sync failure evidence. */
+export function classifySyncError(err: unknown): { stage: SyncErrorStage; class: string } {
+  const e = err as { status?: number; code?: number; message?: string };
+  const status = e?.status ?? e?.code;
+  if (status === 401 || status === 403) return { stage: 'auth', class: 'auth' };
+  if (status === 429) return { stage: 'fetch_page', class: 'http_429' };
+  if (typeof status === 'number' && status >= 500)
+    return { stage: 'fetch_page', class: 'http_5xx' };
+  if (typeof status === 'number' && status >= 400)
+    return { stage: 'fetch_page', class: 'http_4xx' };
+  if (e?.message && /network|fetch|abort|timeout/i.test(e.message)) {
+    return { stage: 'network', class: 'network' };
+  }
+  return { stage: 'fetch_page', class: 'unknown' };
+}
 
 export interface EnsureInboxOptions {
   target: number;
@@ -57,13 +77,39 @@ export async function ensureInboxEmails(options: EnsureInboxOptions): Promise<En
     const currentCount = await getEmailCount();
     const params = new URLSearchParams({
       label: 'INBOX',
-      maxResults: String(Math.min(500, target - currentCount)),
+      maxResults: String(Math.min(SYNC_MAX_PAGE, target - currentCount)),
     });
     if (metadataOnly) params.set('metadataOnly', 'true');
     if (pageToken) params.set('pageToken', pageToken);
 
-    const res = await fetch(`/api/emails?${params}`, { signal });
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    let res: Response;
+    try {
+      res = await fetch(`/api/emails?${params}`, { signal });
+    } catch (fetchErr) {
+      const { stage, class: cls } = classifySyncError(fetchErr);
+      await setInboxSyncMeta({
+        ...meta,
+        nextPageToken: pageToken,
+        exhausted,
+        lastSyncedAt: meta.lastSyncedAt,
+        lastError: { stage, class: cls, at: new Date().toISOString() },
+      });
+      throw fetchErr;
+    }
+
+    if (!res.ok) {
+      const err = new Error(`API error: ${res.status}`) as Error & { status?: number };
+      err.status = res.status;
+      const { stage, class: cls } = classifySyncError(err);
+      await setInboxSyncMeta({
+        ...meta,
+        nextPageToken: pageToken,
+        exhausted,
+        lastSyncedAt: meta.lastSyncedAt,
+        lastError: { stage, class: cls, at: new Date().toISOString() },
+      });
+      throw err;
+    }
 
     const data = await res.json();
     const batch: Email[] = data.emails ?? [];
@@ -73,7 +119,19 @@ export async function ensureInboxEmails(options: EnsureInboxOptions): Promise<En
         ...e,
         embedding: embeddingById.get(e.id) ?? null,
       }));
-      await storeEmails(toStore);
+      try {
+        await storeEmails(toStore);
+      } catch (storeErr) {
+        const { stage, class: cls } = classifySyncError(storeErr);
+        await setInboxSyncMeta({
+          ...meta,
+          nextPageToken: pageToken,
+          exhausted,
+          lastSyncedAt: meta.lastSyncedAt,
+          lastError: { stage, class: cls, at: new Date().toISOString() },
+        });
+        throw storeErr;
+      }
       fetchedThisRun += batch.length;
       onProgress?.(`Syncing inbox… ${currentCount + batch.length}/${target}`);
     }
@@ -85,6 +143,7 @@ export async function ensureInboxEmails(options: EnsureInboxOptions): Promise<En
       nextPageToken: pageToken,
       exhausted,
       lastSyncedAt: new Date().toISOString(),
+      lastError: null,
     });
   }
 
@@ -115,6 +174,8 @@ export async function refreshInboxHead(options?: {
 
   options?.onProgress?.('Checking for new mail…');
 
+  const meta = await getInboxSyncMeta();
+
   do {
     if (options?.signal?.aborted) break;
 
@@ -125,8 +186,30 @@ export async function refreshInboxHead(options?: {
     if (options?.metadataOnly) params.set('metadataOnly', 'true');
     if (pageToken) params.set('pageToken', pageToken);
 
-    const res = await fetch(`/api/emails?${params}`, { signal: options?.signal });
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    let res: Response;
+    try {
+      res = await fetch(`/api/emails?${params}`, { signal: options?.signal });
+    } catch (fetchErr) {
+      const { stage, class: cls } = classifySyncError(fetchErr);
+      await setInboxSyncMeta({
+        ...meta,
+        lastSyncedAt: meta.lastSyncedAt,
+        lastError: { stage, class: cls, at: new Date().toISOString() },
+      });
+      throw fetchErr;
+    }
+
+    if (!res.ok) {
+      const err = new Error(`API error: ${res.status}`) as Error & { status?: number };
+      err.status = res.status;
+      const { stage, class: cls } = classifySyncError(err);
+      await setInboxSyncMeta({
+        ...meta,
+        lastSyncedAt: meta.lastSyncedAt,
+        lastError: { stage, class: cls, at: new Date().toISOString() },
+      });
+      throw err;
+    }
 
     const data = await res.json();
     const batch: Email[] = data.emails ?? [];
@@ -145,10 +228,10 @@ export async function refreshInboxHead(options?: {
     if (batch.length === 0 || !pageToken) break;
   } while (fetched < maxEmails);
 
-  const meta = await getInboxSyncMeta();
   await setInboxSyncMeta({
     ...meta,
     lastSyncedAt: new Date().toISOString(),
+    lastError: null,
   });
 
   return fetched;

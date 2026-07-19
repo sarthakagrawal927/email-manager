@@ -11,6 +11,7 @@ added, retired, or its cadence changes.
 | --- | --- | --- | --- |
 | `ci.yml` | `push`/`pull_request` to `main`/`master` | Every push/PR | `pnpm lint`, `pnpm test:unit`, `pnpm build`, `pnpm check:docs` |
 | `deploy.yml` | `workflow_dispatch` (manual) | Manual only | Build + `wrangler deploy` + production smoke check |
+| `foundry-evidence.yml` | `push` to `main`/`master` + `cron: 0 6 * * 1` + `workflow_dispatch` | Every push to main + weekly (Mondays 06:00 UTC) | `pnpm foundry:evidence` → uploads `foundry-evidence.json` artifact (30-day retention) |
 | `weekly.yml` | `cron: 0 9 * * 1` (Mondays 09:00 UTC) + `workflow_dispatch` | Weekly | `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` + Playwright e2e (installs browsers) |
 
 ## Notes
@@ -25,6 +26,10 @@ added, retired, or its cadence changes.
 - **Weekly (`weekly.yml`)** runs the full quality suite including typecheck and
   Playwright e2e (with browser installation). It auto-detects the package
   manager and runs available scripts conditionally.
+- **Foundry evidence (`foundry-evidence.yml`)** generates a privacy-safe
+  `foundry-evidence.json` (build/sync/auth invariants, no email content or
+  tokens) and uploads it as a 30-day workflow artifact for the Foundry. See
+  [`../foundry-evidence.md`](../foundry-evidence.md).
 
 ## No local cron jobs
 

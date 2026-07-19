@@ -1,5 +1,5 @@
 # email-manager — PROJECT STATUS
-Last updated: 2026-07-04
+Last updated: 2026-07-19
 
 ## Why / What
 
@@ -52,6 +52,7 @@ Last updated: 2026-07-04
 
 ## Timeline
 
+- **2026-07-19:** Added privacy-safe Foundry evidence automation: durable sync failure recording (`InboxSyncMeta.lastError` with sanitized stage/class/timestamp, cleared on success), `classifySyncError()` helper, sync lifecycle unit tests (`src/lib/__tests__/inbox-sync.test.ts`), `pnpm foundry:evidence` script (`scripts/foundry-evidence.mjs`) that generates `foundry-evidence.json` with build/sync/auth invariants (no email content or tokens), and `foundry-evidence.yml` CI workflow that uploads the artifact on push + weekly. See `docs/operations/foundry-evidence.md`.
 - **2026-07-13:** Allowed Cloudflare Web Analytics in the production CSP so the canonical `mail.sassmaker.com` surface loads without blocked-script errors.
 
 - **2026-07-04** — Keyboard-driven batch triage promoted to the primary `#today` interface: `j`/`k` + arrows navigate, `Shift+arrows` extend multi-select, `d`/`f`/`s` act on all selected (or focused) messages, `?` toggles a shortcut help overlay, `Esc` clears selection. Per-row kbd hints on the focused message; `ShortcutHelpOverlay` component shared by both the queue and the focused session. `isTypingTarget` extracted to `triage-session.ts` (duck-typed, Node-safe) so shortcuts never fire inside text inputs.

@@ -1,6 +1,6 @@
 # STATUS — email-manager
 
-Last updated: 2026-07-18
+Last updated: 2026-07-19
 
 This is the short, operative view of where email-manager is right now. For the
 full timeline and shipped-feature inventory, see
@@ -17,9 +17,11 @@ paused direction.
 
 ## Active work
 
-- **Documentation consolidation** (this branch): unifying the scattered `docs/`
-  tree, root status files, and Blume presentation into one canonical
-  local-first knowledge system with validation and CI checks.
+- **Foundry evidence automation** (this branch): privacy-safe build/sync/auth
+  evidence for the Foundry. Added durable sync failure recording
+  (`InboxSyncMeta.lastError`), sync lifecycle unit tests, a
+  `pnpm foundry:evidence` script, and a CI workflow that uploads the evidence
+  artifact. See [`docs/operations/foundry-evidence.md`](docs/operations/foundry-evidence.md).
 - **Maintenance baseline**: keyboard triage, digest verification, and global
   error handling are the maintained baseline. Bug fixes and dependency updates
   only.

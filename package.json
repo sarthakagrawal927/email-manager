@@ -27,6 +27,7 @@
     "format:check": "biome format .",
     "check": "biome check .",
     "check:docs": "node scripts/check-docs.mjs",
+    "foundry:evidence": "node scripts/foundry-evidence.mjs",
     "docs:dev": "pnpm --filter ./apps/docs-blume dev",
     "docs:build": "pnpm --filter ./apps/docs-blume build",
     "docs:preview": "pnpm --filter ./apps/docs-blume preview"
