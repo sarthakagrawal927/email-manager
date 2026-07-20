@@ -14,7 +14,7 @@ and weekly digest reflection without server-side mailbox storage.
 ## Scope
 
 **IN scope:** Vite SPA + Hono worker, Astro landing, IndexedDB cache,
-client-side embeddings, triage/digest/filter studio.
+client-side embeddings, digest/filter studio, and sender insights.
 
 **OUT of scope:** Server-side digest cron/delivery, LLM-written digest prose,
 automatic Today Little Log sync, saved filter presets, commercial "personal
@@ -54,12 +54,11 @@ AI-suggested labels), the policy is:
 For the full inventory, see
 [`../../PROJECT_STATUS.md`](../../PROJECT_STATUS.md) "Features (shipped)".
 
-- **Mailbox views:** inbox, starred, sent, trash, subscriptions, analytics.
+- **Mailbox views:** inbox, sent, subscriptions, insights, and analytics.
 - **Semantic search:** in-browser vector search over locally generated ONNX embeddings.
 - **Sender analytics:** bucketed frequency analysis with drill-down.
 - **Unsubscribe:** RFC 8058 one-click POST + fallback links; deduped sender list.
 - **Weekly digest:** quiet relationships, threads to revisit, weekly themes.
-- **Triage:** keyboard-driven batch triage on `#today`; focused session mode.
 - **Gmail filter studio:** recipe suggestions with XML export.
 - **PostHog RUM:** signup, returned, activated, email_opened, digest_generated, digest_exported.
 

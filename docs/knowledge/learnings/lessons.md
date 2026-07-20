@@ -70,13 +70,7 @@ thousand emails this is fast. At 10k+ emails with 384-dim float vectors this wil
 become the bottleneck. A dedicated `embedded: 0|1` index would fix it, but requires
 a version bump (see lesson 5).
 
-### 7. Embedding export balloons file size
-
-`exportEmails()` strips embeddings by default with good reason: 10k emails × 384 dims ×
-4 bytes = ~15 MB of floats. Always test the `includeEmbeddings: false` default before
-adding any export-all flow.
-
-### 8. Large attachment bodies in IndexedDB
+### 7. Large attachment bodies in IndexedDB
 
 Email bodies are stored as decoded UTF-8 strings including HTML. Emails with inline
 base64 images (common in marketing HTML) can be 500 KB–2 MB per message. IndexedDB

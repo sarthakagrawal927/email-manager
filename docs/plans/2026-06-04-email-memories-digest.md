@@ -139,7 +139,7 @@ node scripts/verify-digest-fixture.mjs
 
 ## Open questions
 
-1. Should “quiet relationship” exclude newsletters (`triage.ts` keyword list)?
+1. Should “quiet relationship” exclude newsletters using digest-owned heuristics?
 2. Store per-thread “last opened in Kinetic” vs infer from selection events only?
 3. Is a single `#digest` nav item enough, or fold into existing `#analytics`?
 
@@ -150,8 +150,6 @@ node scripts/verify-digest-fixture.mjs
 | Local store | `src/lib/db.ts` |
 | Sender stats | `src/components/Analytics.tsx` |
 | Semantic recall | `src/lib/semantic-search.ts` |
-| Newsletter heuristics | `src/lib/triage.ts` |
-| JSON export (emails) | `db.exportEmails()` |
 
 ## Acceptance mapping
 

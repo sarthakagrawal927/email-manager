@@ -12,7 +12,7 @@ persisting mailbox contents on the server.
 
 ## What it does
 
-- Browse Gmail views for inbox, starred, sent, trash, subscriptions, and analytics.
+- Browse Gmail views for inbox, sent mail, subscriptions, insights, and analytics.
 - Search normal email metadata and run semantic search over locally generated embeddings.
 - Generate embeddings in-browser with Hugging Face Transformers / ONNX.
 - Keep email data and embeddings in IndexedDB instead of a server database.
@@ -20,7 +20,7 @@ persisting mailbox contents on the server.
 - Surface sender analytics and deduplicated unsubscribe candidates.
 - Unsubscribe through RFC 8058 one-click POST where available, with fallback links.
 - Weekly digest: quiet relationships, threads to revisit, weekly themes — all local.
-- Keyboard-driven batch triage on `#today`.
+- Inbox insights and filter recipes, generated locally.
 
 ## Privacy model
 

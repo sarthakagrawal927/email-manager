@@ -1,6 +1,6 @@
 # STATUS — email-manager
 
-Last updated: 2026-07-19
+Last updated: 2026-07-20
 
 This is the short, operative view of where email-manager is right now. For the
 full timeline and shipped-feature inventory, see
@@ -22,9 +22,9 @@ paused direction.
   (`InboxSyncMeta.lastError`), sync lifecycle unit tests, a
   `pnpm foundry:evidence` script, and a CI workflow that uploads the evidence
   artifact. See [`docs/operations/foundry-evidence.md`](docs/operations/foundry-evidence.md).
-- **Maintenance baseline**: keyboard triage, digest verification, and global
-  error handling are the maintained baseline. Bug fixes and dependency updates
-  only.
+- **Maintenance baseline**: inbox browsing, local semantic search, digest
+  verification, and global error handling are the maintained baseline. Bug
+  fixes and dependency updates only. The unused triage experiment is retired.
 
 ## Blockers
 

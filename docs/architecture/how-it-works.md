@@ -190,21 +190,7 @@ The UI (`src/components/SemanticSearch.tsx`) reads sync/index state from the
 "Sync & Index" flow: sync mail into IndexedDB, then generate embeddings. Search
 is disabled until at least one email is indexed.
 
-## Step 6 — Triage (no ML needed)
-
-Not everything uses embeddings. `src/lib/triage.ts` is pure, synchronous, and
-regex-driven. `triageEmails()` scores each message and sorts it into one of
-four queues — `respond`, `review`, `unsubscribe`, `reference` — using pattern
-sets (e.g. `respondPatterns` matches "can you / following up / feedback";
-`urgencyPatterns` matches "today / deadline / meeting"). Signals like
-`UNREAD`, `STARRED`, and the presence of an unsubscribe link adjust a numeric
-score that maps to high/medium/low priority.
-
-This is intentionally *not* an LLM or embedding task: triage runs instantly on
-every load with no model download, and the rules are auditable and predictable.
-It powers the keyboard-driven `#today` batch triage view.
-
-## Step 7 — Unsubscribe (the one write path)
+## Step 6 — Unsubscribe (the one write path)
 
 `POST /api/emails/:id/unsubscribe` in `src/worker.ts` implements
 [RFC 8058](https://www.rfc-editor.org/rfc/rfc8058) one-click unsubscribe. It
