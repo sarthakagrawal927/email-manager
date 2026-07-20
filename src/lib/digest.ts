@@ -7,13 +7,13 @@
 
 import type { Email } from './gmail';
 
-export const DIGEST_FORMAT = 'email-manager-weekly-digest' as const;
-export const DIGEST_FORMAT_VERSION = 1;
+const DIGEST_FORMAT = 'email-manager-weekly-digest' as const;
+const DIGEST_FORMAT_VERSION = 1;
 
 export interface DigestEmailInput
   extends Pick<Email, 'id' | 'threadId' | 'subject' | 'from' | 'date' | 'snippet' | 'labelIds'> {}
 
-export interface RelationshipQuiet {
+interface RelationshipQuiet {
   senderEmail: string;
   displayName: string;
   lastMessageAt: string;
@@ -22,7 +22,7 @@ export interface RelationshipQuiet {
   reason: 'no_messages_in_quiet_window';
 }
 
-export interface ThreadRevisit {
+interface ThreadRevisit {
   threadId: string;
   subject: string;
   lastMessageAt: string;
@@ -30,7 +30,7 @@ export interface ThreadRevisit {
   messageCount: number;
 }
 
-export interface WeeklyTheme {
+interface WeeklyTheme {
   id: string;
   label: string;
   messageCount: number;

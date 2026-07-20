@@ -1,5 +1,5 @@
 # email-manager — PROJECT STATUS
-Last updated: 2026-07-19
+Last updated: 2026-07-20
 
 ## Why / What
 
@@ -9,7 +9,7 @@ Last updated: 2026-07-19
 
 **Constraints:** Stable maintenance mode after De-OpenNext migration (2026-06-20). Gmail OAuth scope is read-only. Unsubscribe requires explicit user click. Automation safety: no silent mailbox mutations.
 
-**IN scope:** Vite SPA + Hono worker, Astro landing, IndexedDB cache, client-side embeddings, triage/digest/filter studio.
+**IN scope:** Vite SPA + Hono worker, Astro landing, IndexedDB cache, client-side embeddings, digest/filter studio, and sender insights.
 
 **OUT of scope:** Server-side digest cron/delivery, LLM-written digest prose, automatic Today Little Log sync, saved filter presets, commercial "personal reporter" positioning.
 
@@ -52,6 +52,7 @@ Last updated: 2026-07-19
 
 ## Timeline
 
+- **2026-07-20:** Completed the earlier triage de-scope: removed the unreachable queue/session implementation and stale action state, retained `#today` and `#triage` as compatibility aliases to Inbox, and aligned product, architecture, and landing documentation. Historical triage PRDs remain archived.
 - **2026-07-19:** Added privacy-safe Foundry evidence automation: durable sync failure recording (`InboxSyncMeta.lastError` with sanitized stage/class/timestamp, cleared on success), `classifySyncError()` helper, sync lifecycle unit tests (`src/lib/__tests__/inbox-sync.test.ts`), `pnpm foundry:evidence` script (`scripts/foundry-evidence.mjs`) that generates `foundry-evidence.json` with build/sync/auth invariants (no email content or tokens), and `foundry-evidence.yml` CI workflow that uploads the artifact on push + weekly. See `docs/operations/foundry-evidence.md`.
 - **2026-07-13:** Allowed Cloudflare Web Analytics in the production CSP so the canonical `mail.sassmaker.com` surface loads without blocked-script errors.
 
@@ -81,12 +82,12 @@ Last updated: 2026-07-19
 
 ### Hash views inside `/app` (`HomeClient.tsx`)
 
-- `#today` — TriageQueues (default).
-- `#inbox`, `#starred`, `#sent`, `#trash` — mailbox lists + detail.
+- `#today`, `#triage`, `#starred`, `#trash` — compatibility aliases to `#inbox`.
+- `#inbox`, `#sent` — mailbox lists + detail.
 - `#search` — SemanticSearch (sync/index embeddings + query).
 - `#subscriptions` — deduplicated unsubscribe candidates.
-- `#digest` — WeeklyDigestView.
-- `#filters` — GmailFilterBuilder recipe studio.
+- `#insights` — WeeklyDigestView + GmailFilterBuilder recipe studio.
+- `#digest`, `#filters` — compatibility aliases to `#insights`.
 - `#analytics` — sender analytics by bucket.
 - Unauthenticated `/app` renders inline Google sign-in UI.
 
@@ -112,7 +113,7 @@ Last updated: 2026-07-19
 
 - Database: `email-search` v2; store `emails` keyed by `id` (index `by-date`) + store `meta` (added in v2) holding the `inbox-sync` cursor.
 - Record: `StoredEmail` = `Email` + `embedding: number[] | null`.
-- Helpers: `storeEmails`, `getAllEmails`, `getEmailsWithoutEmbedding`, `getEmailCount`, `getIndexedCount`, `getInboxSyncMeta`, `setInboxSyncMeta`, `exportEmails`.
+- Helpers: `storeEmails`, `getAllEmails`, `getEmailsWithoutEmbedding`, `getEmailCount`, `getIndexedCount`, `getInboxSyncMeta`, `setInboxSyncMeta`.
 
 ### D1 schema (`migrations/0001_better_auth.sql`)
 
@@ -132,8 +133,7 @@ Last updated: 2026-07-19
 
 - `Sidebar` — nav for all views; mobile drawer.
 - `WorkSurface` — split list/detail layout.
-- `TriageQueues` + `TriageActionBar` + `TriageStateBadge` + `TriageQueueLedger` + `TriageActionsProvider` + `TriageSession` + `ShortcutHelpOverlay`.
-- `EmailList`, `EmailDetail` — list rows with triage badges, thread reader, unsubscribe.
+- `EmailList`, `EmailDetail` — mailbox rows, thread reader, and explicit unsubscribe.
 - `SemanticSearch` — model load, index sync, semantic query.
 - `Subscriptions`, `Analytics`, `WeeklyDigestView`, `GmailFilterBuilder`.
 - `Providers`, `posthog-provider.tsx`, `ErrorBoundary`.
@@ -147,14 +147,10 @@ Last updated: 2026-07-19
 - `digestToTodayLittleLogExport()` clipboard copy (manual only).
 - Fixtures: `fixtures/digest-sample-emails.json`, `fixtures/weekly-digest-sample.json`; verify via `pnpm digest:verify`.
 
-**Triage action queue:**
-- Shared `TriageQueueLedger` on Today + Inbox.
-- `TriageActionBar`: summarize, defer (4h/EOD/1d), follow-up (3d/1w), reply, skip; undo.
-- Deferred snooze visible on rows and detail via `buildActiveMap`.
-- State in `localStorage` `email-manager:triage-actions:v1` (max 200 records).
-- `TriageQueues` heuristic queues (newsletters, follow-ups, etc.) on `#today`.
-- **Keyboard-driven batch triage is the primary `#today` motion** (2026-07-04): `j`/`k` + arrows navigate the flat queue, `Shift+arrows` extend a multi-selection, `d`/`f`/`s` act on all selected (or the focused row if none selected), `Enter` opens the focused message, `?` toggles `ShortcutHelpOverlay`, `Esc` clears selection. Per-row kbd hints appear on the focused message; a selection-count badge shows batch size. Shortcuts are disabled while typing in text inputs (`isTypingTarget`).
-- **Focused triage session** (`TriageSession`, entered via "⌨ Focused session" button on `#today`): next 25 unread-but-unsorted messages one at a time; `d` defer 1d, `f` follow-up 3d, `s` summarize, `j`/`k`/arrows next/prev, `?` help overlay, `Esc` exit; on-screen key legend; queue built by `src/lib/triage-session.ts` (snapshotted at entry); PostHog `core_action: triage_session_started`.
+**Retired triage experiment:**
+- The keyboard triage queue, focused session, and local action ledger shipped in July 2026 but were removed from navigation before maintenance mode.
+- Their implementation was deleted on 2026-07-20; the historical PRD remains in `docs/archive/`.
+- `#today` and `#triage` remain safe aliases to Inbox so old bookmarks do not break.
 
 **Gmail filter recipe studio (`#filters`):**
 - Categories: newsletter, receipt, notification, follow-up.
@@ -169,7 +165,7 @@ Last updated: 2026-07-19
 
 ### Tests
 
-- Vitest unit (`pnpm test`): digest builder, filter builder, triage session queue/keymap/`isTypingTarget` (`src/lib/__tests__/`).
+- Vitest unit (`pnpm test`): digest builder, filter builder, inbox sync, formatting, subscription senders, and sent-reply state (`src/lib/__tests__/`).
 - Playwright: landing hero/features/CTA, no horizontal scroll, CTA touch target ≥44px (desktop + mobile).
 - `pnpm digest:verify` golden-file check for digest builder.
 - CI (`ci.yml`): lint + build only; weekly workflow adds typecheck + e2e.
@@ -183,7 +179,7 @@ Last updated: 2026-07-19
 
 ### Closure
 
-- **Finish-and-pause (2026-07-10):** shipped keyboard triage, digest verification, and error handling are the maintained baseline. No new feature work is planned.
+- **Finish-and-pause (2026-07-10):** inbox browsing, local semantic search, digest verification, and error handling are the maintained baseline. No new feature work is planned.
 
 ### Deferred
 

@@ -34,8 +34,7 @@ src/
     Subscriptions.tsx     # Deduplicated unsubscribeable senders
     Analytics.tsx         # Sender frequency analysis (bar charts)
     SemanticSearch.tsx    # In-browser vector search UI
-    TriageQueues.tsx      # Keyboard-driven batch triage on #today
-    TriageSession.tsx     # Focused triage session mode
+    InsightsView.tsx      # Digest and filter-recipe workspace
     WeeklyDigestView.tsx  # Weekly digest view
     GmailFilterBuilder.tsx # Filter recipe studio
   lib/
@@ -48,9 +47,6 @@ src/
     semantic-search.ts    # Cosine similarity search over stored embeddings
     digest.ts             # Weekly digest builder (pure)
     filter-builder.ts     # Gmail filter XML recipe builder
-    triage.ts             # Newsletter heuristics + triage classification
-    triage-actions.ts     # Triage action queue state (localStorage)
-    triage-session.ts     # Focused session queue builder + isTypingTarget
     security-headers.ts   # Security headers for /api/* responses
   db/
     schema.ts             # Drizzle schema (D1 auth tables)
@@ -117,9 +113,7 @@ User click → POST /api/emails/:id/unsubscribe → RFC 8058 one-click POST
   `exhausted`, `lastSyncedAt`) so paged sync can resume where it left off.
 - Record: `StoredEmail` = `Email` + `embedding: number[] | null`.
 - Helpers: `storeEmails`, `getAllEmails`, `getEmailsWithoutEmbedding`,
-  `getEmailCount`, `getIndexedCount`, `getInboxSyncMeta`, `setInboxSyncMeta`,
-  `exportEmails`.
-- `exportEmails()` strips embeddings by default (10k × 384 × 4 bytes ≈ 15 MB).
+  `getEmailCount`, `getIndexedCount`, `getInboxSyncMeta`, and `setInboxSyncMeta`.
 
 ## D1 schema (`migrations/0001_better_auth.sql`)
 
@@ -146,12 +140,12 @@ User click → POST /api/emails/:id/unsubscribe → RFC 8058 one-click POST
 
 ## Hash views inside `/app`
 
-- `#today` — TriageQueues (default; keyboard-driven batch triage).
-- `#inbox`, `#starred`, `#sent`, `#trash` — mailbox lists + detail.
+- `#today`, `#triage`, `#starred`, and `#trash` — compatibility aliases to `#inbox`.
+- `#inbox`, `#sent` — mailbox lists + detail.
 - `#search` — SemanticSearch (sync/index embeddings + query).
 - `#subscriptions` — deduplicated unsubscribe candidates.
-- `#digest` — WeeklyDigestView.
-- `#filters` — GmailFilterBuilder recipe studio.
+- `#insights` — weekly digest and Gmail filter recipe studio.
+- `#digest`, `#filters` — compatibility aliases to `#insights`.
 - `#analytics` — sender analytics by bucket.
 
 ## Build pipeline

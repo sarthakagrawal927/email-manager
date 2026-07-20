@@ -10,7 +10,7 @@ import {
 import type { Email } from './gmail';
 
 export const DEFAULT_INBOX_SYNC = 500;
-export const REFRESH_HEAD_COUNT = 100;
+const REFRESH_HEAD_COUNT = 100;
 export const SYNC_MAX_PAGE = 500;
 
 export type SyncErrorStage = NonNullable<NonNullable<InboxSyncMeta['lastError']>['stage']>;
@@ -235,20 +235,4 @@ export async function refreshInboxHead(options?: {
   });
 
   return fetched;
-}
-
-/** Convenience wrapper for the default inbox sync size. */
-export async function syncInboxFromGmail(options?: {
-  maxEmails?: number;
-  metadataOnly?: boolean;
-  onProgress?: (message: string) => void;
-  signal?: AbortSignal;
-}): Promise<number> {
-  const result = await ensureInboxEmails({
-    target: options?.maxEmails ?? DEFAULT_INBOX_SYNC,
-    metadataOnly: options?.metadataOnly,
-    onProgress: options?.onProgress,
-    signal: options?.signal,
-  });
-  return result.fetched;
 }

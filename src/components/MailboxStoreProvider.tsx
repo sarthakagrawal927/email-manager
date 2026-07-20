@@ -56,9 +56,6 @@ export function useMailboxStore() {
   return ctx;
 }
 
-/** @deprecated Use useMailboxStore */
-export const useInboxIndex = useMailboxStore;
-
 export function MailboxStoreProvider({ children }: { children: ReactNode }) {
   const [emails, setEmails] = useState<StoredEmail[]>([]);
   const [total, setTotal] = useState(0);
@@ -285,6 +282,3 @@ export function MailboxStoreProvider({ children }: { children: ReactNode }) {
 
   return <MailboxStoreContext.Provider value={value}>{children}</MailboxStoreContext.Provider>;
 }
-
-/** @deprecated Use MailboxStoreProvider */
-export const InboxIndexProvider = MailboxStoreProvider;
